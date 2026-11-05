@@ -10,15 +10,15 @@
   "theme_color": "#0a232c",
   "icons": [
     {
-      "src": "/assets/aistudio/sms_52ac56d3.png",
+      "src": "/app-icon-selected.jpg",
       "sizes": "192x192",
-      "type": "image/png",
+      "type": "image/jpeg",
       "purpose": "any"
     },
     {
-      "src": "/assets/aistudio/image_50870e1f.png",
+      "src": "/app-icon-selected.jpg",
       "sizes": "512x512",
-      "type": "image/png",
+      "type": "image/jpeg",
       "purpose": "any"
     }
   ]

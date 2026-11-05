@@ -1,18 +1,20 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { ActiveTab } from '../types';
-import { BookOpen, Wind, Sun, Sparkles, Moon, Compass, Feather, Heart, Waves, LayoutGrid, X, UserCheck, Bell } from 'lucide-react';
+import { BookOpen, Wind, Sun, Sparkles, Moon, Compass, Feather, Heart, Waves, LayoutGrid, X, UserCheck, Bell, Smartphone } from 'lucide-react';
 import { useUserRole } from '../context/UserRoleContext';
 
 interface NavigationProps {
   activeTab: ActiveTab;
   setActiveTab: (tab: ActiveTab) => void;
   onOpenNotifications: () => void;
+  onOpenInstallModal?: () => void;
 }
 
 export const Navigation: React.FC<NavigationProps> = ({
   activeTab,
   setActiveTab,
   onOpenNotifications,
+  onOpenInstallModal,
 }) => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
@@ -103,6 +105,18 @@ export const Navigation: React.FC<NavigationProps> = ({
         >
           <Bell className="w-4 h-4" />
         </button>
+
+        {/* App Icon / Home Screen Button on mobile */}
+        {onOpenInstallModal && (
+          <button
+            onClick={onOpenInstallModal}
+            className="shrink-0 p-2 rounded-xl bg-white/10 hover:bg-white/20 text-[#f5d77f] border border-[#dfba61]/40 transition"
+            title="App-Icon auf den Startbildschirm legen"
+            aria-label="App-Icon"
+          >
+            <Smartphone className="w-4 h-4" />
+          </button>
+        )}
 
         {/* Mobile All-Rooms Grid Toggle Button */}
         <button
@@ -225,6 +239,18 @@ export const Navigation: React.FC<NavigationProps> = ({
           <Bell className="w-3.5 h-3.5" />
           <span className="hidden lg:inline">Mitteilungen</span>
         </button>
+
+        {/* Desktop App Icon / Home Screen Button */}
+        {onOpenInstallModal && (
+          <button
+            onClick={onOpenInstallModal}
+            className="shrink-0 flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white/10 hover:bg-white/20 text-[#f5d77f] border border-[#dfba61]/40 transition text-xs font-medium"
+            title="App-Icon wählen & auf den Startbildschirm legen"
+          >
+            <Smartphone className="w-3.5 h-3.5" />
+            <span className="hidden lg:inline">App-Icon</span>
+          </button>
+        )}
 
       </div>
 

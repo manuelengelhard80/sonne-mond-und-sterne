@@ -17,11 +17,13 @@ export const AndroidBottomHelperBar: React.FC = () => {
   const [isInstalled, setIsInstalled] = useState<boolean>(false);
   const [isTriggering, setIsTriggering] = useState<boolean>(false);
   const [justInstalled, setJustInstalled] = useState<boolean>(false);
+  const [showManualGuide, setShowManualGuide] = useState<boolean>(false);
+  const [isInAppBrowser, setIsInAppBrowser] = useState<boolean>(false);
 
   useEffect(() => {
     if (typeof window === 'undefined') return;
 
-    // Check if running in standalone mode (already installed on homescreen)
+    // Check standalone mode
     const isStandalone =
       window.matchMedia('(display-mode: standalone)').matches ||
       (navigator as any).standalone === true;
@@ -31,11 +33,15 @@ export const AndroidBottomHelperBar: React.FC = () => {
       return;
     }
 
-    const userAgent = window.navigator.userAgent.toLowerCase();
-    const isIOSDevice = /iphone|ipad|ipod/.test(userAgent);
+    const ua = window.navigator.userAgent.toLowerCase();
+    const isIOSDevice = /iphone|ipad|ipod/.test(ua);
     const isDismissed = localStorage.getItem('android_helper_dismissed') === 'true';
 
-    // Show for Android/desktop Chrome if not dismissed
+    // Detect if inside an in-app browser like WhatsApp, Instagram, FB, etc.
+    const inApp = /wv|fbav|instagram|line|micromessenger|whatsapp/.test(ua);
+    setIsInAppBrowser(inApp);
+
+    // Show for Android / desktop Chrome if not dismissed
     if (!isIOSDevice && !isDismissed) {
       setShowBanner(true);
     }
@@ -50,15 +56,16 @@ export const AndroidBottomHelperBar: React.FC = () => {
       setDeferredPrompt(e as BeforeInstallPromptEvent);
       (window as any).deferredInstallPrompt = e;
       setShowBanner(true);
+      setShowManualGuide(false);
     };
 
     const handlePromptReady = (e: any) => {
-      if (e.detail) {
-        setDeferredPrompt(e.detail);
-      } else if ((window as any).deferredInstallPrompt) {
-        setDeferredPrompt((window as any).deferredInstallPrompt);
+      const promptObj = e.detail || (window as any).deferredInstallPrompt;
+      if (promptObj) {
+        setDeferredPrompt(promptObj);
       }
       setShowBanner(true);
+      setShowManualGuide(false);
     };
 
     const handleOpenBarEvent = () => {
@@ -70,72 +77,71 @@ export const AndroidBottomHelperBar: React.FC = () => {
       setJustInstalled(true);
       (window as any).deferredInstallPrompt = null;
       setDeferredPrompt(null);
-      setTimeout(() => setShowBanner(false), 3500);
+      setTimeout(() => setShowBanner(false), 4000);
     };
 
     window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
     window.addEventListener('deferred-prompt-ready', handlePromptReady);
     window.addEventListener('open-install-pwa', handleOpenBarEvent);
     window.addEventListener('appinstalled', handleAppInstalled);
+    window.addEventListener('app-installed-success', handleAppInstalled);
 
     return () => {
       window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
       window.removeEventListener('deferred-prompt-ready', handlePromptReady);
       window.removeEventListener('open-install-pwa', handleOpenBarEvent);
       window.removeEventListener('appinstalled', handleAppInstalled);
+      window.removeEventListener('app-installed-success', handleAppInstalled);
     };
   }, []);
 
   const handleInstallClick = async () => {
-    const promptEvent = deferredPrompt || (window as any).deferredInstallPrompt;
-    if (promptEvent) {
+    if (typeof window !== 'undefined' && 'vibrate' in navigator) {
+      try { navigator.vibrate(40); } catch (_) {}
+    }
+
+    const promptEvent: BeforeInstallPromptEvent | null =
+      deferredPrompt || (window as any).deferredInstallPrompt;
+
+    if (promptEvent && typeof promptEvent.prompt === 'function') {
       setIsTriggering(true);
       try {
+        // Direct synchronous trigger within user gesture
         await promptEvent.prompt();
-        const { outcome } = await promptEvent.userChoice;
-        if (outcome === 'accepted') {
+        const choice = await promptEvent.userChoice;
+        if (choice && choice.outcome === 'accepted') {
           setJustInstalled(true);
           setIsInstalled(true);
           (window as any).deferredInstallPrompt = null;
           setDeferredPrompt(null);
           setTimeout(() => {
             setShowBanner(false);
-          }, 3500);
+          }, 4000);
         }
       } catch (err) {
         console.warn('Install prompt error:', err);
+        setShowManualGuide(true);
       } finally {
         setIsTriggering(false);
       }
-    } else {
-      // If promptEvent is not ready yet, poll for it up to 1.5 seconds
-      setIsTriggering(true);
-      let attempts = 0;
-      const checkInterval = setInterval(async () => {
-        attempts++;
-        const readyPrompt = (window as any).deferredInstallPrompt;
-        if (readyPrompt) {
-          clearInterval(checkInterval);
-          setIsTriggering(false);
-          try {
-            await readyPrompt.prompt();
-            const { outcome } = await readyPrompt.userChoice;
-            if (outcome === 'accepted') {
-              setJustInstalled(true);
-              setIsInstalled(true);
-              (window as any).deferredInstallPrompt = null;
-              setDeferredPrompt(null);
-              setTimeout(() => setShowBanner(false), 3500);
-            }
-          } catch (e) {
-            console.warn(e);
-          }
-        } else if (attempts >= 8) {
-          clearInterval(checkInterval);
-          setIsTriggering(false);
-        }
-      }, 200);
+      return;
     }
+
+    // Check if the app is already installed
+    if ('getInstalledRelatedApps' in navigator) {
+      try {
+        const apps = await (navigator as any).getInstalledRelatedApps();
+        if (apps && apps.length > 0) {
+          setIsInstalled(true);
+          setJustInstalled(true);
+          setTimeout(() => setShowBanner(false), 4000);
+          return;
+        }
+      } catch (_) {}
+    }
+
+    // If deferred prompt hasn't arrived yet, show manual guide indicator
+    setShowManualGuide(true);
   };
 
   const handleDismiss = () => {
@@ -190,6 +196,17 @@ export const AndroidBottomHelperBar: React.FC = () => {
               <Download className="w-4 h-4 text-[#0a232c]" />
               <span>{isTriggering ? 'Wird geöffnet...' : 'JETZT AUF DEN STARTBILDSCHIRM LEGEN'}</span>
             </button>
+
+            {showManualGuide && (
+              <div className="p-2.5 rounded-xl bg-[#dfba61]/15 border border-[#dfba61]/40 text-[#f5d77f] text-[11px] leading-snug flex items-start gap-2 animate-fade-in">
+                <span className="text-sm shrink-0">👉</span>
+                <span>
+                  {isInAppBrowser
+                    ? 'In WhatsApp/Nachricht geöffnet: Tippe oben rechts auf die drei Punkte (⋮) ➔ „In Chrome öffnen“, damit das Icon direkt abgelegt werden kann.'
+                    : 'Tippe oben rechts in Chrome auf die 3 Punkte (⋮) ➔ „App installieren“ oder „Zum Startbildschirm hinzufügen“.'}
+                </span>
+              </div>
+            )}
 
             <p className="text-[10px] text-white/60 text-center italic">
               Oder oben rechts im Chrome-Menü (⋮) auf „App installieren“ tippen.

@@ -29,6 +29,17 @@
       window.addEventListener('appinstalled', function() {
         window.deferredInstallPrompt = null;
       });
+      if ('serviceWorker' in navigator) {
+        window.addEventListener('load', function() {
+          navigator.serviceWorker.register('/sw.js', { scope: '/' }).catch(function(err) {
+            console.warn('SW registration warning:', err);
+          });
+        });
+        // Also kick off registration immediately if document already loaded or interactive
+        if (document.readyState === 'complete' || document.readyState === 'interactive') {
+          navigator.serviceWorker.register('/sw.js', { scope: '/' }).catch(function() {});
+        }
+      }
     </script>
   </head>
   <body class="bg-[#0b1d24] text-[#2c3e50] antialiased selection:bg-[#d4af37]/30 selection:text-[#008080]">

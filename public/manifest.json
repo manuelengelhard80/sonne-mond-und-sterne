@@ -1,0 +1,25 @@
+{
+  "id": "/",
+  "name": "Sonne, Mond und Sterne",
+  "short_name": "Sonne & Mond",
+  "description": "Ein liebevoller digitaler Rückzugsort für Manuel & Stefanie.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#071920",
+  "theme_color": "#0a232c",
+  "icons": [
+    {
+      "src": "/assets/aistudio/sms_52ac56d3.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/assets/aistudio/image_50870e1f.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    }
+  ]
+}

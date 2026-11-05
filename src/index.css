@@ -1,0 +1,135 @@
+@import "tailwindcss";
+
+@custom-variant dark (&:where(.dark, .dark *));
+
+@layer base {
+  :root {
+    --petrol-deep: #0a232c;
+    --petrol-medium: #0f3844;
+    --petrol-bright: #175263;
+    --gold-1: #e6d3a3;
+    --gold-2: #cbb27a;
+    --gold-3: #b09b69;
+    --gold-foil: #dfba61;
+    --gold-bright: #f5d77f;
+    --text-dark: #1e293b;
+    --bg-gradient: linear-gradient(135deg, #071920, #0a232c, #0f3844);
+  }
+
+  body {
+    font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
+    background-color: #071920;
+  }
+
+  h1, h2, h3, .font-serif-serif {
+    font-family: 'Cormorant Garamond', Georgia, serif;
+  }
+
+  .font-script {
+    font-family: 'Great Vibes', cursive;
+  }
+
+  .gold-gradient-text {
+    background: linear-gradient(135deg, #e6d3a3 0%, #cbb27a 50%, #b09b69 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    display: inline-block;
+  }
+
+  .gold-gradient-bg {
+    background-color: #dfba61;
+    background: #dfba61;
+  }
+
+  /* Solid Warm Amber/Orange Tone from Innehalten Outer Circle (#dfba61) without gradient */
+  .gold-gradient-btn, .gold-btn, .gold-solid-btn {
+    background-color: #dfba61 !important;
+    background: #dfba61 !important;
+    color: #0a232c !important;
+    font-weight: 700;
+    transition: all 0.2s ease-in-out;
+  }
+
+  .gold-gradient-btn:hover:not(:disabled), .gold-btn:hover:not(:disabled), .gold-solid-btn:hover:not(:disabled) {
+    background-color: #e8c86d !important;
+    background: #e8c86d !important;
+    box-shadow: 0 4px 16px rgba(223, 186, 97, 0.45);
+    filter: brightness(1.03);
+  }
+
+  .gold-gradient-btn:active:not(:disabled), .gold-btn:active:not(:disabled), .gold-solid-btn:active:not(:disabled) {
+    transform: scale(0.98);
+    background-color: #d4ae52 !important;
+    background: #d4ae52 !important;
+  }
+}
+
+@keyframes float-slow {
+  0%, 100% { transform: translateY(0px) rotate(0deg); }
+  50% { transform: translateY(-8px) rotate(1deg); }
+}
+
+@keyframes pulse-glow {
+  0%, 100% { opacity: 0.6; transform: scale(1); filter: drop-shadow(0 0 12px rgba(212, 175, 55, 0.4)); }
+  50% { opacity: 1; transform: scale(1.05); filter: drop-shadow(0 0 24px rgba(212, 175, 55, 0.8)); }
+}
+
+@keyframes shimmer-star {
+  0%, 100% { opacity: 0.3; transform: scale(0.8); }
+  50% { opacity: 1; transform: scale(1.2); }
+}
+
+.animate-float {
+  animation: float-slow 6s ease-in-out infinite;
+}
+
+.animate-pulse-glow {
+  animation: pulse-glow 4s ease-in-out infinite;
+}
+
+.animate-shimmer {
+  animation: shimmer-star 3s ease-in-out infinite;
+}
+
+/* Remove scrollbars completely on mobile & touch devices for full screen width */
+@media (max-width: 768px), (pointer: coarse) {
+  html, body, div, main, nav, section, * {
+    -ms-overflow-style: none !important;
+    scrollbar-width: none !important;
+  }
+  *::-webkit-scrollbar {
+    display: none !important;
+    width: 0 !important;
+    height: 0 !important;
+  }
+}
+
+/* Reusable scrollbar-none utility */
+.scrollbar-none, .no-scrollbar {
+  -ms-overflow-style: none !important;
+  scrollbar-width: none !important;
+}
+.scrollbar-none::-webkit-scrollbar, .no-scrollbar::-webkit-scrollbar {
+  display: none !important;
+  width: 0 !important;
+  height: 0 !important;
+}
+
+/* Custom delicate scrollbars only for Desktop screens with mouse pointers */
+@media (min-width: 769px) and (pointer: fine) {
+  ::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+  ::-webkit-scrollbar-track {
+    background: rgba(0, 128, 128, 0.05);
+  }
+  ::-webkit-scrollbar-thumb {
+    background: rgba(212, 175, 55, 0.4);
+    border-radius: 3px;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    background: rgba(212, 175, 55, 0.7);
+  }
+}

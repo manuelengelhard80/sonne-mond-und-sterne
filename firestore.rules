@@ -1,0 +1,34 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Connection test document
+    match /test/{testId} {
+      allow read, write: if true;
+    }
+
+    // User Roles / Settings
+    match /user_roles/{userId} {
+      allow read: if true;
+      allow write: if true;
+    }
+
+    // Shared Shooting Stars (Sternschnuppen)
+    match /shooting_stars/{starId} {
+      allow read: if true;
+      allow create, update, delete: if true;
+    }
+
+    // Shared Thoughts (Gedanken teilen)
+    match /shared_thoughts/{thoughtId} {
+      allow read: if true;
+      allow create, update, delete: if true;
+    }
+
+    // Celestial Touch Encounters (Interaktive Himmelsbegegnung)
+    match /celestial_touches/{touchId} {
+      allow read: if true;
+      allow create, update, delete: if true;
+    }
+  }
+}

@@ -1,0 +1,80 @@
+{
+  "entities": {
+    "UserRole": {
+      "title": "UserRole",
+      "description": "User role selection and settings for Sonne or Mond",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "role": { "type": "string", "enum": ["sonne", "mond"] },
+        "displayName": { "type": "string" },
+        "updatedAt": { "type": "string" }
+      },
+      "required": ["userId", "role", "displayName", "updatedAt"]
+    },
+    "ShootingStar": {
+      "title": "ShootingStar",
+      "description": "A shared shooting star with optional appointment/expiration date",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "text": { "type": "string" },
+        "author": { "type": "string", "enum": ["sonne", "mond"] },
+        "authorUid": { "type": "string" },
+        "x": { "type": "number" },
+        "y": { "type": "number" },
+        "createdAt": { "type": "string" },
+        "expiresAt": { "type": "string" },
+        "isArchived": { "type": "boolean" }
+      },
+      "required": ["id", "text", "author", "authorUid", "x", "y", "createdAt"]
+    },
+    "SharedThought": {
+      "title": "SharedThought",
+      "description": "A shared thought between Sonne and Mond",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "content": { "type": "string" },
+        "author": { "type": "string", "enum": ["sonne", "mond"] },
+        "authorUid": { "type": "string" },
+        "mood": { "type": "string" },
+        "createdAt": { "type": "string" },
+        "likes": { "type": "array" }
+      },
+      "required": ["id", "content", "author", "authorUid", "createdAt"]
+    },
+    "CelestialTouch": {
+      "title": "CelestialTouch",
+      "description": "An interactive encounter touch between Sun and Moon",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "authorRole": { "type": "string", "enum": ["sonne", "mond"] },
+        "authorName": { "type": "string" },
+        "authorUid": { "type": "string" },
+        "createdAt": { "type": "string" },
+        "touchVal": { "type": "number" }
+      },
+      "required": ["id", "authorRole", "createdAt"]
+    }
+  },
+  "firestore": {
+    "/user_roles/{userId}": {
+      "schema": "UserRole",
+      "description": "Stores user role choices"
+    },
+    "/shooting_stars/{starId}": {
+      "schema": "ShootingStar",
+      "description": "Stores shared shooting stars with optional appointment expiration"
+    },
+    "/shared_thoughts/{thoughtId}": {
+      "schema": "SharedThought",
+      "description": "Stores thoughts shared between partners"
+    },
+    "/celestial_touches/{touchId}": {
+      "schema": "CelestialTouch",
+      "description": "Stores interactive touch encounters between Sun and Moon"
+    }
+  }
+}

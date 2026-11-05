@@ -21,7 +21,6 @@ import { soundSynth } from './services/soundSynth';
 import { UserRoleProvider, useUserRole } from './context/UserRoleContext';
 import { RolePickerModal } from './components/RolePickerModal';
 import { NotificationSettingsModal } from './components/NotificationSettingsModal';
-import { InstallPwaModal } from './components/InstallPwaModal';
 import { IosBottomHelperBar } from './components/IosBottomHelperBar';
 import { AndroidBottomHelperBar } from './components/AndroidBottomHelperBar';
 import {
@@ -40,27 +39,10 @@ function MainApp() {
   const [isMindfulnessPlaying, setIsMindfulnessPlaying] = useState<boolean>(false);
   const [mindfulnessTimeLeft, setMindfulnessTimeLeft] = useState<number>(300); // 5 minutes = 300s
   const [isNotificationModalOpen, setIsNotificationModalOpen] = useState<boolean>(false);
-  const [isInstallModalOpen, setIsInstallModalOpen] = useState<boolean>(false);
   const [showNotificationBanner, setShowNotificationBanner] = useState<boolean>(() => {
     if (typeof window === 'undefined') return false;
     return isNotificationSupported() && Notification.permission === 'default';
   });
-
-  // Automatically prompt for PWA Home Screen icon on first start if not standalone
-  useEffect(() => {
-    if (typeof window === 'undefined') return;
-    const isStandalone =
-      window.matchMedia('(display-mode: standalone)').matches ||
-      (navigator as any).standalone === true;
-    const hasSeenPrompt = localStorage.getItem('pwa_install_prompt_seen');
-
-    if (!isStandalone && !hasSeenPrompt) {
-      const timer = setTimeout(() => {
-        setIsInstallModalOpen(true);
-      }, 1500);
-      return () => clearTimeout(timer);
-    }
-  }, []);
 
   // Initialize service worker, 5:00 AM morning message scheduler, and real-time partner activity alerts
   useEffect(() => {
@@ -146,7 +128,7 @@ function MainApp() {
         activeTab={activeTab}
         setActiveTab={setActiveTab}
         onOpenNotifications={() => setIsNotificationModalOpen(true)}
-        onOpenInstallModal={() => setIsInstallModalOpen(true)}
+        onOpenInstallModal={() => window.dispatchEvent(new Event('open-install-pwa'))}
       />
 
       {/* 3. Dedicated 5 Minuten Achtsamkeit Audio Controller (Positioned directly under Nav on the right, starts audio with cleanly centered Play icon) */}
@@ -265,15 +247,6 @@ function MainApp() {
       <NotificationSettingsModal
         isOpen={isNotificationModalOpen}
         onClose={() => setIsNotificationModalOpen(false)}
-      />
-
-      {/* PWA Home Screen Icon Installation Modal */}
-      <InstallPwaModal
-        isOpen={isInstallModalOpen}
-        onClose={() => {
-          localStorage.setItem('pwa_install_prompt_seen', 'true');
-          setIsInstallModalOpen(false);
-        }}
       />
 
       {/* Floating iPhone Safari Bottom Helper Bar with bouncing arrow */}

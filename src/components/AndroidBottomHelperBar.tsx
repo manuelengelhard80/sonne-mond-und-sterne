@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Download, Smartphone, X, Check, HelpCircle } from 'lucide-react';
+import { Download, Smartphone, X, Check } from 'lucide-react';
 
 interface BeforeInstallPromptEvent extends Event {
   prompt: () => Promise<void>;
@@ -7,10 +7,15 @@ interface BeforeInstallPromptEvent extends Event {
 }
 
 export const AndroidBottomHelperBar: React.FC = () => {
-  const [deferredPrompt, setDeferredPrompt] = useState<BeforeInstallPromptEvent | null>(null);
+  const [deferredPrompt, setDeferredPrompt] = useState<BeforeInstallPromptEvent | null>(() => {
+    if (typeof window !== 'undefined' && (window as any).deferredInstallPrompt) {
+      return (window as any).deferredInstallPrompt;
+    }
+    return null;
+  });
   const [showBanner, setShowBanner] = useState<boolean>(false);
   const [isInstalled, setIsInstalled] = useState<boolean>(false);
-  const [showManualHint, setShowManualHint] = useState<boolean>(false);
+  const [isTriggering, setIsTriggering] = useState<boolean>(false);
   const [justInstalled, setJustInstalled] = useState<boolean>(false);
 
   useEffect(() => {
@@ -35,45 +40,101 @@ export const AndroidBottomHelperBar: React.FC = () => {
       setShowBanner(true);
     }
 
+    // Check if already captured in window
+    if ((window as any).deferredInstallPrompt) {
+      setDeferredPrompt((window as any).deferredInstallPrompt);
+    }
+
     const handleBeforeInstallPrompt = (e: Event) => {
       e.preventDefault();
       setDeferredPrompt(e as BeforeInstallPromptEvent);
+      (window as any).deferredInstallPrompt = e;
+      setShowBanner(true);
+    };
+
+    const handlePromptReady = (e: any) => {
+      if (e.detail) {
+        setDeferredPrompt(e.detail);
+      } else if ((window as any).deferredInstallPrompt) {
+        setDeferredPrompt((window as any).deferredInstallPrompt);
+      }
       setShowBanner(true);
     };
 
     const handleOpenBarEvent = () => {
       setShowBanner(true);
-      setShowManualHint(false);
+    };
+
+    const handleAppInstalled = () => {
+      setIsInstalled(true);
+      setJustInstalled(true);
+      (window as any).deferredInstallPrompt = null;
+      setDeferredPrompt(null);
+      setTimeout(() => setShowBanner(false), 3500);
     };
 
     window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+    window.addEventListener('deferred-prompt-ready', handlePromptReady);
     window.addEventListener('open-install-pwa', handleOpenBarEvent);
+    window.addEventListener('appinstalled', handleAppInstalled);
 
     return () => {
       window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+      window.removeEventListener('deferred-prompt-ready', handlePromptReady);
       window.removeEventListener('open-install-pwa', handleOpenBarEvent);
+      window.removeEventListener('appinstalled', handleAppInstalled);
     };
   }, []);
 
   const handleInstallClick = async () => {
-    if (deferredPrompt) {
+    const promptEvent = deferredPrompt || (window as any).deferredInstallPrompt;
+    if (promptEvent) {
+      setIsTriggering(true);
       try {
-        await deferredPrompt.prompt();
-        const { outcome } = await deferredPrompt.userChoice;
+        await promptEvent.prompt();
+        const { outcome } = await promptEvent.userChoice;
         if (outcome === 'accepted') {
           setJustInstalled(true);
           setIsInstalled(true);
+          (window as any).deferredInstallPrompt = null;
           setDeferredPrompt(null);
           setTimeout(() => {
             setShowBanner(false);
-          }, 4000);
+          }, 3500);
         }
       } catch (err) {
-        setShowManualHint(true);
+        console.warn('Install prompt error:', err);
+      } finally {
+        setIsTriggering(false);
       }
     } else {
-      // Browser hasn't exposed beforeinstallprompt yet or user is on Firefox/Samsung browser
-      setShowManualHint(true);
+      // If promptEvent is not ready yet, poll for it up to 1.5 seconds
+      setIsTriggering(true);
+      let attempts = 0;
+      const checkInterval = setInterval(async () => {
+        attempts++;
+        const readyPrompt = (window as any).deferredInstallPrompt;
+        if (readyPrompt) {
+          clearInterval(checkInterval);
+          setIsTriggering(false);
+          try {
+            await readyPrompt.prompt();
+            const { outcome } = await readyPrompt.userChoice;
+            if (outcome === 'accepted') {
+              setJustInstalled(true);
+              setIsInstalled(true);
+              (window as any).deferredInstallPrompt = null;
+              setDeferredPrompt(null);
+              setTimeout(() => setShowBanner(false), 3500);
+            }
+          } catch (e) {
+            console.warn(e);
+          }
+        } else if (attempts >= 8) {
+          clearInterval(checkInterval);
+          setIsTriggering(false);
+        }
+      }, 200);
     }
   };
 
@@ -123,28 +184,16 @@ export const AndroidBottomHelperBar: React.FC = () => {
             {/* 1-Click Install Button */}
             <button
               onClick={handleInstallClick}
-              className="w-full py-3 rounded-xl gold-gradient-btn text-[#0a232c] font-bold text-xs sm:text-sm tracking-wide shadow-xl transition active:scale-95 flex items-center justify-center gap-2"
+              disabled={isTriggering}
+              className="w-full py-3 rounded-xl gold-gradient-btn text-[#0a232c] font-bold text-xs sm:text-sm tracking-wide shadow-xl transition active:scale-95 flex items-center justify-center gap-2 disabled:opacity-75"
             >
               <Download className="w-4 h-4 text-[#0a232c]" />
-              <span>JETZT AUF DEN STARTBILDSCHIRM LEGEN</span>
+              <span>{isTriggering ? 'Wird geöffnet...' : 'JETZT AUF DEN STARTBILDSCHIRM LEGEN'}</span>
             </button>
 
-            {/* Helper Hint */}
-            {showManualHint ? (
-              <div className="p-2.5 rounded-xl bg-[#dfba61]/20 border border-[#dfba61]/50 text-[#f5d77f] text-xs space-y-1">
-                <div className="font-bold flex items-center gap-1.5">
-                  <HelpCircle className="w-3.5 h-3.5" />
-                  <span>So klappt es sofort:</span>
-                </div>
-                <p className="text-[11px] text-white/90 leading-relaxed">
-                  Tippe oben rechts in Chrome auf die <strong className="text-white">drei Punkte (⋮)</strong> und wähle <strong className="text-[#f5d77f]">„App installieren“</strong> oder <strong className="text-[#f5d77f]">„Zum Startbildschirm hinzufügen“</strong>.
-                </p>
-              </div>
-            ) : (
-              <p className="text-[10px] text-white/60 text-center italic">
-                Oder oben rechts im Chrome-Menü (⋮) auf „App installieren“ tippen.
-              </p>
-            )}
+            <p className="text-[10px] text-white/60 text-center italic">
+              Oder oben rechts im Chrome-Menü (⋮) auf „App installieren“ tippen.
+            </p>
           </>
         )}
 

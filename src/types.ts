@@ -34,7 +34,7 @@ export interface JournalEntry {
 
 export type SoundMode = 'off' | 'sun' | 'moon' | 'stars' | 'rain' | 'lake';
 
-export type ActiveTab = 'story' | 'breath' | 'reflection' | 'moon' | 'stars' | 'lake' | 'meditation' | 'traumreisen' | 'journal';
+export type ActiveTab = 'story' | 'breath' | 'reflection' | 'moon' | 'stars' | 'lake' | 'meditation' | 'traumreisen' | 'journal' | 'settings';
 
 export type ThemeMode = 'petrol-gold' | 'night-sky' | 'golden-hour' | 'deep-emerald';
 

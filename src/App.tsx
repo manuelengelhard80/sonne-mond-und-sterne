@@ -15,9 +15,11 @@ import { MeditationSpace } from './components/MeditationSpace';
 import { TraumreisenSpace } from './components/TraumreisenSpace';
 import { JournalSpace } from './components/JournalSpace';
 import { SommernachtSee } from './components/SommernachtSee';
+import { SettingsSpace } from './components/SettingsSpace';
 import { Heart, Play, Pause, Bell, X } from 'lucide-react';
 import { soundSynth } from './services/soundSynth';
 
+import { ThemeProvider, useTheme } from './context/ThemeContext';
 import { UserRoleProvider, useUserRole } from './context/UserRoleContext';
 import { RolePickerModal } from './components/RolePickerModal';
 import { NotificationSettingsModal } from './components/NotificationSettingsModal';
@@ -107,19 +109,19 @@ function MainApp() {
   return (
     <div className="min-h-screen bg-[#071920] text-white flex flex-col justify-between transition-colors duration-700 w-full overflow-x-hidden">
       
-      {/* 1. Full Bleed Hero Header Image (Enlarged to utilize the full space so the central picture & text are prominently visible) */}
-      <div className="relative w-full bg-[#071920] overflow-hidden flex items-center justify-center portrait:h-[54vh] portrait:min-h-[420px] portrait:max-h-[580px] landscape:h-[62vh] landscape:min-h-[440px] landscape:max-h-[720px] sm:h-[62vh] sm:min-h-[460px] sm:max-h-[720px]">
+      {/* 1. Full Bleed Hero Header Image (Centered horizontally and vertically for mobile and desktop) */}
+      <div className="relative w-full bg-[#0a232c] overflow-hidden flex items-center justify-center portrait:h-[50vh] portrait:min-h-[380px] portrait:max-h-[540px] landscape:h-[60vh] landscape:min-h-[440px] landscape:max-h-[720px] sm:h-[60vh] sm:min-h-[440px] sm:max-h-[700px]">
         
-        {/* Full image banner: in portrait frames the central emblem prominently with maximum clarity and generous space */}
+        {/* Full image banner: perfectly centered horizontally and vertically */}
         <img
-          src="/assets/aistudio/sms_banner_new.png"
+          src="/assets/aistudio/SMS-Banner.png"
           alt="Sonne, Mond und Sterne - Manuel & Stefanie"
-          className="w-full h-full object-cover block select-none pointer-events-none transition-all duration-300"
+          className="w-full h-full object-cover object-center block select-none pointer-events-none transition-all duration-300"
           style={{ objectPosition: '50% 50%' }}
         />
 
         {/* Soft bottom edge blend into navigation */}
-        <div className="absolute inset-x-0 bottom-0 h-12 bg-gradient-to-t from-[#071920] to-transparent pointer-events-none" />
+        <div className="absolute inset-x-0 bottom-0 h-14 bg-gradient-to-t from-[#071920] via-[#071920]/60 to-transparent pointer-events-none" />
 
       </div>
 
@@ -127,8 +129,6 @@ function MainApp() {
       <Navigation
         activeTab={activeTab}
         setActiveTab={setActiveTab}
-        onOpenNotifications={() => setIsNotificationModalOpen(true)}
-        onOpenInstallModal={() => window.dispatchEvent(new Event('open-install-pwa'))}
       />
 
       {/* 3. Dedicated 5 Minuten Achtsamkeit Audio Controller (Positioned directly under Nav on the right, starts audio with cleanly centered Play icon) */}
@@ -225,6 +225,7 @@ function MainApp() {
         {activeTab === 'traumreisen' && <TraumreisenSpace />}
 
         {activeTab === 'journal' && <JournalSpace />}
+        {activeTab === 'settings' && <SettingsSpace />}
       </main>
 
       {/* Loving Footer */}
@@ -261,9 +262,11 @@ function MainApp() {
 
 export default function App() {
   return (
-    <UserRoleProvider>
-      <MainApp />
-    </UserRoleProvider>
+    <ThemeProvider>
+      <UserRoleProvider>
+        <MainApp />
+      </UserRoleProvider>
+    </ThemeProvider>
   );
 }
 

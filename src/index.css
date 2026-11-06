@@ -63,6 +63,96 @@
     background-color: #d4ae52 !important;
     background: #d4ae52 !important;
   }
+
+  /* Copper Metallic Theme (Extracted directly from /public/assets/aistudio/1_0ac96aa9.png) */
+  .theme-copper {
+    --copper-highlight: #ebd8c8;
+    --copper-light: #d6c5b4;
+    --copper-primary: #c79b78;
+    --copper-medium: #b88562;
+    --copper-deep: #87583b;
+    --copper-shadow: #5a3b27;
+  }
+
+  /* 1. Copper Headings & Text */
+  .theme-copper .gold-gradient-text,
+  .theme-copper .copper-gradient-text {
+    background: linear-gradient(135deg, #ebd8c8 0%, #d6c5b4 25%, #c79b78 55%, #b88562 80%, #87583b 100%) !important;
+    -webkit-background-clip: text !important;
+    -webkit-text-fill-color: transparent !important;
+    background-clip: text !important;
+    display: inline-block;
+  }
+
+  /* 2. Copper Buttons */
+  .theme-copper .gold-gradient-btn,
+  .theme-copper .gold-btn,
+  .theme-copper .gold-solid-btn,
+  .theme-copper .copper-btn {
+    background: linear-gradient(135deg, #ebd8c8 0%, #c79b78 50%, #a27b5c 100%) !important;
+    background-color: #c79b78 !important;
+    color: #1a0f0a !important;
+    font-weight: 700 !important;
+    box-shadow: 0 4px 18px rgba(199, 155, 120, 0.45) !important;
+    border-color: #d6c5b4 !important;
+    transition: all 0.25s ease-in-out;
+  }
+
+  .theme-copper .gold-gradient-btn:hover:not(:disabled),
+  .theme-copper .gold-btn:hover:not(:disabled),
+  .theme-copper .gold-solid-btn:hover:not(:disabled),
+  .theme-copper .copper-btn:hover:not(:disabled) {
+    background: linear-gradient(135deg, #f5e8dd 0%, #d6c5b4 50%, #b88562 100%) !important;
+    background-color: #d6c5b4 !important;
+    box-shadow: 0 6px 22px rgba(199, 155, 120, 0.6) !important;
+    filter: brightness(1.04) !important;
+  }
+
+  .theme-copper .gold-gradient-btn:active:not(:disabled),
+  .theme-copper .gold-btn:active:not(:disabled),
+  .theme-copper .copper-btn:active:not(:disabled) {
+    transform: scale(0.98);
+    background: linear-gradient(135deg, #c79b78 0%, #b88562 50%, #87583b 100%) !important;
+  }
+
+  /* 3. Copper Borders & Rings */
+  .theme-copper header {
+    border-bottom-color: rgba(199, 155, 120, 0.45) !important;
+  }
+
+  .theme-copper [class*="border-[#dfba61]"] {
+    border-color: rgba(199, 155, 120, 0.65) !important;
+  }
+
+  .theme-copper [class*="border-[#dfba61]/40"],
+  .theme-copper [class*="border-[#dfba61]/30"],
+  .theme-copper [class*="border-[#dfba61]/50"],
+  .theme-copper [class*="border-[#dfba61]/80"] {
+    border-color: rgba(199, 155, 120, 0.4) !important;
+  }
+
+  .theme-copper [class*="ring-[#dfba61]"],
+  .theme-copper [class*="ring-[#dfba61]/80"] {
+    --tw-ring-color: #c79b78 !important;
+  }
+
+  /* 4. Copper Icons & Text Accents */
+  .theme-copper [class*="text-[#dfba61]"],
+  .theme-copper [class*="text-[#f5d77f]"],
+  .theme-copper [class*="text-[#fae298]"],
+  .theme-copper [class*="text-[#e6d3a3]"] {
+    color: #c79b78 !important;
+  }
+
+  .theme-copper [class*="fill-[#dfba61]"] {
+    fill: #c79b78 !important;
+  }
+
+  .theme-copper [class*="bg-[#dfba61]/20"],
+  .theme-copper [class*="bg-[#dfba61]/15"],
+  .theme-copper [class*="bg-[#dfba61]/10"] {
+    background-color: rgba(199, 155, 120, 0.18) !important;
+  }
 }
 
 @keyframes float-slow {

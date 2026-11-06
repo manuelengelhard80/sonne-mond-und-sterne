@@ -20,6 +20,23 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,600;0,700;1,400;1,600&family=Great+Vibes&family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <script>
+      // Compatibility patch for preview environments and extensions (e.g. frame_ant) that monkey-patch window.fetch
+      (function() {
+        try {
+          var _nativeFetch = window.fetch;
+          Object.defineProperty(window, 'fetch', {
+            get: function() {
+              return _nativeFetch;
+            },
+            set: function(fn) {
+              _nativeFetch = fn;
+            },
+            configurable: true,
+            enumerable: true
+          });
+        } catch (e) {}
+      })();
+
       window.deferredInstallPrompt = null;
       window.addEventListener('beforeinstallprompt', function(e) {
         e.preventDefault();

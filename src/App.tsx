@@ -114,6 +114,14 @@ function MainApp() {
     return `${m}:${s < 10 ? '0' : ''}${s}`;
   };
 
+  if (!isOnboardingCompleted) {
+    return (
+      <div className="min-h-screen w-full bg-[#071920] flex items-center justify-center p-4">
+        <AndroidBottomHelperBar />
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-[#071920] text-white flex flex-col justify-between transition-colors duration-700 w-full overflow-x-hidden">
       
@@ -128,93 +136,84 @@ function MainApp() {
         <div className="absolute inset-x-0 bottom-0 h-14 bg-gradient-to-t from-[#071920] via-[#071920]/60 to-transparent pointer-events-none" />
       </div>
 
-      {/* BEFORE ONBOARDING COMPLETION: Render ONLY the 3-step guide directly under the banner */}
-      {!isOnboardingCompleted ? (
-        <div className="flex-1 flex items-center justify-center p-4">
-          <AndroidBottomHelperBar />
-        </div>
-      ) : (
-        <>
-          {/* 2. Navigation Bar */}
-          <Navigation
-            activeTab={activeTab}
-            setActiveTab={setActiveTab}
+      {/* 2. Navigation Bar */}
+      <Navigation
+        activeTab={activeTab}
+        setActiveTab={setActiveTab}
+      />
+
+      {/* 3. Dedicated 5 Minuten Achtsamkeit Audio Controller */}
+      <div className="w-full max-w-5xl mx-auto px-4 sm:px-6 md:px-8 pt-3 pb-1 flex justify-end items-center">
+        <button
+          onClick={toggleMindfulnessAudio}
+          className={`gold-gradient-btn px-4 py-2 rounded-full flex items-center justify-center gap-2.5 transition shadow-lg select-none active:scale-95 ${
+            isMindfulnessPlaying
+              ? 'ring-2 ring-[#c79b78]/60 shadow-[0_0_18px_rgba(199,155,120,0.5)]'
+              : ''
+          }`}
+          title={isMindfulnessPlaying ? '5 Minuten Achtsamkeits-Audio pausieren' : '5 Minuten Achtsamkeits-Audio starten'}
+        >
+          {isMindfulnessPlaying ? (
+            <>
+              <span className="relative flex h-2.5 w-2.5 shrink-0">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#c79b78] opacity-75"></span>
+                <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-[#c79b78]"></span>
+              </span>
+              <Pause className="w-3.5 h-3.5 text-[#c79b78] fill-[#c79b78] shrink-0" />
+              <span className="gold-gradient-text text-xs font-bold">
+                Achtsamkeit läuft · {formatTime(mindfulnessTimeLeft)}
+              </span>
+            </>
+          ) : (
+            <>
+              <div className="w-5 h-5 rounded-full bg-[#c79b78]/20 border border-[#c79b78]/40 flex items-center justify-center shrink-0">
+                <svg className="w-3 h-3 text-[#c79b78] block" viewBox="0 0 16 16" fill="currentColor">
+                  <polygon points="4.25,3.6 11.75,8 4.25,12.4" />
+                </svg>
+              </div>
+              <span className="gold-gradient-text font-bold text-xs tracking-wide">
+                5 Minuten Achtsamkeit
+              </span>
+            </>
+          )}
+        </button>
+      </div>
+
+      {/* 4. Main Content Area */}
+      <main className="flex-1 py-8 px-4 sm:px-6 md:px-8 max-w-5xl mx-auto w-full flex items-center justify-center">
+        {activeTab === 'story' && (
+          <StorySanctuary
+            onGoToBreath={() => setActiveTab('breath')}
+            onGoToStars={() => setActiveTab('stars')}
           />
+        )}
 
-          {/* 3. Dedicated 5 Minuten Achtsamkeit Audio Controller */}
-          <div className="w-full max-w-5xl mx-auto px-4 sm:px-6 md:px-8 pt-3 pb-1 flex justify-end items-center">
-            <button
-              onClick={toggleMindfulnessAudio}
-              className={`gold-gradient-btn px-4 py-2 rounded-full flex items-center justify-center gap-2.5 transition shadow-lg select-none active:scale-95 ${
-                isMindfulnessPlaying
-                  ? 'ring-2 ring-[#c79b78]/60 shadow-[0_0_18px_rgba(199,155,120,0.5)]'
-                  : ''
-              }`}
-              title={isMindfulnessPlaying ? '5 Minuten Achtsamkeits-Audio pausieren' : '5 Minuten Achtsamkeits-Audio starten'}
-            >
-              {isMindfulnessPlaying ? (
-                <>
-                  <span className="relative flex h-2.5 w-2.5 shrink-0">
-                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#c79b78] opacity-75"></span>
-                    <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-[#c79b78]"></span>
-                  </span>
-                  <Pause className="w-3.5 h-3.5 text-[#c79b78] fill-[#c79b78] shrink-0" />
-                  <span className="gold-gradient-text text-xs font-bold">
-                    Achtsamkeit läuft · {formatTime(mindfulnessTimeLeft)}
-                  </span>
-                </>
-              ) : (
-                <>
-                  <div className="w-5 h-5 rounded-full bg-[#c79b78]/20 border border-[#c79b78]/40 flex items-center justify-center shrink-0">
-                    <svg className="w-3 h-3 text-[#c79b78] block" viewBox="0 0 16 16" fill="currentColor">
-                      <polygon points="4.25,3.6 11.75,8 4.25,12.4" />
-                    </svg>
-                  </div>
-                  <span className="gold-gradient-text font-bold text-xs tracking-wide">
-                    5 Minuten Achtsamkeit
-                  </span>
-                </>
-              )}
-            </button>
-          </div>
+        {activeTab === 'breath' && <BreathingCalm />}
+        {activeTab === 'reflection' && <SunInspiration />}
+        {activeTab === 'stars' && <StarrySky />}
+        {activeTab === 'lake' && <SommernachtSee />}
+        {activeTab === 'moon' && <MoonPower />}
+        {activeTab === 'meditation' && <MeditationSpace />}
+        {activeTab === 'traumreisen' && <TraumreisenSpace />}
+        {activeTab === 'journal' && <JournalSpace />}
+        {activeTab === 'settings' && <SettingsSpace />}
+      </main>
 
-          {/* 4. Main Content Area */}
-          <main className="flex-1 py-8 px-4 sm:px-6 md:px-8 max-w-5xl mx-auto w-full flex items-center justify-center">
-            {activeTab === 'story' && (
-              <StorySanctuary
-                onGoToBreath={() => setActiveTab('breath')}
-                onGoToStars={() => setActiveTab('stars')}
-              />
-            )}
+      {/* Loving Footer */}
+      <footer className="py-6 border-t border-[#dfba61]/30 text-center text-xs text-white/80 space-y-2 backdrop-blur-md bg-black/40">
+        <div className="flex items-center justify-center gap-1.5 font-serif-serif text-sm text-[#f5d77f]">
+          <span>Dein Raum. Wann immer du magst. Ganz ohne Erwartung.</span>
+          <Heart className="w-3.5 h-3.5 text-[#dfba61] fill-[#dfba61]" />
+        </div>
+        <div className="text-white/70 flex items-center justify-center gap-2">
+          <span className="font-script text-lg text-[#dfba61]">Manuel & Stefanie</span>
+          <span>·</span>
+          <span>Liebe, Freiheit, Achtsamkeit.</span>
+        </div>
+      </footer>
 
-            {activeTab === 'breath' && <BreathingCalm />}
-            {activeTab === 'reflection' && <SunInspiration />}
-            {activeTab === 'stars' && <StarrySky />}
-            {activeTab === 'lake' && <SommernachtSee />}
-            {activeTab === 'moon' && <MoonPower />}
-            {activeTab === 'meditation' && <MeditationSpace />}
-            {activeTab === 'traumreisen' && <TraumreisenSpace />}
-            {activeTab === 'journal' && <JournalSpace />}
-            {activeTab === 'settings' && <SettingsSpace />}
-          </main>
-
-          {/* Loving Footer */}
-          <footer className="py-6 border-t border-[#dfba61]/30 text-center text-xs text-white/80 space-y-2 backdrop-blur-md bg-black/40">
-            <div className="flex items-center justify-center gap-1.5 font-serif-serif text-sm text-[#f5d77f]">
-              <span>Dein Raum. Wann immer du magst. Ganz ohne Erwartung.</span>
-              <Heart className="w-3.5 h-3.5 text-[#dfba61] fill-[#dfba61]" />
-            </div>
-            <div className="text-white/70 flex items-center justify-center gap-2">
-              <span className="font-script text-lg text-[#dfba61]">Manuel & Stefanie</span>
-              <span>·</span>
-              <span>Liebe, Freiheit, Achtsamkeit.</span>
-            </div>
-          </footer>
-
-          <IosBottomHelperBar />
-          <AndroidBottomHelperBar />
-        </>
-      )}
+      <IosBottomHelperBar />
+      <AndroidBottomHelperBar />
 
     </div>
   );

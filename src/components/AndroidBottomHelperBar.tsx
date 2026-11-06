@@ -175,20 +175,20 @@ export const AndroidBottomHelperBar: React.FC = () => {
         )}
 
         {/* Welcoming Message Above 3 Steps */}
-        <div className="text-center space-y-1 pr-4">
-          <div className="inline-flex items-center gap-1 text-[#dfba61] text-[11px] font-bold uppercase tracking-wider">
-            <Sparkles className="w-3.5 h-3.5 text-[#dfba61]" />
-            <span>Seelenraum Onboarding</span>
+        <div className="text-center space-y-1.5 pr-2">
+          <div className="inline-flex items-center gap-1 text-[#ebd8c8] text-[11px] font-bold uppercase tracking-wider">
+            <Sparkles className="w-3.5 h-3.5 text-[#ebd8c8]" />
+            <span>Onboarding</span>
           </div>
           <h2 className="font-serif-serif text-xl sm:text-2xl font-bold gold-gradient-text leading-snug">
-            Herzlich Willkommen bei Sonne, Mond und Sterne
+            Herzlich Willkommen<br />bei Sonne, Mond und Sterne
           </h2>
         </div>
 
         {justInstalled ? (
           <div className="p-3 rounded-xl bg-emerald-500/20 border border-emerald-400/40 text-emerald-300 text-xs text-center font-medium flex items-center justify-center gap-2">
             <Check className="w-4 h-4 text-emerald-400 shrink-0" />
-            <span>Erfolgreich hinzugefügt! Das Icon liegt jetzt auf deinem Startbildschirm.</span>
+            <span>Erfolgreich hinzugefügt! Das Icon liegt jetzt auf deinem Bildschirm.</span>
           </div>
         ) : (
           <>
@@ -205,11 +205,11 @@ export const AndroidBottomHelperBar: React.FC = () => {
                 </span>
               </div>
 
-              {/* Progress Dots */}
-              <div className="flex items-center gap-1">
-                <div className={`w-2 h-2 rounded-full transition-all ${step >= 1 ? 'bg-[#dfba61]' : 'bg-white/20'}`} />
-                <div className={`w-2 h-2 rounded-full transition-all ${step >= 2 ? 'bg-[#dfba61]' : 'bg-white/20'}`} />
-                <div className={`w-2 h-2 rounded-full transition-all ${step >= 3 ? 'bg-[#dfba61]' : 'bg-white/20'}`} />
+              {/* Green Progress Dots */}
+              <div className="flex items-center gap-1.5">
+                <div className={`w-2.5 h-2.5 rounded-full transition-all ${step >= 1 ? 'bg-emerald-400 shadow-[0_0_8px_rgba(52,211,153,0.8)]' : 'bg-white/20'}`} />
+                <div className={`w-2.5 h-2.5 rounded-full transition-all ${step >= 2 ? 'bg-emerald-400 shadow-[0_0_8px_rgba(52,211,153,0.8)]' : 'bg-white/20'}`} />
+                <div className={`w-2.5 h-2.5 rounded-full transition-all ${step >= 3 ? 'bg-emerald-400 shadow-[0_0_8px_rgba(52,211,153,0.8)]' : 'bg-white/20'}`} />
               </div>
             </div>
 
@@ -312,7 +312,7 @@ export const AndroidBottomHelperBar: React.FC = () => {
 
                   <div>
                     <span className="font-serif-serif font-bold text-xs sm:text-sm text-[#f5d77f] block leading-tight">
-                      1-Klick: App auf deinen Android-Bildschirm legen
+                      1-Klick: App auf deinen Bildschirm legen
                     </span>
                     <span className="text-[11px] text-white/70 leading-tight block mt-0.5">
                       Ein Klick lädt euer goldenes Sonne & Mond Icon direkt auf dein Handy!
@@ -327,7 +327,7 @@ export const AndroidBottomHelperBar: React.FC = () => {
                   className="w-full py-3 px-4 rounded-xl gold-gradient-btn font-bold text-xs sm:text-sm tracking-wide shadow-xl transition active:scale-95 flex items-center justify-center gap-2 disabled:opacity-75"
                 >
                   <Download className="w-4 h-4 text-[#c79b78] shrink-0" />
-                  <span className="gold-gradient-text">{isTriggering ? 'Wird geöffnet...' : 'JETZT AUF DEN STARTBILDSCHIRM LEGEN'}</span>
+                  <span className="gold-gradient-text">{isTriggering ? 'Wird geöffnet...' : 'JETZT AUF DEN BILDSCHIRM LEGEN'}</span>
                 </button>
 
                 {showManualGuide && (
@@ -360,7 +360,7 @@ export const AndroidBottomHelperBar: React.FC = () => {
                     className="text-[#f5d77f] font-semibold hover:underline flex items-center gap-1"
                   >
                     <Sparkles className="w-3.5 h-3.5 text-[#dfba61]" />
-                    <span>In den Seelenraum eintreten ✨</span>
+                    <span>Fertig</span>
                   </button>
                 </div>
               </div>

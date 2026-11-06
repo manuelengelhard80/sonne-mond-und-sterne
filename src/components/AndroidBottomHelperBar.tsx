@@ -176,9 +176,9 @@ export const AndroidBottomHelperBar: React.FC = () => {
 
         {/* Welcoming Message Above 3 Steps */}
         <div className="text-center space-y-1.5 pr-2">
-          <div className="inline-flex items-center gap-1 text-[#ebd8c8] text-[11px] font-bold uppercase tracking-wider">
-            <Sparkles className="w-3.5 h-3.5 text-[#ebd8c8]" />
-            <span>Onboarding</span>
+          <div className="inline-flex items-center gap-1.5 text-[#ebd8c8] text-[11px] font-bold uppercase tracking-wider">
+            <span className="text-xs">💫</span>
+            <span>SoulSpace ONBOARDING</span>
           </div>
           <h2 className="font-serif-serif text-xl sm:text-2xl font-bold gold-gradient-text leading-snug">
             Herzlich Willkommen<br />bei Sonne, Mond und Sterne
@@ -217,7 +217,7 @@ export const AndroidBottomHelperBar: React.FC = () => {
             {step === 1 && (
               <div className="space-y-2.5 animate-fade-in pt-1">
                 <p className="text-xs text-white/90 text-center">
-                  Wähle deine Persona im gemeinsamen Seelenraum:
+                  Wähle deine Persona im gemeinsamen SoulSpace:
                 </p>
 
                 <div className="grid grid-cols-2 gap-2">
@@ -225,12 +225,12 @@ export const AndroidBottomHelperBar: React.FC = () => {
                     type="button"
                     onClick={() => handleSelectRole('sonne')}
                     className={`p-3 rounded-xl border-2 transition-all flex items-center justify-center gap-2 ${
-                      selectedRole === 'sonne' && isConfigured
-                        ? 'bg-[#071920] border-[#dfba61] text-[#dfba61] font-bold shadow-lg'
-                        : 'bg-white/5 border-white/15 hover:border-[#dfba61]/60 text-white'
+                      selectedRole === 'sonne'
+                        ? 'bg-[#071920] border-[#c79b78] text-[#ebd8c8] font-bold shadow-lg ring-1 ring-[#c79b78]/50'
+                        : 'bg-white/5 border-white/15 hover:border-[#c79b78]/60 text-white'
                     }`}
                   >
-                    <Sun className="w-4 h-4 text-[#dfba61]" />
+                    <Sun className="w-4 h-4 text-[#c79b78]" />
                     <span className="text-xs font-semibold">☀️ Sonne (Stefanie)</span>
                   </button>
 
@@ -238,12 +238,12 @@ export const AndroidBottomHelperBar: React.FC = () => {
                     type="button"
                     onClick={() => handleSelectRole('mond')}
                     className={`p-3 rounded-xl border-2 transition-all flex items-center justify-center gap-2 ${
-                      selectedRole === 'mond' && isConfigured
-                        ? 'bg-[#071920] border-[#f5d77f] text-[#f5d77f] font-bold shadow-lg'
-                        : 'bg-white/5 border-white/15 hover:border-[#f5d77f]/60 text-white'
+                      selectedRole === 'mond'
+                        ? 'bg-[#071920] border-[#c79b78] text-[#ebd8c8] font-bold shadow-lg ring-1 ring-[#c79b78]/50'
+                        : 'bg-white/5 border-white/15 hover:border-[#c79b78]/60 text-white'
                     }`}
                   >
-                    <Moon className="w-4 h-4 text-[#f5d77f]" />
+                    <Moon className="w-4 h-4 text-[#c79b78]" />
                     <span className="text-xs font-semibold">🌙 Mond (Manuel)</span>
                   </button>
                 </div>
@@ -252,7 +252,7 @@ export const AndroidBottomHelperBar: React.FC = () => {
                   <button
                     type="button"
                     onClick={() => setStep(2)}
-                    className="text-xs text-[#f5d77f] hover:underline flex items-center gap-1 font-semibold"
+                    className="text-xs text-[#ebd8c8] hover:underline flex items-center gap-1 font-semibold"
                   >
                     <span>Weiter zu Schritt 2</span>
                     <ChevronRight className="w-3.5 h-3.5" />
@@ -261,9 +261,15 @@ export const AndroidBottomHelperBar: React.FC = () => {
               </div>
             )}
 
-            {/* STEP 2: Push-Nachrichten (ohne Erklärtext) */}
+            {/* STEP 2: Push-Nachrichten */}
             {step === 2 && (
-              <div className="space-y-2.5 animate-fade-in pt-1">
+              <div className="space-y-3 animate-fade-in pt-1">
+                <p className="text-[11px] text-white/70 text-center leading-snug">
+                  {selectedRole === 'sonne'
+                    ? 'Lass die Nachrichten zu, damit dir der Mond Mitteilungen senden kann.'
+                    : 'Lass die Nachrichten zu, damit dir die Sonne Mitteilungen senden kann.'}
+                </p>
+
                 <button
                   type="button"
                   onClick={handleRequestPush}
@@ -287,7 +293,7 @@ export const AndroidBottomHelperBar: React.FC = () => {
                   <button
                     type="button"
                     onClick={() => setStep(3)}
-                    className="text-[#f5d77f] hover:underline flex items-center gap-1 font-semibold"
+                    className="text-[#ebd8c8] hover:underline flex items-center gap-1 font-semibold"
                   >
                     <span>Weiter zu Schritt 3</span>
                     <ChevronRight className="w-3.5 h-3.5" />

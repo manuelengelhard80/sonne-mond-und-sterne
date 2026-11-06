@@ -116,7 +116,7 @@ function MainApp() {
 
   if (!isOnboardingCompleted) {
     return (
-      <div className="min-h-screen w-full bg-[#071920] flex items-center justify-center p-4">
+      <div className="fixed inset-0 z-50 bg-[#071920] flex items-center justify-center p-4 overflow-hidden select-none">
         <AndroidBottomHelperBar />
       </div>
     );

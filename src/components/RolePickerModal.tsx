@@ -42,8 +42,7 @@ export const RolePickerModal: React.FC = () => {
 
         <div className="text-center space-y-2">
           <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#dfba61]/20 border border-[#dfba61]/40 text-[#f5d77f] text-xs font-medium">
-            <Sparkles className="w-3.5 h-3.5" />
-            <span>Gemeinsamer Seelenraum</span>
+            <span>💫 Gemeinsamer SoulSpace</span>
           </div>
           <h3 className="font-serif-serif text-2xl sm:text-3xl font-bold gold-gradient-text">
             Wer bist du in diesem Moment?

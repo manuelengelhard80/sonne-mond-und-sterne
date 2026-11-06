@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Download, Smartphone, X, Check, Sun, Moon, Bell, Sparkles, ChevronRight } from 'lucide-react';
+import { Download, X, Check, Sun, Moon, Bell, Sparkles, ChevronRight } from 'lucide-react';
 import { useUserRole } from '../context/UserRoleContext';
 import { UserRoleType } from '../types';
 
@@ -11,14 +11,13 @@ interface BeforeInstallPromptEvent extends Event {
 export const AndroidBottomHelperBar: React.FC = () => {
   const { role, displayName, setRole, isConfigured } = useUserRole();
 
-  // Current step in the bottom bar (1: Persona, 2: Push, 3: Desktop Icon)
+  // Current step in the guide (1: Persona, 2: Push, 3: Desktop Icon)
   const [step, setStep] = useState<number>(() => {
     if (!isConfigured) return 1;
     return 3;
   });
 
   const [selectedRole, setSelectedRole] = useState<UserRoleType>(role || 'sonne');
-  const [nameInput, setNameInput] = useState<string>(displayName || '');
 
   const [deferredPrompt, setDeferredPrompt] = useState<BeforeInstallPromptEvent | null>(() => {
     if (typeof window !== 'undefined' && (window as any).deferredInstallPrompt) {
@@ -50,15 +49,8 @@ export const AndroidBottomHelperBar: React.FC = () => {
     }
 
     const ua = window.navigator.userAgent.toLowerCase();
-    const isIOSDevice = /iphone|ipad|ipod/.test(ua);
-    const isDismissed = localStorage.getItem('android_helper_dismissed') === 'true';
-
     const inApp = /wv|fbav|instagram|line|micromessenger|whatsapp/.test(ua);
     setIsInAppBrowser(inApp);
-
-    if (!isIOSDevice && !isDismissed) {
-      setShowBanner(true);
-    }
 
     if ((window as any).deferredInstallPrompt) {
       setDeferredPrompt((window as any).deferredInstallPrompt);
@@ -82,7 +74,9 @@ export const AndroidBottomHelperBar: React.FC = () => {
       setJustInstalled(true);
       (window as any).deferredInstallPrompt = null;
       setDeferredPrompt(null);
-      setTimeout(() => setShowBanner(false), 4000);
+      localStorage.setItem('onboarding_3steps_done', 'true');
+      window.dispatchEvent(new Event('onboarding-completed'));
+      setTimeout(() => setShowBanner(false), 3000);
     };
 
     window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
@@ -100,13 +94,12 @@ export const AndroidBottomHelperBar: React.FC = () => {
   const handleSelectRole = (r: UserRoleType) => {
     setSelectedRole(r);
     const newName = r === 'sonne' ? 'Sonne (Stefanie)' : 'Mond (Manuel)';
-    setNameInput(newName);
     setRole(r, newName);
     // Auto advance to Step 2
     setStep(2);
   };
 
-  // Step 2: Handle Notification permission
+  // Step 2: Handle Notification permission (without explanation)
   const handleRequestPush = async () => {
     if (typeof window !== 'undefined' && 'Notification' in window) {
       try {
@@ -141,7 +134,9 @@ export const AndroidBottomHelperBar: React.FC = () => {
           setIsInstalled(true);
           (window as any).deferredInstallPrompt = null;
           setDeferredPrompt(null);
-          setTimeout(() => setShowBanner(false), 4000);
+          localStorage.setItem('onboarding_3steps_done', 'true');
+          window.dispatchEvent(new Event('onboarding-completed'));
+          setTimeout(() => setShowBanner(false), 3000);
         }
       } catch (err) {
         console.warn('Install prompt error:', err);
@@ -155,26 +150,40 @@ export const AndroidBottomHelperBar: React.FC = () => {
     setShowManualGuide(true);
   };
 
-  const handleDismiss = () => {
-    localStorage.setItem('android_helper_dismissed', 'true');
+  const handleFinishGuide = () => {
+    localStorage.setItem('onboarding_3steps_done', 'true');
+    window.dispatchEvent(new Event('onboarding-completed'));
     setShowBanner(false);
   };
 
-  if (!showBanner || (isInstalled && !justInstalled && isConfigured && step === 3)) return null;
+  if (!showBanner) return null;
 
   return (
-    <div className="fixed bottom-0 inset-x-0 z-50 p-2 sm:p-3 bg-gradient-to-t from-black via-[#071920]/95 to-transparent pointer-events-auto animate-slide-up">
-      <div className="max-w-md mx-auto bg-[#0a232c] border-2 border-[#dfba61] rounded-2xl p-4 shadow-[0_-8px_30px_rgba(0,0,0,0.85)] text-white relative flex flex-col gap-3 backdrop-blur-md">
+    <div className="w-full max-w-md mx-auto p-2 sm:p-3 pointer-events-auto animate-fade-in my-4">
+      <div className="bg-[#0a232c] border-2 border-[#dfba61] rounded-2xl p-4 sm:p-5 shadow-[0_8px_30px_rgba(0,0,0,0.85)] text-white relative flex flex-col gap-3.5 backdrop-blur-md">
         
         {/* Dismiss / Close Button */}
-        <button
-          onClick={handleDismiss}
-          className="absolute top-2.5 right-2.5 p-1 rounded-full bg-white/10 hover:bg-white/20 text-white/70 transition"
-          title="Schließen"
-          aria-label="Schließen"
-        >
-          <X className="w-4 h-4" />
-        </button>
+        {isConfigured && (
+          <button
+            onClick={handleFinishGuide}
+            className="absolute top-2.5 right-2.5 p-1 rounded-full bg-white/10 hover:bg-white/20 text-white/70 transition"
+            title="Schließen"
+            aria-label="Schließen"
+          >
+            <X className="w-4 h-4" />
+          </button>
+        )}
+
+        {/* Welcoming Message Above 3 Steps */}
+        <div className="text-center space-y-1 pr-4">
+          <div className="inline-flex items-center gap-1 text-[#dfba61] text-[11px] font-bold uppercase tracking-wider">
+            <Sparkles className="w-3.5 h-3.5 text-[#dfba61]" />
+            <span>Seelenraum Onboarding</span>
+          </div>
+          <h2 className="font-serif-serif text-xl sm:text-2xl font-bold gold-gradient-text leading-snug">
+            Herzlich Willkommen bei Sonne, Mond und Sterne
+          </h2>
+        </div>
 
         {justInstalled ? (
           <div className="p-3 rounded-xl bg-emerald-500/20 border border-emerald-400/40 text-emerald-300 text-xs text-center font-medium flex items-center justify-center gap-2">
@@ -184,12 +193,12 @@ export const AndroidBottomHelperBar: React.FC = () => {
         ) : (
           <>
             {/* Step Indicator Header */}
-            <div className="flex items-center justify-between pr-7">
+            <div className="flex items-center justify-between border-t border-white/10 pt-2.5">
               <div className="flex items-center gap-1.5">
                 <span className="px-2 py-0.5 rounded-full bg-[#dfba61]/20 border border-[#dfba61]/40 text-[#f5d77f] text-[10px] font-bold uppercase tracking-wider">
                   Schritt {step} von 3
                 </span>
-                <span className="text-xs text-white/80 font-medium">
+                <span className="text-xs text-white/90 font-medium">
                   {step === 1 && 'Persona wählen'}
                   {step === 2 && 'Push-Nachrichten'}
                   {step === 3 && 'App-Symbol ablegen'}
@@ -207,8 +216,8 @@ export const AndroidBottomHelperBar: React.FC = () => {
             {/* STEP 1: Persona Sonne oder Mond */}
             {step === 1 && (
               <div className="space-y-2.5 animate-fade-in pt-1">
-                <p className="text-xs text-white/90">
-                  Wer bist du im gemeinsamen Seelenraum?
+                <p className="text-xs text-white/90 text-center">
+                  Wähle deine Persona im gemeinsamen Seelenraum:
                 </p>
 
                 <div className="grid grid-cols-2 gap-2">
@@ -222,7 +231,7 @@ export const AndroidBottomHelperBar: React.FC = () => {
                     }`}
                   >
                     <Sun className="w-4 h-4 text-[#dfba61]" />
-                    <span className="text-xs font-semibold">☀️ Sonne</span>
+                    <span className="text-xs font-semibold">☀️ Sonne (Stefanie)</span>
                   </button>
 
                   <button
@@ -235,7 +244,7 @@ export const AndroidBottomHelperBar: React.FC = () => {
                     }`}
                   >
                     <Moon className="w-4 h-4 text-[#f5d77f]" />
-                    <span className="text-xs font-semibold">🌙 Mond</span>
+                    <span className="text-xs font-semibold">🌙 Mond (Manuel)</span>
                   </button>
                 </div>
 
@@ -336,7 +345,7 @@ export const AndroidBottomHelperBar: React.FC = () => {
                   Oder oben rechts im Chrome-Menü (⋮) auf „App installieren“ tippen.
                 </p>
 
-                <div className="flex items-center justify-between text-xs pt-0.5">
+                <div className="flex items-center justify-between text-xs pt-1">
                   <button
                     type="button"
                     onClick={() => setStep(2)}
@@ -347,11 +356,11 @@ export const AndroidBottomHelperBar: React.FC = () => {
 
                   <button
                     type="button"
-                    onClick={handleDismiss}
+                    onClick={handleFinishGuide}
                     className="text-[#f5d77f] font-semibold hover:underline flex items-center gap-1"
                   >
                     <Sparkles className="w-3.5 h-3.5 text-[#dfba61]" />
-                    <span>Fertig</span>
+                    <span>In den Seelenraum eintreten ✨</span>
                   </button>
                 </div>
               </div>

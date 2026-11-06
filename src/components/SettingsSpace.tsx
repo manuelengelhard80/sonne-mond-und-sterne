@@ -304,13 +304,14 @@ export const SettingsSpace: React.FC = () => {
 
             <button
               onClick={(e) => { e.stopPropagation(); handleSelectTheme('copper'); }}
-              className={`w-full py-2.5 rounded-xl font-bold text-xs transition ${
+              className={`w-full py-2.5 rounded-xl font-bold text-xs transition flex items-center justify-center gap-2 ${
                 isCopper
-                  ? 'bg-gradient-to-r from-[#ebd8c8] via-[#c79b78] to-[#a27b5c] text-[#1a0f0a] shadow-lg'
-                  : 'bg-white/10 hover:bg-white/20 text-white/80'
+                  ? 'bg-[#071920] border-2 border-[#c79b78] text-[#ebd8c8] shadow-[0_0_16px_rgba(199,155,120,0.35)]'
+                  : 'bg-white/5 border border-white/10 hover:bg-white/10 text-white/70'
               }`}
             >
-              {isCopper ? 'Aktives Farbschema' : 'Kupfer-Farbschema aktivieren'}
+              <Sparkles className={`w-3.5 h-3.5 ${isCopper ? 'text-[#c79b78]' : 'text-white/40'}`} />
+              <span className={isCopper ? 'gold-gradient-text' : ''}>{isCopper ? 'Aktives Farbschema' : 'Kupfer-Farbschema aktivieren'}</span>
             </button>
           </div>
 
@@ -370,13 +371,14 @@ export const SettingsSpace: React.FC = () => {
 
             <button
               onClick={(e) => { e.stopPropagation(); handleSelectTheme('gold'); }}
-              className={`w-full py-2.5 rounded-xl font-bold text-xs transition ${
+              className={`w-full py-2.5 rounded-xl font-bold text-xs transition flex items-center justify-center gap-2 ${
                 !isCopper
-                  ? 'gold-gradient-btn text-[#0a232c] shadow-lg'
-                  : 'bg-white/10 hover:bg-white/20 text-white/80'
+                  ? 'bg-[#071920] border-2 border-[#dfba61] text-[#f5d77f] shadow-[0_0_16px_rgba(223,186,97,0.3)]'
+                  : 'bg-white/5 border border-white/10 hover:bg-white/10 text-white/70'
               }`}
             >
-              {!isCopper ? 'Aktives Farbschema' : 'Gold-Farbschema aktivieren'}
+              <Sun className={`w-3.5 h-3.5 ${!isCopper ? 'text-[#dfba61]' : 'text-white/40'}`} />
+              <span className={!isCopper ? 'gold-gradient-text' : ''}>{!isCopper ? 'Aktives Farbschema' : 'Gold-Farbschema aktivieren'}</span>
             </button>
           </div>
 
@@ -405,19 +407,19 @@ export const SettingsSpace: React.FC = () => {
 
             {/* 2. Preview Nav Pill */}
             <div className="p-3 rounded-xl bg-white/5 border border-white/10 flex flex-col items-center justify-center">
-              <span className="text-[10px] text-white/50 uppercase tracking-wider block mb-1">Menüpunkt</span>
-              <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-[#071920] border-2 border-[#dfba61] shadow">
-                <Sun className="w-3.5 h-3.5 text-[#dfba61]" />
+              <span className="text-[10px] text-white/50 uppercase tracking-wider block mb-1">Menüpunkt (Aktiv)</span>
+              <div className="relative flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white/12 shadow-sm after:absolute after:bottom-0.5 after:left-1/2 after:-translate-x-1/2 after:w-4 after:h-[2px] after:rounded-full after:bg-gradient-to-r after:from-[#ebd8c8] after:via-[#c79b78] after:to-[#b88562] after:shadow-[0_0_6px_rgba(199,155,120,0.8)]">
+                <Sun className="w-3.5 h-3.5 text-[#ebd8c8]" />
                 <span className="gold-gradient-text text-xs font-bold">Sonnenstrahl</span>
               </div>
             </div>
 
             {/* 3. Preview Button */}
             <div className="p-3 rounded-xl bg-white/5 border border-white/10 flex flex-col items-center justify-center">
-              <span className="text-[10px] text-white/50 uppercase tracking-wider block mb-1">Button & Icon</span>
-              <button className="gold-gradient-btn px-3 py-1.5 rounded-xl text-xs font-bold flex items-center gap-1.5 shadow">
-                <Heart className="w-3 h-3 text-[#1a0f0a] fill-[#1a0f0a]" />
-                <span>Muster-Button</span>
+              <span className="text-[10px] text-white/50 uppercase tracking-wider block mb-1">Button (Dark Pill)</span>
+              <button className="gold-gradient-btn px-4 py-2 rounded-xl text-xs font-bold flex items-center gap-2 shadow">
+                <Heart className="w-3.5 h-3.5 text-[#c79b78] fill-[#c79b78]" />
+                <span className="gold-gradient-text">Muster-Button</span>
               </button>
             </div>
           </div>
@@ -593,10 +595,10 @@ export const SettingsSpace: React.FC = () => {
             {permission !== 'granted' ? (
               <button
                 onClick={handleRequestPermission}
-                className="flex-1 py-3 px-4 rounded-xl gold-gradient-btn text-[#0a232c] font-bold text-xs sm:text-sm tracking-wide shadow-lg transition active:scale-95 flex items-center justify-center gap-2"
+                className="flex-1 py-3 px-4 rounded-xl gold-gradient-btn font-bold text-xs sm:text-sm tracking-wide shadow-lg transition active:scale-95 flex items-center justify-center gap-2"
               >
-                <Bell className="w-4 h-4 text-[#0a232c]" />
-                <span>Benachrichtigungen auf dem Handy erlauben</span>
+                <Bell className="w-4 h-4 text-[#c79b78]" />
+                <span className="gold-gradient-text">Benachrichtigungen auf dem Handy erlauben</span>
               </button>
             ) : (
               <button
@@ -724,10 +726,10 @@ export const SettingsSpace: React.FC = () => {
             <button
               onClick={handleInstallClick}
               disabled={isTriggeringInstall}
-              className="w-full py-4 rounded-2xl gold-gradient-btn text-[#0a232c] font-bold text-sm sm:text-base tracking-wide shadow-2xl transition active:scale-95 flex items-center justify-center gap-2.5 disabled:opacity-75"
+              className="w-full py-4 rounded-2xl gold-gradient-btn font-bold text-sm sm:text-base tracking-wide shadow-2xl transition active:scale-95 flex items-center justify-center gap-2.5 disabled:opacity-75"
             >
-              <Download className="w-5 h-5 text-[#0a232c]" />
-              <span>{isTriggeringInstall ? 'Wird geöffnet...' : 'JETZT AUF DEN STARTBILDSCHIRM LEGEN'}</span>
+              <Download className="w-5 h-5 text-[#c79b78]" />
+              <span className="gold-gradient-text">{isTriggeringInstall ? 'Wird geöffnet...' : 'JETZT AUF DEN STARTBILDSCHIRM LEGEN'}</span>
             </button>
           )}
 

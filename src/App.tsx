@@ -21,7 +21,7 @@ import { soundSynth } from './services/soundSynth';
 
 import { ThemeProvider, useTheme } from './context/ThemeContext';
 import { UserRoleProvider, useUserRole } from './context/UserRoleContext';
-import { RolePickerModal } from './components/RolePickerModal';
+import { WelcomeInstallationGuide } from './components/WelcomeInstallationGuide';
 import { NotificationSettingsModal } from './components/NotificationSettingsModal';
 import { IosBottomHelperBar } from './components/IosBottomHelperBar';
 import { AndroidBottomHelperBar } from './components/AndroidBottomHelperBar';
@@ -135,33 +135,32 @@ function MainApp() {
       <div className="w-full max-w-5xl mx-auto px-4 sm:px-6 md:px-8 pt-3 pb-1 flex justify-end items-center">
         <button
           onClick={toggleMindfulnessAudio}
-          className={`px-4 py-2 rounded-full flex items-center justify-center gap-2.5 transition shadow-lg select-none active:scale-95 border ${
+          className={`gold-gradient-btn px-4 py-2 rounded-full flex items-center justify-center gap-2.5 transition shadow-lg select-none active:scale-95 ${
             isMindfulnessPlaying
-              ? 'gold-gradient-btn font-bold ring-2 ring-[#dfba61]/80 shadow-[0_0_18px_rgba(223,186,97,0.5)] border-[#dfba61]'
-              : 'gold-gradient-btn font-bold text-[#0a232c] border-[#dfba61]'
+              ? 'ring-2 ring-[#c79b78]/60 shadow-[0_0_18px_rgba(199,155,120,0.5)]'
+              : ''
           }`}
           title={isMindfulnessPlaying ? '5 Minuten Achtsamkeits-Audio pausieren' : '5 Minuten Achtsamkeits-Audio starten'}
         >
           {isMindfulnessPlaying ? (
             <>
               <span className="relative flex h-2.5 w-2.5 shrink-0">
-                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#0a232c] opacity-75"></span>
-                <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-[#0a232c]"></span>
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#c79b78] opacity-75"></span>
+                <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-[#c79b78]"></span>
               </span>
-              <Pause className="w-3.5 h-3.5 text-[#0a232c] fill-[#0a232c] shrink-0" />
-              <span className="text-xs font-bold text-[#0a232c]">
+              <Pause className="w-3.5 h-3.5 text-[#c79b78] fill-[#c79b78] shrink-0" />
+              <span className="gold-gradient-text text-xs font-bold">
                 Achtsamkeit läuft · {formatTime(mindfulnessTimeLeft)}
               </span>
             </>
           ) : (
             <>
-              {/* Sauber zentriertes Play-Zeichen im runden Kreis-Symbol */}
-              <div className="w-5 h-5 rounded-full bg-[#0a232c]/15 flex items-center justify-center shrink-0">
-                <svg className="w-3 h-3 text-[#0a232c] block" viewBox="0 0 16 16" fill="currentColor">
+              <div className="w-5 h-5 rounded-full bg-[#c79b78]/20 border border-[#c79b78]/40 flex items-center justify-center shrink-0">
+                <svg className="w-3 h-3 text-[#c79b78] block" viewBox="0 0 16 16" fill="currentColor">
                   <polygon points="4.25,3.6 11.75,8 4.25,12.4" />
                 </svg>
               </div>
-              <span className="text-[#0a232c] font-bold text-xs tracking-wide">
+              <span className="gold-gradient-text font-bold text-xs tracking-wide">
                 5 Minuten Achtsamkeit
               </span>
             </>
@@ -241,8 +240,8 @@ function MainApp() {
         </div>
       </footer>
 
-      {/* Role Picker Modal (Prompts initially or opens on role switch click) */}
-      <RolePickerModal />
+      {/* 3-Step Welcome & Installation Guide */}
+      <WelcomeInstallationGuide />
 
       {/* Notification Settings Modal */}
       <NotificationSettingsModal

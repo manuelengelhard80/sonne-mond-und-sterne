@@ -191,10 +191,10 @@ export const AndroidBottomHelperBar: React.FC = () => {
             <button
               onClick={handleInstallClick}
               disabled={isTriggering}
-              className="w-full py-3 rounded-xl gold-gradient-btn text-[#0a232c] font-bold text-xs sm:text-sm tracking-wide shadow-xl transition active:scale-95 flex items-center justify-center gap-2 disabled:opacity-75"
+              className="w-full py-3 px-4 rounded-xl gold-gradient-btn font-bold text-xs sm:text-sm tracking-wide shadow-xl transition active:scale-95 flex items-center justify-center gap-2 disabled:opacity-75"
             >
-              <Download className="w-4 h-4 text-[#0a232c]" />
-              <span>{isTriggering ? 'Wird geöffnet...' : 'JETZT AUF DEN STARTBILDSCHIRM LEGEN'}</span>
+              <Download className="w-4 h-4 text-[#c79b78] shrink-0" />
+              <span className="gold-gradient-text">{isTriggering ? 'Wird geöffnet...' : 'JETZT AUF DEN STARTBILDSCHIRM LEGEN'}</span>
             </button>
 
             {showManualGuide && (

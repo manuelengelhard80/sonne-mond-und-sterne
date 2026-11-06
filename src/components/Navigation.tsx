@@ -79,14 +79,14 @@ export const Navigation: React.FC<NavigationProps> = ({
                 key={item.id}
                 ref={isActive ? activeBtnRef : null}
                 onClick={() => handleSelectTab(item.id as ActiveTab)}
-                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold whitespace-nowrap shrink-0 transition-all ${
+                className={`relative flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs whitespace-nowrap shrink-0 transition-all ${
                   isActive
-                    ? 'bg-[#071920] border-2 border-[#dfba61] text-[#fff5c5] shadow-md font-bold scale-[1.02]'
-                    : 'bg-white/5 hover:bg-white/10 text-white/85 border border-transparent'
+                    ? 'bg-white/12 text-[#ebd8c8] font-bold shadow-sm'
+                    : 'text-[#c79b78]/75 hover:text-[#ebd8c8] hover:bg-white/5 font-medium'
                 }`}
               >
-                <Icon className="w-3.5 h-3.5 text-[#e6d3a3] shrink-0" />
-                <span className="gold-gradient-text">{item.label}</span>
+                <Icon className={`w-3.5 h-3.5 shrink-0 transition-colors ${isActive ? 'text-[#ebd8c8]' : 'text-[#c79b78]/80'}`} />
+                <span className={isActive ? 'gold-gradient-text font-bold' : ''}>{item.label}</span>
               </button>
             );
           })}
@@ -97,16 +97,16 @@ export const Navigation: React.FC<NavigationProps> = ({
           onClick={() => setMobileMenuOpen((prev) => !prev)}
           className={`shrink-0 p-2 rounded-xl border transition-all ${
             mobileMenuOpen
-              ? 'bg-[#dfba61] text-[#0a232c] border-[#dfba61]'
-              : 'bg-white/10 text-[#dfba61] border-[#dfba61]/40 hover:bg-white/20'
+              ? 'bg-[#071920] text-[#ebd8c8] border-[#c79b78]'
+              : 'bg-white/5 text-[#c79b78] border-[#c79b78]/30 hover:border-[#c79b78] hover:bg-white/10'
           }`}
           title={mobileMenuOpen ? 'Menü schließen' : 'Alle Bereiche anzeigen'}
           aria-label="Menü"
         >
           {mobileMenuOpen ? (
-            <X className="w-4 h-4 text-[#0a232c]" />
+            <X className="w-4 h-4 text-[#ebd8c8]" />
           ) : (
-            <LayoutGrid className="w-4 h-4 text-[#fae298]" />
+            <LayoutGrid className="w-4 h-4 text-[#c79b78]" />
           )}
         </button>
 
@@ -114,10 +114,10 @@ export const Navigation: React.FC<NavigationProps> = ({
 
       {/* 2. EXPANDABLE MOBILE GRID OVERLAY (Shows when user taps the Grid Menu icon) */}
       {mobileMenuOpen && (
-        <div className="md:hidden border-t border-[#dfba61]/30 bg-[#071920]/95 backdrop-blur-xl p-3 animate-fade-in shadow-2xl">
-          <div className="flex items-center justify-between pb-2 mb-2 border-b border-white/10 text-xs text-[#fae298] font-medium">
+        <div className="md:hidden border-t border-[#c79b78]/30 bg-[#071920]/98 backdrop-blur-xl p-3 animate-fade-in shadow-2xl">
+          <div className="flex items-center justify-between pb-2 mb-2 border-b border-[#c79b78]/20 text-xs text-[#c79b78]/70 font-medium">
             <span>Alle 10 Bereiche</span>
-            <span className="text-[10px] text-white/60">Tippe zum Auswählen</span>
+            <span className="text-[10px] text-[#c79b78]/50">Tippe zum Auswählen</span>
           </div>
 
           <div className="grid grid-cols-2 gap-2">
@@ -128,16 +128,16 @@ export const Navigation: React.FC<NavigationProps> = ({
                 <button
                   key={item.id}
                   onClick={() => handleSelectTab(item.id as ActiveTab)}
-                  className={`flex items-center gap-2 p-2.5 rounded-xl text-left text-xs font-semibold transition-all ${
+                  className={`flex items-center gap-2 p-2.5 rounded-xl text-left text-xs transition-all ${
                     isActive
-                      ? 'bg-[#0a232c] border-2 border-[#dfba61] shadow-lg font-bold'
-                      : 'bg-white/5 hover:bg-white/10 border border-white/10 text-white/80'
+                      ? 'bg-white/12 text-[#ebd8c8] font-bold shadow-sm'
+                      : 'bg-white/5 hover:bg-white/10 text-[#c79b78]/75 hover:text-[#ebd8c8]'
                   }`}
                 >
-                  <div className="p-1.5 rounded-lg bg-[#dfba61]/15 text-[#dfba61] shrink-0">
+                  <div className={`p-1.5 rounded-lg shrink-0 ${isActive ? 'bg-[#c79b78]/25 text-[#ebd8c8]' : 'bg-[#c79b78]/10 text-[#c79b78]/80'}`}>
                     <Icon className="w-3.5 h-3.5" />
                   </div>
-                  <span className="gold-gradient-text truncate">{item.label}</span>
+                  <span className={`truncate ${isActive ? 'gold-gradient-text font-bold' : ''}`}>{item.label}</span>
                 </button>
               );
             })}
@@ -155,14 +155,14 @@ export const Navigation: React.FC<NavigationProps> = ({
               <button
                 key={item.id}
                 onClick={() => setActiveTab(item.id as ActiveTab)}
-                className={`flex items-center justify-center gap-1.5 px-3.5 py-2 rounded-xl text-xs sm:text-sm font-semibold transition-all ${
+                className={`relative flex items-center justify-center gap-1.5 px-3.5 py-2 rounded-xl text-xs sm:text-sm transition-all ${
                   isActive
-                    ? 'bg-[#071920] border-2 border-[#dfba61] shadow-lg font-bold scale-[1.02]'
-                    : 'bg-white/5 hover:bg-white/10 border border-transparent'
+                    ? 'bg-white/12 text-[#ebd8c8] font-bold shadow-sm scale-[1.02]'
+                    : 'text-[#c79b78]/75 hover:text-[#ebd8c8] hover:bg-white/5 font-medium'
                 }`}
               >
-                <Icon className="w-4 h-4 text-[#e6d3a3] shrink-0" />
-                <span className="gold-gradient-text text-center leading-tight">{item.label}</span>
+                <Icon className={`w-4 h-4 shrink-0 transition-colors ${isActive ? 'text-[#ebd8c8]' : 'text-[#c79b78]/80'}`} />
+                <span className={`text-center leading-tight ${isActive ? 'gold-gradient-text font-bold' : ''}`}>{item.label}</span>
               </button>
             );
           })}

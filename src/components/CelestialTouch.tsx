@@ -1,5 +1,5 @@
 import React, { useState, useRef } from 'react';
-import { Sparkles, Heart, Send } from 'lucide-react';
+import { Sparkles } from 'lucide-react';
 import { useUserRole } from '../context/UserRoleContext';
 import { db, ensureAuthenticated } from '../services/firebase';
 import { doc, setDoc } from 'firebase/firestore';
@@ -90,11 +90,11 @@ const MoonSphere: React.FC = () => (
 
 // SVG-rendered Sun in smooth Gelbgold with subtle solar surface texture & background glow halo
 const SunSphere: React.FC = () => (
-  <div className="relative flex items-center justify-center">
-    <div className="absolute -inset-4 sm:-inset-5 w-24 h-24 sm:w-28 sm:h-28 pointer-events-none flex items-center justify-center">
-      <div className="absolute inset-0 rounded-full bg-gradient-to-r from-[#fffbbf]/35 via-[#facc15]/45 to-[#ea580c]/30 blur-xl opacity-80 animate-pulse-slow" />
+  <div className="relative flex items-center justify-center isolate" style={{ isolation: 'isolate' }}>
+    <div className="absolute -inset-4 sm:-inset-5 w-24 h-24 sm:w-28 sm:h-28 pointer-events-none flex items-center justify-center" style={{ isolation: 'isolate' }}>
+      <div className="absolute inset-0 rounded-full bg-gradient-to-r from-[#fffbbf]/35 via-[#facc15]/45 to-[#ea580c]/30 blur-xl opacity-80 animate-pulse-slow" style={{ mixBlendMode: 'normal' }} />
       
-      <svg className="w-full h-full animate-spin-slow opacity-35 filter blur-[3px]" viewBox="0 0 100 100">
+      <svg className="w-full h-full animate-spin-slow opacity-35 filter blur-[3px]" style={{ mixBlendMode: 'normal', isolation: 'isolate' }} viewBox="0 0 100 100">
         <defs>
           <radialGradient id="sunRayGrad" cx="50%" cy="50%" r="50%">
             <stop offset="35%" stopColor="#fef08a" stopOpacity="0.6" />
@@ -102,7 +102,7 @@ const SunSphere: React.FC = () => (
             <stop offset="100%" stopColor="#ea580c" stopOpacity="0" />
           </radialGradient>
         </defs>
-        <g fill="url(#sunRayGrad)">
+        <g fill="url(#sunRayGrad)" style={{ mixBlendMode: 'normal' }}>
           {Array.from({ length: 16 }).map((_, i) => {
             const angle = (i * 360) / 16;
             const rad1 = ((angle - 5.5) * Math.PI) / 180;
@@ -206,12 +206,6 @@ export const CelestialTouch: React.FC = () => {
     }
   };
 
-  const handleQuickTouchBtn = () => {
-    setTouchVal(100);
-    hasTriggeredRef.current = false;
-    triggerCelestialEncounter(100);
-  };
-
   const isEclipse = touchVal >= 85;
   const encounterProgress = touchVal / 100;
 
@@ -277,9 +271,10 @@ export const CelestialTouch: React.FC = () => {
           >
             <SunSphere />
             <span 
-              className={`absolute top-full mt-2 text-[12px] text-[#f5d77f] font-semibold drop-shadow-[0_1px_3px_rgba(0,0,0,0.85)] whitespace-nowrap transition-opacity duration-300 ${
+              className={`absolute top-full mt-2 text-[12px] font-semibold text-sun-gold drop-shadow-[0_1px_3px_rgba(0,0,0,0.85)] whitespace-nowrap transition-opacity duration-300 ${
                 isEclipse ? 'opacity-0' : 'opacity-100'
               }`}
+              style={{ color: '#f5d77f' }}
             >
               Sonne
             </span>
@@ -292,9 +287,10 @@ export const CelestialTouch: React.FC = () => {
           >
             <MoonSphere />
             <span 
-              className={`absolute top-full mt-2 text-[12px] text-[#e6d3a3] font-semibold drop-shadow-[0_1px_3px_rgba(0,0,0,0.85)] whitespace-nowrap transition-opacity duration-300 ${
+              className={`absolute top-full mt-2 text-[12px] font-semibold text-moon-cream drop-shadow-[0_1px_3px_rgba(0,0,0,0.85)] whitespace-nowrap transition-opacity duration-300 ${
                 isEclipse ? 'opacity-0' : 'opacity-100'
               }`}
+              style={{ color: '#f8edd6' }}
             >
               Mond
             </span>
@@ -330,18 +326,6 @@ export const CelestialTouch: React.FC = () => {
             onChange={handleSliderChange}
             className="w-full h-2 bg-white/20 rounded-lg appearance-none cursor-pointer accent-[#f5d77f] focus:outline-none"
           />
-
-          {/* Quick Action Touch Button */}
-          <div className="pt-2 flex justify-center">
-            <button
-              type="button"
-              onClick={handleQuickTouchBtn}
-              className="px-5 py-2.5 rounded-xl gold-gradient-btn text-[#0a232c] font-bold text-xs flex items-center gap-2 shadow-lg transition active:scale-95"
-            >
-              <Heart className="w-4 h-4 fill-[#0a232c] text-[#0a232c]" />
-              <span>{role === 'sonne' ? 'Sonne & Mond berühren lassen (Mitteilung senden) ✨' : 'Mond & Sonne berühren lassen (Mitteilung senden) ✨'}</span>
-            </button>
-          </div>
         </div>
 
         {/* Touch Notice Alert */}

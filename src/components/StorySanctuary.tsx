@@ -14,7 +14,7 @@ export const StorySanctuary: React.FC<StorySanctuaryProps> = ({ onGoToBreath, on
       {/* Main Section Title */}
       <div className="text-center">
         <h2 className="font-serif-serif text-3xl sm:text-4xl font-bold gold-gradient-text">
-          Die Geschichte von Sonne, Mond und Sternen.
+          Die Geschichte von Sonne, Mond und Sternen
         </h2>
       </div>
 
@@ -25,8 +25,8 @@ export const StorySanctuary: React.FC<StorySanctuaryProps> = ({ onGoToBreath, on
         <div className="absolute -top-12 -right-12 w-48 h-48 bg-[#dfba61]/10 rounded-full blur-3xl pointer-events-none" />
 
         <p className="leading-relaxed">
-          <span className="font-semibold text-[#dfba61]">Die Sonne</span> strahlt in ihrer ganz eigenen, schönen Wildheit. Sie spendet Wärme, erhellt den Tag und schenkt dem Leben seine bunten Farben.<br />
-          <span className="font-semibold text-[#f5d77f]">Der Mond</span> zieht bedacht seine Bahnen im weiten Raum. Er wacht über die Stille der Nacht und schenkt der Welt Ruhe und inneren Frieden.
+          <span className="font-semibold text-sun-gold" style={{ color: '#f5d77f' }}>Die Sonne</span> strahlt in ihrer ganz eigenen, schönen Wildheit. Sie spendet Wärme, erhellt den Tag und schenkt dem Leben seine bunten Farben.<br />
+          <span className="font-semibold text-moon-cream" style={{ color: '#f8edd6' }}>Der Mond</span> zieht bedacht seine Bahnen im weiten Raum. Er wacht über die Stille der Nacht und schenkt der Welt Ruhe und inneren Frieden.
         </p>
 
         <p className="leading-relaxed">

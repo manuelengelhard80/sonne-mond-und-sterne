@@ -1,6 +1,6 @@
 import React from 'react';
 import { CelestialTouch } from './CelestialTouch';
-import { Sparkles, Sun } from 'lucide-react';
+import { Sparkles, Sun, Moon } from 'lucide-react';
 
 interface StorySanctuaryProps {
   onGoToBreath: () => void;
@@ -25,8 +25,8 @@ export const StorySanctuary: React.FC<StorySanctuaryProps> = ({ onGoToBreath, on
         <div className="absolute -top-12 -right-12 w-48 h-48 bg-[#dfba61]/10 rounded-full blur-3xl pointer-events-none" />
 
         <p className="leading-relaxed">
-          <span className="font-semibold text-sun-gold" style={{ color: '#f5d77f' }}>Die Sonne</span> strahlt in ihrer ganz eigenen, schönen Wildheit. Sie spendet Wärme, erhellt den Tag und schenkt dem Leben seine bunten Farben.<br />
-          <span className="font-semibold text-moon-cream" style={{ color: '#f8edd6' }}>Der Mond</span> zieht bedacht seine Bahnen im weiten Raum. Er wacht über die Stille der Nacht und schenkt der Welt Ruhe und inneren Frieden.
+          <span className="inline-flex items-center gap-1.5"><Sun className="w-4 h-4 text-[#dfba61] shrink-0" /> Die Sonne</span> strahlt in ihrer ganz eigenen, schönen Wildheit. Sie spendet Wärme, erhellt den Tag und schenkt dem Leben seine bunten Farben.<br />
+          <span className="inline-flex items-center gap-1.5"><Moon className="w-4 h-4 text-[#c79b78] shrink-0" /> Der Mond</span> zieht bedacht seine Bahnen im weiten Raum. Er wacht über die Stille der Nacht und schenkt der Welt Ruhe und inneren Frieden.
         </p>
 
         <p className="leading-relaxed">

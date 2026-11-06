@@ -135,21 +135,37 @@ export const SettingsSpace: React.FC = () => {
     }
   };
 
+  const ensurePermissionAndSend = async (sendFn: () => Promise<any>) => {
+    if (!isNotificationSupported()) {
+      alert('Dein Browser unterstützt keine Benachrichtigungen.');
+      return;
+    }
+    if (Notification.permission !== 'granted') {
+      const granted = await requestNotificationPermission();
+      setPermission(granted ? 'granted' : getNotificationPermission());
+      if (!granted) {
+        alert('Bitte erlaube Push-Benachrichtigungen in deinem Browser, um Mitteilungen zu erhalten.');
+        return;
+      }
+    }
+    await sendFn();
+  };
+
   // Test triggers
   const handleTestAffirmation = async () => {
-    await sendTestMorningAffirmation(selectedRole);
+    await ensurePermissionAndSend(() => sendTestMorningAffirmation(selectedRole));
     setTestFeedback('Test: Morgen Affirmation gesendet & im Log vermerkt!');
     setTimeout(() => setTestFeedback(null), 4000);
   };
 
   const handleTestStar = async () => {
-    await sendTestShootingStar(selectedRole);
+    await ensurePermissionAndSend(() => sendTestShootingStar(selectedRole));
     setTestFeedback('Test: Sternschnuppen-Mitteilung gesendet & im Log vermerkt!');
     setTimeout(() => setTestFeedback(null), 4000);
   };
 
   const handleTestThought = async () => {
-    await sendTestSharedThought(selectedRole);
+    await ensurePermissionAndSend(() => sendTestSharedThought(selectedRole));
     setTestFeedback('Test: Gedanken Teilen Mitteilung gesendet & im Log vermerkt!');
     setTimeout(() => setTestFeedback(null), 4000);
   };

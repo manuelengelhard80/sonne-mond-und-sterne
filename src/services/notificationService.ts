@@ -113,8 +113,16 @@ export const sendAppNotification = async (
 ): Promise<boolean> => {
   const bodyText = options?.body || '';
 
-  // Always log the notification so the log window tracks sent notifications
+  // Always log the notification and trigger in-app visual toast
   addNotificationLog(title, bodyText, isTest, logType);
+
+  if (typeof window !== 'undefined') {
+    window.dispatchEvent(
+      new CustomEvent('show-in-app-toast', {
+        detail: { title, body: bodyText, isTest },
+      })
+    );
+  }
 
   if (!isNotificationSupported() || Notification.permission !== 'granted') {
     return false;

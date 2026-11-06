@@ -29,75 +29,24 @@
     font-family: 'Great Vibes', cursive;
   }
 
-  .gold-gradient-text {
-    background: linear-gradient(135deg, #e6d3a3 0%, #cbb27a 50%, #b09b69 100%);
+  /* Copper Metallic Theme as Native Base Standard */
+  .gold-gradient-text,
+  .copper-gradient-text {
+    background: linear-gradient(135deg, #ebd8c8 0%, #d6c5b4 25%, #c79b78 55%, #b88562 80%, #87583b 100%);
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     background-clip: text;
     display: inline-block;
   }
 
-  .gold-gradient-bg {
-    background-color: #dfba61;
-    background: #dfba61;
+  .gold-gradient-bg,
+  .copper-gradient-bg {
+    background-color: #c79b78;
+    background: #c79b78;
   }
 
-  /* Buttons styled like the noble dark medallion pill (former active nav tab style) */
-  .gold-gradient-btn, .gold-btn, .gold-solid-btn {
-    background-color: #071920 !important;
-    background: #071920 !important;
-    border: 2px solid #dfba61 !important;
-    color: #f5d77f !important;
-    font-weight: 700;
-    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4), 0 0 14px rgba(223, 186, 97, 0.25) !important;
-    transition: all 0.2s ease-in-out;
-  }
-
-  .gold-gradient-btn:hover:not(:disabled), .gold-btn:hover:not(:disabled), .gold-solid-btn:hover:not(:disabled) {
-    background-color: #0a232c !important;
-    background: #0a232c !important;
-    border-color: #f5d77f !important;
-    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5), 0 0 20px rgba(223, 186, 97, 0.45) !important;
-    transform: translateY(-1px);
-    filter: brightness(1.04);
-  }
-
-  .gold-gradient-btn:active:not(:disabled), .gold-btn:active:not(:disabled), .gold-solid-btn:active:not(:disabled) {
-    transform: scale(0.98);
-    background-color: #051318 !important;
-    background: #051318 !important;
-    border-color: #d4ae52 !important;
-  }
-
-  .gold-gradient-btn svg, .gold-btn svg, .gold-solid-btn svg {
-    color: #dfba61 !important;
-  }
-
-  /* Copper Metallic Theme (Extracted directly from /public/assets/aistudio/1_0ac96aa9.png) */
-  .theme-copper {
-    --copper-highlight: #ebd8c8;
-    --copper-light: #d6c5b4;
-    --copper-primary: #c79b78;
-    --copper-medium: #b88562;
-    --copper-deep: #87583b;
-    --copper-shadow: #5a3b27;
-  }
-
-  /* 1. Copper Headings & Text */
-  .theme-copper .gold-gradient-text,
-  .theme-copper .copper-gradient-text {
-    background: linear-gradient(135deg, #ebd8c8 0%, #d6c5b4 25%, #c79b78 55%, #b88562 80%, #87583b 100%) !important;
-    -webkit-background-clip: text !important;
-    -webkit-text-fill-color: transparent !important;
-    background-clip: text !important;
-    display: inline-block;
-  }
-
-  /* 2. Copper Buttons (Dark background with crisp copper border, glowing text, matching active tab style) */
-  .theme-copper .gold-gradient-btn,
-  .theme-copper .gold-btn,
-  .theme-copper .gold-solid-btn,
-  .theme-copper .copper-btn {
+  /* Buttons styled in noble dark copper medallion pill style */
+  .gold-gradient-btn, .gold-btn, .gold-solid-btn, .copper-btn {
     background-color: #071920 !important;
     background: #071920 !important;
     border: 2px solid #c79b78 !important;
@@ -107,10 +56,7 @@
     transition: all 0.25s ease-in-out;
   }
 
-  .theme-copper .gold-gradient-btn:hover:not(:disabled),
-  .theme-copper .gold-btn:hover:not(:disabled),
-  .theme-copper .gold-solid-btn:hover:not(:disabled),
-  .theme-copper .copper-btn:hover:not(:disabled) {
+  .gold-gradient-btn:hover:not(:disabled), .gold-btn:hover:not(:disabled), .gold-solid-btn:hover:not(:disabled), .copper-btn:hover:not(:disabled) {
     background-color: #0c252e !important;
     background: #0c252e !important;
     border-color: #ebd8c8 !important;
@@ -119,23 +65,27 @@
     filter: brightness(1.05) !important;
   }
 
-  .theme-copper .gold-gradient-btn:active:not(:disabled),
-  .theme-copper .gold-btn:active:not(:disabled),
-  .theme-copper .copper-btn:active:not(:disabled) {
+  .gold-gradient-btn:active:not(:disabled), .gold-btn:active:not(:disabled), .gold-solid-btn:active:not(:disabled), .copper-btn:active:not(:disabled) {
     transform: scale(0.98);
     background-color: #051318 !important;
     background: #051318 !important;
     border-color: #b88562 !important;
   }
 
-  .theme-copper .gold-gradient-btn svg,
-  .theme-copper .gold-btn svg,
-  .theme-copper .gold-solid-btn svg,
-  .theme-copper .copper-btn svg {
+  .gold-gradient-btn svg, .gold-btn svg, .gold-solid-btn svg, .copper-btn svg {
     color: #c79b78 !important;
   }
 
-  /* 3. Copper Borders & Rings */
+  /* Copper Metallic Variables & Direct Overrides */
+  .theme-copper {
+    --copper-highlight: #ebd8c8;
+    --copper-light: #d6c5b4;
+    --copper-primary: #c79b78;
+    --copper-medium: #b88562;
+    --copper-deep: #87583b;
+    --copper-shadow: #5a3b27;
+  }
+
   .theme-copper header {
     border-bottom-color: rgba(199, 155, 120, 0.45) !important;
   }
@@ -156,7 +106,6 @@
     --tw-ring-color: #c79b78 !important;
   }
 
-  /* 4. Copper Icons & Text Accents */
   .theme-copper [class*="text-[#dfba61]"],
   .theme-copper [class*="text-[#f5d77f]"],
   .theme-copper [class*="text-[#fae298]"],
@@ -173,18 +122,6 @@
   .theme-copper [class*="bg-[#dfba61]/10"] {
     background-color: rgba(199, 155, 120, 0.18) !important;
   }
-}
-
-.theme-gold [class*="text-[#c79b78]"] {
-  color: rgba(223, 186, 97, 0.85) !important;
-}
-
-.theme-gold [class*="text-[#ebd8c8]"] {
-  color: #f5d77f !important;
-}
-
-.theme-gold [class*="border-[#c79b78]"] {
-  border-color: rgba(223, 186, 97, 0.5) !important;
 }
 
 .text-sun-gold {

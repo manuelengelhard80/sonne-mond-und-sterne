@@ -1,6 +1,6 @@
 import { collection, onSnapshot } from 'firebase/firestore';
 import { db } from './firebase';
-import { UserRoleType } from '../types';
+import { NotificationLogEntry, UserRoleType } from '../types';
 
 export const MORNING_AFFIRMATIONS: string[] = [
   "So wie die Sonne jeden Morgen verlässlich aufgeht, darfst auch du deinem ganz eigenen Rhythmus vertrauen.",
@@ -14,6 +14,50 @@ export const MORNING_AFFIRMATIONS: string[] = [
   "Erlaube dir heute immer wieder kurze Momente zum Innehalten und Durchatmen.",
   "Ein neuer Tag voller Möglichkeiten, von Liebe getragen und beschützt."
 ];
+
+const LOG_STORAGE_KEY = 'sonne_mond_notification_logs';
+
+export const getNotificationLogs = (): NotificationLogEntry[] => {
+  if (typeof window === 'undefined') return [];
+  try {
+    const raw = localStorage.getItem(LOG_STORAGE_KEY);
+    return raw ? JSON.parse(raw) : [];
+  } catch {
+    return [];
+  }
+};
+
+export const addNotificationLog = (
+  title: string,
+  body: string,
+  isTest: boolean = false,
+  type: NotificationLogEntry['type'] = 'system'
+): NotificationLogEntry => {
+  const newEntry: NotificationLogEntry = {
+    id: 'log-' + Date.now() + '-' + Math.random().toString(36).substring(2, 7),
+    timestamp: new Date().toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit', second: '2-digit' }),
+    title,
+    body,
+    isTest,
+    type,
+  };
+
+  if (typeof window !== 'undefined') {
+    const existing = getNotificationLogs();
+    const updated = [newEntry, ...existing].slice(0, 100);
+    localStorage.setItem(LOG_STORAGE_KEY, JSON.stringify(updated));
+    window.dispatchEvent(new CustomEvent('notification-log-updated', { detail: updated }));
+  }
+
+  return newEntry;
+};
+
+export const clearNotificationLogs = (): void => {
+  if (typeof window !== 'undefined') {
+    localStorage.removeItem(LOG_STORAGE_KEY);
+    window.dispatchEvent(new CustomEvent('notification-log-updated', { detail: [] }));
+  }
+};
 
 let swRegistration: ServiceWorkerRegistration | null = null;
 let morningTimerId: number | null = null;
@@ -63,8 +107,15 @@ export const requestNotificationPermission = async (): Promise<boolean> => {
 // Send an App Notification (Engineered for Google Chrome Mobile & Desktop)
 export const sendAppNotification = async (
   title: string,
-  options?: NotificationOptions
+  options?: NotificationOptions,
+  isTest: boolean = false,
+  logType: NotificationLogEntry['type'] = 'system'
 ): Promise<boolean> => {
+  const bodyText = options?.body || '';
+
+  // Always log the notification so the log window tracks sent notifications
+  addNotificationLog(title, bodyText, isTest, logType);
+
   if (!isNotificationSupported() || Notification.permission !== 'granted') {
     return false;
   }
@@ -98,14 +149,64 @@ export const sendAppNotification = async (
   }
 };
 
-// Send immediate test notification
+// Send immediate generic test notification
 export const sendTestNotification = async (userRole: UserRoleType): Promise<boolean> => {
   const partnerName = userRole === 'sonne' ? 'Mond (Manuel)' : 'Sonne (Stefanie)';
-  return sendAppNotification('✨ Benachrichtigungstest aktiv', {
-    body: `Mitteilungen sind erfolgreich auf deinem Gerät aktiviert! Du wirst informiert, wenn ${partnerName} eine Sternschnuppe oder einen Gedanken teilt.`,
-    tag: 'test-notification',
-  });
+  return sendAppNotification(
+    '[TEST] ✨ Benachrichtigungstest aktiv',
+    {
+      body: `Mitteilungen sind erfolgreich auf deinem Gerät aktiviert! Du wirst informiert, wenn ${partnerName} eine Sternschnuppe oder einen Gedanken teilt.`,
+      tag: 'test-notification',
+    },
+    true,
+    'test'
+  );
 };
+
+// Test 1: Morgen Affirmation Test
+export const sendTestMorningAffirmation = async (userRole: UserRoleType): Promise<boolean> => {
+  const randomIndex = Math.floor(Math.random() * MORNING_AFFIRMATIONS.length);
+  const message = MORNING_AFFIRMATIONS[randomIndex];
+  const partnerGreeting = userRole === 'sonne' ? 'meine Sonne ☀️' : 'mein Mond 🌙';
+  return sendAppNotification(
+    `[TEST] 🌅 Guten Morgen, ${partnerGreeting}!`,
+    {
+      body: `Dein positiver Gedanke für heute: "${message}"`,
+      tag: 'test-morgen-affirmation',
+    },
+    true,
+    'morgen_affirmation'
+  );
+};
+
+// Test 2: Sternschnuppen Test
+export const sendTestShootingStar = async (userRole: UserRoleType): Promise<boolean> => {
+  const partnerName = userRole === 'sonne' ? 'dem Mond (Manuel)' : 'der Sonne (Stefanie)';
+  return sendAppNotification(
+    `[TEST] ✨ Neue Sternschnuppe am Himmel!`,
+    {
+      body: `Eine neue Wunschnote wurde von ${partnerName} an euren gemeinsamen Sternenhimmel gesetzt.`,
+      tag: 'test-shooting-star',
+    },
+    true,
+    'sternschnuppe'
+  );
+};
+
+// Test 3: Gedanken Teilen Test
+export const sendTestSharedThought = async (userRole: UserRoleType): Promise<boolean> => {
+  const partnerName = userRole === 'sonne' ? 'Mond (Manuel)' : 'Sonne (Stefanie)';
+  return sendAppNotification(
+    `[TEST] 💬 Gedanken geteilt von ${partnerName}`,
+    {
+      body: `„In der Stille des Abends spüre ich unsere tiefe Verbundenheit.“ – Neuer Gedanke im SoulSpace.`,
+      tag: 'test-shared-thought',
+    },
+    true,
+    'gedanken'
+  );
+};
+
 
 // 5:00 AM Morning Positive Message Scheduler
 export const scheduleDailyMorningAffirmation = (

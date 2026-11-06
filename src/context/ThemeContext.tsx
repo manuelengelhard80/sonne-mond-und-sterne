@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 
-export type ColorSchemeType = 'copper' | 'gold';
+export type ColorSchemeType = 'copper';
 
 interface ThemeContextType {
   colorScheme: ColorSchemeType;
@@ -13,52 +13,30 @@ const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
 const STORAGE_THEME_KEY = 'sonne_mond_color_scheme';
 
 export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [colorScheme, setColorSchemeState] = useState<ColorSchemeType>(() => {
-    if (typeof window === 'undefined') return 'copper';
-    const saved = localStorage.getItem(STORAGE_THEME_KEY);
-    return (saved === 'gold' || saved === 'copper') ? saved : 'copper'; // Default to 'copper' so user immediately sees the requested new copper scheme!
-  });
+  const [colorScheme] = useState<ColorSchemeType>('copper');
 
-  const setColorScheme = (scheme: ColorSchemeType) => {
-    setColorSchemeState(scheme);
+  const setColorScheme = (_scheme: ColorSchemeType) => {
     if (typeof window !== 'undefined') {
-      localStorage.setItem(STORAGE_THEME_KEY, scheme);
-      if (scheme === 'copper') {
-        document.documentElement.classList.add('theme-copper');
-        document.body.classList.add('theme-copper');
-        document.documentElement.classList.remove('theme-gold');
-        document.body.classList.remove('theme-gold');
-      } else {
-        document.documentElement.classList.remove('theme-copper');
-        document.body.classList.remove('theme-copper');
-        document.documentElement.classList.add('theme-gold');
-        document.body.classList.add('theme-gold');
-      }
+      localStorage.setItem(STORAGE_THEME_KEY, 'copper');
+      document.documentElement.classList.add('theme-copper');
+      document.body.classList.add('theme-copper');
     }
   };
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
-      if (colorScheme === 'copper') {
-        document.documentElement.classList.add('theme-copper');
-        document.body.classList.add('theme-copper');
-        document.documentElement.classList.remove('theme-gold');
-        document.body.classList.remove('theme-gold');
-      } else {
-        document.documentElement.classList.remove('theme-copper');
-        document.body.classList.remove('theme-copper');
-        document.documentElement.classList.add('theme-gold');
-        document.body.classList.add('theme-gold');
-      }
+      localStorage.setItem(STORAGE_THEME_KEY, 'copper');
+      document.documentElement.classList.add('theme-copper');
+      document.body.classList.add('theme-copper');
     }
-  }, [colorScheme]);
+  }, []);
 
   return (
     <ThemeContext.Provider
       value={{
-        colorScheme,
+        colorScheme: 'copper',
         setColorScheme,
-        isCopper: colorScheme === 'copper',
+        isCopper: true,
       }}
     >
       {children}

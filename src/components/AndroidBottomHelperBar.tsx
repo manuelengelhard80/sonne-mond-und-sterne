@@ -231,7 +231,7 @@ export const AndroidBottomHelperBar: React.FC = () => {
                     }`}
                   >
                     <Sun className="w-4 h-4 text-[#c79b78]" />
-                    <span className="text-xs font-semibold">☀️ Sonne (Stefanie)</span>
+                    <span className="text-xs font-semibold">Sonne (Stefanie)</span>
                   </button>
 
                   <button
@@ -244,7 +244,7 @@ export const AndroidBottomHelperBar: React.FC = () => {
                     }`}
                   >
                     <Moon className="w-4 h-4 text-[#c79b78]" />
-                    <span className="text-xs font-semibold">🌙 Mond (Manuel)</span>
+                    <span className="text-xs font-semibold">Mond (Manuel)</span>
                   </button>
                 </div>
 
@@ -265,9 +265,19 @@ export const AndroidBottomHelperBar: React.FC = () => {
             {step === 2 && (
               <div className="space-y-3 animate-fade-in pt-1">
                 <p className="text-[11px] text-white/70 text-center leading-snug">
-                  {selectedRole === 'sonne'
-                    ? 'Lass die Nachrichten zu, damit dir der Mond Mitteilungen senden kann.'
-                    : 'Lass die Nachrichten zu, damit dir die Sonne Mitteilungen senden kann.'}
+                  {selectedRole === 'sonne' ? (
+                    <>
+                      Lass die Nachrichten zu, damit dir der Mond
+                      <br />
+                      Mitteilungen senden kann.
+                    </>
+                  ) : (
+                    <>
+                      Lass die Nachrichten zu, damit dir die Sonne
+                      <br />
+                      Mitteilungen senden kann.
+                    </>
+                  )}
                 </p>
 
                 <button

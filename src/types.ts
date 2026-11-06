@@ -38,3 +38,12 @@ export type ActiveTab = 'story' | 'breath' | 'reflection' | 'moon' | 'stars' | '
 
 export type ThemeMode = 'petrol-gold' | 'night-sky' | 'golden-hour' | 'deep-emerald';
 
+export interface NotificationLogEntry {
+  id: string;
+  timestamp: string;
+  title: string;
+  body: string;
+  isTest: boolean;
+  type: 'morgen_affirmation' | 'sternschnuppe' | 'gedanken' | 'himmelsbegegnung' | 'test' | 'system';
+}
+

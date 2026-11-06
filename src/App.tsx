@@ -21,8 +21,6 @@ import { soundSynth } from './services/soundSynth';
 
 import { ThemeProvider, useTheme } from './context/ThemeContext';
 import { UserRoleProvider, useUserRole } from './context/UserRoleContext';
-import { WelcomeInstallationGuide } from './components/WelcomeInstallationGuide';
-import { NotificationSettingsModal } from './components/NotificationSettingsModal';
 import { IosBottomHelperBar } from './components/IosBottomHelperBar';
 import { AndroidBottomHelperBar } from './components/AndroidBottomHelperBar';
 import {
@@ -240,19 +238,10 @@ function MainApp() {
         </div>
       </footer>
 
-      {/* 3-Step Welcome & Installation Guide */}
-      <WelcomeInstallationGuide />
-
-      {/* Notification Settings Modal */}
-      <NotificationSettingsModal
-        isOpen={isNotificationModalOpen}
-        onClose={() => setIsNotificationModalOpen(false)}
-      />
-
       {/* Floating iPhone Safari Bottom Helper Bar with bouncing arrow */}
       <IosBottomHelperBar />
 
-      {/* Floating Android 1-Click PWA Helper Bar */}
+      {/* Single Bottom Bar Window: Sequential 3-Step Onboarding & Installation Guide */}
       <AndroidBottomHelperBar />
 
     </div>

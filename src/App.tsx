@@ -259,9 +259,6 @@ function MainApp() {
         </div>
       </footer>
 
-      <IosBottomHelperBar />
-      <AndroidBottomHelperBar />
-
     </div>
   );
 }

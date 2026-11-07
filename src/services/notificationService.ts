@@ -129,8 +129,8 @@ export const sendAppNotification = async (
   }
 
   const notificationOptions: NotificationOptions = {
-    icon: '/assets/aistudio/sms_52ac56d3.png',
-    badge: '/assets/aistudio/sms_52ac56d3.png',
+    icon: '/app-icon-selected.jpg',
+    badge: '/app-icon-selected.jpg',
     ...options,
   };
 
@@ -161,7 +161,7 @@ export const sendAppNotification = async (
 export const sendTestNotification = async (userRole: UserRoleType): Promise<boolean> => {
   const partnerName = userRole === 'sonne' ? 'Mond (Manuel)' : 'Sonne (Stefanie)';
   return sendAppNotification(
-    '[TEST] ✨ Benachrichtigungstest aktiv',
+    '✨ Benachrichtigungstest aktiv',
     {
       body: `Mitteilungen sind erfolgreich auf deinem Gerät aktiviert! Du wirst informiert, wenn ${partnerName} eine Sternschnuppe oder einen Gedanken teilt.`,
       tag: 'test-notification',
@@ -177,7 +177,7 @@ export const sendTestMorningAffirmation = async (userRole: UserRoleType): Promis
   const message = MORNING_AFFIRMATIONS[randomIndex];
   const partnerGreeting = userRole === 'sonne' ? 'meine Sonne ☀️' : 'mein Mond 🌙';
   return sendAppNotification(
-    `[TEST] 🌅 Guten Morgen, ${partnerGreeting}!`,
+    `🌅 Guten Morgen, ${partnerGreeting}!`,
     {
       body: `Dein positiver Gedanke für heute: "${message}"`,
       tag: 'test-morgen-affirmation',
@@ -191,7 +191,7 @@ export const sendTestMorningAffirmation = async (userRole: UserRoleType): Promis
 export const sendTestShootingStar = async (userRole: UserRoleType): Promise<boolean> => {
   const partnerName = userRole === 'sonne' ? 'dem Mond (Manuel)' : 'der Sonne (Stefanie)';
   return sendAppNotification(
-    `[TEST] ✨ Neue Sternschnuppe am Himmel!`,
+    `✨ Neue Sternschnuppe am Himmel!`,
     {
       body: `Eine neue Wunschnote wurde von ${partnerName} an euren gemeinsamen Sternenhimmel gesetzt.`,
       tag: 'test-shooting-star',
@@ -205,7 +205,7 @@ export const sendTestShootingStar = async (userRole: UserRoleType): Promise<bool
 export const sendTestSharedThought = async (userRole: UserRoleType): Promise<boolean> => {
   const partnerName = userRole === 'sonne' ? 'Mond (Manuel)' : 'Sonne (Stefanie)';
   return sendAppNotification(
-    `[TEST] 💬 Gedanken geteilt von ${partnerName}`,
+    `💬 Gedanken geteilt von ${partnerName}`,
     {
       body: `„In der Stille des Abends spüre ich unsere tiefe Verbundenheit.“ – Neuer Gedanke im SoulSpace.`,
       tag: 'test-shared-thought',

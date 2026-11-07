@@ -267,7 +267,7 @@ export const SettingsSpace: React.FC = () => {
                   : 'bg-white/5 border-white/15 hover:border-[#c79b78]/60 text-white/80'
               }`}
             >
-              <Sun className="w-4 h-4 text-[#c79b78] shrink-0" />
+              <Sun className="w-4 h-4 text-[#ffe89c] shrink-0" />
               <span className="text-xs font-semibold">Sonne (Stefanie)</span>
             </button>
 

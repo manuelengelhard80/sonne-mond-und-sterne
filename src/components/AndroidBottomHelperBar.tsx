@@ -230,7 +230,7 @@ export const AndroidBottomHelperBar: React.FC = () => {
                         : 'bg-white/5 border-white/15 hover:border-[#c79b78]/60 text-white'
                     }`}
                   >
-                    <Sun className="w-4 h-4 text-[#c79b78]" />
+                    <Sun className="w-4 h-4 text-[#ffe89c]" />
                     <span className="text-xs font-semibold">Sonne (Stefanie)</span>
                   </button>
 

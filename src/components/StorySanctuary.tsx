@@ -24,9 +24,21 @@ export const StorySanctuary: React.FC<StorySanctuaryProps> = ({ onGoToBreath, on
         {/* Subtle background glow accent */}
         <div className="absolute -top-12 -right-12 w-48 h-48 bg-[#dfba61]/10 rounded-full blur-3xl pointer-events-none" />
 
-        <p className="leading-relaxed">
-          <span className="inline-flex items-center gap-1.5"><Sun className="w-4 h-4 text-[#dfba61] shrink-0" /> Die Sonne</span> strahlt in ihrer ganz eigenen, schönen Wildheit. Sie spendet Wärme, erhellt den Tag und schenkt dem Leben seine bunten Farben.<br />
-          <span className="inline-flex items-center gap-1.5"><Moon className="w-4 h-4 text-[#c79b78] shrink-0" /> Der Mond</span> zieht bedacht seine Bahnen im weiten Raum. Er wacht über die Stille der Nacht und schenkt der Welt Ruhe und inneren Frieden.
+        <p className="leading-relaxed space-y-3">
+          <span className="block">
+            <span className="inline-flex items-center gap-1.5 mr-1.5">
+              <Sun className="w-4 h-4 text-[#ffe89c] shrink-0" style={{ verticalAlign: 'middle' }} />
+              <span className="font-semibold text-white">Die Sonne</span>
+            </span>
+            strahlt in ihrer ganz eigenen, schönen Wildheit. Sie spendet Wärme, erhellt den Tag und schenkt dem Leben seine bunten Farben.
+          </span>
+          <span className="block pt-2">
+            <span className="inline-flex items-center gap-1.5 mr-1.5">
+              <Moon className="w-4 h-4 text-[#c79b78] shrink-0" style={{ verticalAlign: 'middle' }} />
+              <span className="font-semibold text-white">Der Mond</span>
+            </span>
+            zieht bedacht seine Bahnen im weiten Raum. Er wacht über die Stille der Nacht und schenkt der Welt Ruhe und inneren Frieden.
+          </span>
         </p>
 
         <p className="leading-relaxed">

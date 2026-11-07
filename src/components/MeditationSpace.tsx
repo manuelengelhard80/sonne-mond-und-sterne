@@ -2,7 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { Play, Pause, Music, RefreshCw, Heart, Wind, Hand, ChevronLeft, ChevronRight, Volume2 } from 'lucide-react';
 import { soundSynth } from '../services/soundSynth';
 
-// Unified illustration assets with consistent line weight and matching background
+// Unified illustration assets
 import thumbIndexImg from '../assets/images/unified_thumb_index_reset_1794045165448.jpg';
 import thumbMiddleImg from '../assets/images/unified_thumb_middle_reset_1794045165616.jpg';
 import thumbRingImg from '../assets/images/unified_thumb_ring_reset_1794045166035.jpg';
@@ -42,13 +42,26 @@ const RESET_STEPS: ResetStep[] = [
   }
 ];
 
-// Reusable Audio Player Component (Matches StorySanctuary)
+const MEDITATION_FILES = [
+  { title: 'Kopf abschalten und erholen', url: '/meditations/med1.mp3' },
+  { title: 'Inneren Kritiker abstellen', url: '/meditations/med2.mp3' },
+  { title: 'Gedankenkarussell beruhigen', url: '/meditations/med3.mp3' },
+  { title: 'Gedanken und Grübeln loslassen', url: '/meditations/med4.mp3' },
+  { title: 'Emotionen schnell beruhigen', url: '/meditations/med5.mp3' },
+  { title: 'Angst sofort loslassen', url: '/meditations/med6.mp3' },
+  { title: 'Limitierende Glaubenssätze auflösen', url: '/meditations/med7.mp3' },
+  { title: 'Unsicherheit loslassen & Ideales Selbst', url: '/meditations/med8.mp3' },
+  { title: 'Dankbarkeit kultivieren', url: '/meditations/med9.mp3' },
+  { title: 'Dankbarkeit & Positives Denken', url: '/meditations/med10.mp3' }
+];
+
+// Reusable Audio Player Component (Local Asset optimized like Home Page)
 interface AudioPlayerProps {
   title: string;
-  audioSrc: string;
+  audioUrl: string;
 }
 
-const AudioPlayer: React.FC<AudioPlayerProps> = ({ title, audioSrc }) => {
+const AudioPlayer: React.FC<AudioPlayerProps> = ({ title, audioUrl }) => {
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const [isPlaying, setIsPlaying] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
@@ -57,10 +70,10 @@ const AudioPlayer: React.FC<AudioPlayerProps> = ({ title, audioSrc }) => {
 
   useEffect(() => {
     if (audioRef.current) {
-      audioRef.current.src = audioSrc;
+      audioRef.current.src = audioUrl;
       audioRef.current.load();
     }
-  }, [audioSrc]);
+  }, [audioUrl]);
 
   useEffect(() => {
     const audio = audioRef.current;
@@ -126,13 +139,12 @@ const AudioPlayer: React.FC<AudioPlayerProps> = ({ title, audioSrc }) => {
 
   return (
     <div className="bg-[#071920]/90 border-2 border-[#c79b78]/70 rounded-2xl p-3.5 sm:p-5 shadow-xl backdrop-blur-md flex flex-row items-center gap-3.5 sm:gap-4 relative overflow-hidden">
-      <audio ref={audioRef} preload="auto" crossOrigin="anonymous" />
+      <audio ref={audioRef} preload="auto" />
 
       <button
         onClick={togglePlay}
         disabled={isLoading}
         className="w-11 h-11 sm:w-12 sm:h-12 rounded-xl bg-[#0a232c] border-2 border-[#c79b78] flex items-center justify-center shrink-0 shadow-lg transition active:scale-95 group disabled:opacity-75"
-        title={isLoading ? 'Laden...' : isPlaying ? 'Pause' : 'Play'}
       >
         {isLoading ? (
           <RefreshCw className="w-5 h-5 text-[#c79b78] animate-spin" />
@@ -178,7 +190,7 @@ const AudioPlayer: React.FC<AudioPlayerProps> = ({ title, audioSrc }) => {
 };
 
 export const MeditationSpace: React.FC = () => {
-  const [currentStep, setCurrentStep] = useState<number>(0); // 0: Intro, 1-4: Finger Steps, 5: Final Close Eyes
+  const [currentStep, setCurrentStep] = useState<number>(0); 
 
   const handleNext = () => {
     if (currentStep < RESET_STEPS.length + 1) {
@@ -220,10 +232,7 @@ export const MeditationSpace: React.FC = () => {
                 <p className="font-serif-serif text-lg sm:text-xl leading-relaxed max-w-lg">
                   Diese Übung hilft dir, im Sitzen oder Stehen sofort zur Ruhe zu kommen. Schau dir zuerst die vier Finger-Verbindungen an.
                 </p>
-                <button 
-                  onClick={handleNext}
-                  className="gold-gradient-btn px-8 py-3 rounded-xl text-[#0a232c] font-bold shadow-lg hover:scale-105 transition-all"
-                >
+                <button onClick={handleNext} className="gold-gradient-btn px-8 py-3 rounded-xl text-[#0a232c] font-bold shadow-lg hover:scale-105 transition-all">
                   Erklärung starten
                 </button>
               </div>
@@ -237,14 +246,9 @@ export const MeditationSpace: React.FC = () => {
                     {RESET_STEPS[currentStep - 1].title}
                   </h3>
                 </div>
-                
                 <div className="flex flex-col md:flex-row gap-8 items-center bg-[#0a232c] p-6 rounded-2xl border border-[#dfba61]/20">
                   <div className="w-full md:w-1/2 aspect-video rounded-xl overflow-hidden border border-[#dfba61]/30 shadow-lg bg-[#0a232c]">
-                    <img 
-                      src={RESET_STEPS[currentStep - 1].image} 
-                      alt={RESET_STEPS[currentStep - 1].title}
-                      className="w-full h-full object-cover"
-                    />
+                    <img src={RESET_STEPS[currentStep - 1].image} alt={RESET_STEPS[currentStep - 1].title} className="w-full h-full object-cover" />
                   </div>
                   <div className="w-full md:w-1/2 text-left space-y-4">
                     <p className="text-xl font-serif-serif text-[#ebd8c8] italic leading-tight">
@@ -260,32 +264,22 @@ export const MeditationSpace: React.FC = () => {
                     </div>
                   </div>
                 </div>
-
-                <p className="text-white/60 text-sm">
-                  Griff: {RESET_STEPS[currentStep - 1].instruction}
-                </p>
+                <p className="text-white/60 text-sm">Griff: {RESET_STEPS[currentStep - 1].instruction}</p>
               </div>
             )}
 
             {currentStep === 5 && (
               <div className="space-y-8 animate-in fade-in zoom-in-90 duration-700">
-                <h3 className="font-serif-serif text-3xl font-bold gold-gradient-text">
-                  Jetzt bist du bereit
-                </h3>
+                <h3 className="font-serif-serif text-3xl font-bold gold-gradient-text">Jetzt bist du bereit</h3>
                 <div className="space-y-4 max-w-lg mx-auto bg-[#0a232c] p-6 rounded-2xl border border-[#dfba61]/30">
                   <p className="text-xl font-serif-serif leading-relaxed">
                     <strong className="text-[#dfba61]">Schließe nun deine Augen.</strong>
                   </p>
-                  <div className="flex items-start gap-3 text-left">
-                    <div className="mt-1 p-1 rounded-full bg-[#dfba61]/20 shrink-0">
-                      <Wind className="w-4 h-4 text-[#dfba61]" />
-                    </div>
-                    <p className="text-white/80 leading-relaxed">
-                      Verbinde nacheinander deinen Daumen mit den Fingern und nimm <span className="text-[#dfba61] font-bold">pro Finger 3 tiefe Atemzüge</span> (ein und aus). Gehe alle vier Griffe in deinem Tempo durch.
-                    </p>
-                  </div>
+                  <p className="text-white/80 leading-relaxed text-left">
+                    Verbinde nacheinander deinen Daumen mit den Fingern und nimm <span className="text-[#dfba61] font-bold">pro Finger 3 tiefe Atemzüge</span> (ein und aus).
+                  </p>
                 </div>
-                <button onClick={resetExercise} className="text-white/40 hover:text-[#dfba61] text-xs transition-colors flex items-center gap-2 mx-auto">
+                <button onClick={resetExercise} className="text-white/40 hover:text-[#dfba61] text-xs transition-colors mx-auto">
                   Anleitung noch einmal lesen
                 </button>
               </div>
@@ -304,16 +298,11 @@ export const MeditationSpace: React.FC = () => {
                   ))}
                 </div>
                 <button onClick={handleNext} className="w-full sm:w-auto flex items-center justify-center gap-2 px-6 py-3 rounded-xl gold-gradient-btn text-[#0a232c] font-bold shadow-lg transition">
-                  {currentStep === 4 ? 'Abschluss' : 'Nächster Finger'}
+                  {currentStep === 4 ? 'Abschluss' : 'Weiter'}
                 </button>
               </div>
             </div>
           )}
-        </div>
-
-        <div className="text-center pt-2 border-t border-white/10 flex items-center justify-center gap-2 text-xs text-white/60">
-          <Heart className="w-3.5 h-3.5 text-[#dfba61]" />
-          <span>In deinem eigenen Rhythmus. Du bist sicher und behütet.</span>
         </div>
       </div>
 
@@ -328,17 +317,15 @@ export const MeditationSpace: React.FC = () => {
           </p>
         </div>
 
-        <div className="space-y-4">
-          {/* First Audio Player - Title will be provided by user, using placeholder for now */}
-          <AudioPlayer 
-            title="Erste Meditation (Wird geladen...)" 
-            audioSrc="" 
-          />
+        <div className="space-y-6">
+          {MEDITATION_FILES.map((med, idx) => (
+            <AudioPlayer key={idx} title={med.title} audioUrl={med.url} />
+          ))}
         </div>
 
         <div className="bg-black/20 p-4 rounded-xl border border-[#dfba61]/20 italic text-sm text-[#ebd8c8] text-center">
           <Volume2 className="w-4 h-4 text-[#dfba61] inline-block mr-2" />
-          Weitere Meditationen folgen in Kürze.
+          Schenke dir diese Zeit der Ruhe und Geborgenheit.
         </div>
       </div>
 

@@ -11,58 +11,95 @@ async function startServer() {
     appType: 'spa',
   });
 
-  // Audio proxy route to stream Dropbox WAV file with range support and instant streaming
+  const dropboxUrl = 'https://www.dropbox.com/scl/fi/g6r348wj1jvmudtzjfujd/Die-Geschichte-von-Sonne-Mond-und-Sternen.wav?rlkey=96zbrlfjd9mxkmgh1dnonexy1&st=ulwscj36&raw=1';
+  
+  let cachedAudioBuffer: Buffer | null = null;
+  let audioFetchPromise: Promise<Buffer | null> | null = null;
+
+  async function fetchAndCacheAudio(): Promise<Buffer | null> {
+    if (cachedAudioBuffer) return cachedAudioBuffer;
+    if (audioFetchPromise) return audioFetchPromise;
+
+    audioFetchPromise = (async () => {
+      try {
+        console.log('Fetching audio from Dropbox...');
+        const response = await fetch(dropboxUrl, {
+          headers: {
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
+          }
+        });
+        if (!response.ok) {
+          console.error('Failed to fetch audio from Dropbox, status:', response.status);
+          return null;
+        }
+        const arrayBuffer = await response.arrayBuffer();
+        cachedAudioBuffer = Buffer.from(arrayBuffer);
+        console.log('Audio cached successfully, size:', cachedAudioBuffer.length);
+        return cachedAudioBuffer;
+      } catch (err) {
+        console.error('Error pre-fetching audio:', err);
+        return null;
+      }
+    })();
+
+    return audioFetchPromise;
+  }
+
+  // Pre-fetch on startup
+  fetchAndCacheAudio();
+
+  // Audio proxy route with in-memory cache and Range request support for instant playback online & mobile
   app.get('/api/proxy-audio', async (req, res) => {
     try {
-      const dropboxUrl = 'https://www.dropbox.com/scl/fi/g6r348wj1jvmudtzjfujd/Die-Geschichte-von-Sonne-Mond-und-Sternen.wav?rlkey=96zbrlfjd9mxkmgh1dnonexy1&st=ulwscj36&raw=1';
-      
-      const fetchHeaders: HeadersInit = {};
-      if (req.headers.range) {
-        fetchHeaders['Range'] = req.headers.range;
+      let buffer = cachedAudioBuffer;
+      if (!buffer) {
+        buffer = await fetchAndCacheAudio();
       }
 
-      const response = await fetch(dropboxUrl, { headers: fetchHeaders });
-      if (!response.ok && response.status !== 206) {
-        return res.status(response.status || 500).send('Failed to fetch audio from Dropbox');
+      if (!buffer) {
+        // Fallback retry
+        const response = await fetch(dropboxUrl, {
+          headers: {
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
+          }
+        });
+        if (response.ok) {
+          const ab = await response.arrayBuffer();
+          buffer = Buffer.from(ab);
+          cachedAudioBuffer = buffer;
+        } else {
+          return res.status(500).send('Audio file unavailable');
+        }
       }
+
+      const total = buffer.length;
+      const range = req.headers.range;
 
       res.setHeader('Content-Type', 'audio/wav');
       res.setHeader('Access-Control-Allow-Origin', '*');
       res.setHeader('Cache-Control', 'public, max-age=86400');
       res.setHeader('Accept-Ranges', 'bytes');
 
-      if (response.headers.get('content-range')) {
-        res.setHeader('Content-Range', response.headers.get('content-range')!);
-      }
-      if (response.headers.get('content-length')) {
-        res.setHeader('Content-Length', response.headers.get('content-length')!);
-      }
-      if (response.status === 206) {
-        res.status(206);
-      }
+      if (range) {
+        const parts = range.replace(/bytes=/, '').split('-');
+        const start = parseInt(parts[0], 10);
+        const end = parts[1] ? parseInt(parts[1], 10) : total - 1;
+        const chunksize = (end - start) + 1;
+        const chunk = buffer.subarray(start, end + 1);
 
-      if (response.body) {
-        const reader = response.body.getReader();
-        const pump = async () => {
-          try {
-            while (true) {
-              const { done, value } = await reader.read();
-              if (done) {
-                res.end();
-                break;
-              }
-              res.write(value);
-            }
-          } catch (streamErr) {
-            console.error('Stream reading error:', streamErr);
-            res.end();
-          }
-        };
-        pump();
+        res.writeHead(206, {
+          'Content-Range': `bytes ${start}-${end}/${total}`,
+          'Accept-Ranges': 'bytes',
+          'Content-Length': chunksize,
+          'Content-Type': 'audio/wav',
+        });
+        return res.end(chunk);
       } else {
-        const arrayBuffer = await response.arrayBuffer();
-        const buffer = Buffer.from(arrayBuffer);
-        res.end(buffer);
+        res.writeHead(200, {
+          'Content-Length': total,
+          'Content-Type': 'audio/wav',
+        });
+        return res.end(buffer);
       }
     } catch (err) {
       console.error('Audio proxy error:', err);

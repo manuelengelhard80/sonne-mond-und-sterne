@@ -247,12 +247,15 @@ function MainApp() {
       </main>
 
       {/* Loving Footer */}
-      <footer className="py-6 border-t border-[#dfba61]/30 text-center text-xs text-white/80 space-y-2 backdrop-blur-md bg-black/40">
+      <footer className="py-8 border-t border-[#dfba61]/30 text-center space-y-4 backdrop-blur-md bg-black/40">
+        <h3 className="font-serif-serif text-2xl sm:text-3xl font-bold gold-gradient-text mb-2">
+          Schön, dass du da bist.
+        </h3>
         <div className="flex items-center justify-center gap-1.5 font-serif-serif text-sm text-[#f5d77f]">
           <span>Dein Raum. Wann immer du magst. Ganz ohne Erwartung.</span>
           <Heart className="w-3.5 h-3.5 text-[#dfba61] fill-[#dfba61]" />
         </div>
-        <div className="text-white/70 flex items-center justify-center gap-2">
+        <div className="text-white/70 flex items-center justify-center gap-2 text-xs">
           <span className="font-script text-lg text-[#dfba61]">Manuel & Stefanie</span>
           <span>·</span>
           <span>Liebe, Freiheit, Achtsamkeit.</span>

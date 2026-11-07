@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { CelestialTouch } from './CelestialTouch';
-import { Sparkles, Sun, Moon, Play, Pause, Music, RefreshCw } from 'lucide-react';
+import { Sparkles, Sun, Moon, Play, Pause, Music, RefreshCw, Plus } from 'lucide-react';
 
 interface StorySanctuaryProps {
   onGoToBreath: () => void;
@@ -94,6 +94,8 @@ export const StorySanctuary: React.FC<StorySanctuaryProps> = ({ onGoToBreath, on
     return `${m}:${s < 10 ? '0' : ''}${s}`;
   };
 
+  const [isExpanded, setIsExpanded] = useState(false);
+
   return (
     <div className="w-full max-w-4xl mx-auto space-y-8 pb-12">
       
@@ -173,18 +175,30 @@ export const StorySanctuary: React.FC<StorySanctuaryProps> = ({ onGoToBreath, on
           <strong className="font-semibold text-white">Die Sonne</strong> strahlt in ihrer ganz eigenen, schönen Wildheit. Sie spendet Wärme, erhellt den Tag und schenkt dem Leben seine bunten Farben.
         </p>
 
-        <p className="leading-relaxed pt-3">
-          <Moon className="w-4 h-4 text-[#c79b78] inline-block mr-2 align-middle shrink-0" />
-          <strong className="font-semibold text-white">Der Mond</strong> zieht bedacht seine Bahnen im weiten Raum. Er wacht über die Stille der Nacht und schenkt der Welt Ruhe und inneren Frieden.
-        </p>
+        <div className={`space-y-6 transition-all duration-700 overflow-hidden ${isExpanded ? 'max-h-[1000px] opacity-100 mb-6' : 'max-h-0 opacity-0'}`}>
+          <p className="leading-relaxed pt-3">
+            <Moon className="w-4 h-4 text-[#c79b78] inline-block mr-2 align-middle shrink-0" />
+            <strong className="font-semibold text-white">Der Mond</strong> zieht bedacht seine Bahnen im weiten Raum. Er wacht über die Stille der Nacht und schenkt der Welt Ruhe und inneren Frieden.
+          </p>
 
-        <p className="leading-relaxed">
-          Sie sind unterschiedlich in ihrem Wesen und doch gehören sie zusammen. Keiner sperrt den anderen ein, keiner erwartet vom anderen, dass er seine Bahn verlässt. Sie leuchten einfach, Tag für Tag und Nacht für Nacht, jeder auf seine Art. Und in den Momenten, in denen Tag und Nacht sich sanft berühren, begegnen sie sich in wahrhaftiger Liebe.
-        </p>
+          <p className="leading-relaxed">
+            Sie sind unterschiedlich in ihrem Wesen und doch gehören sie zusammen. Keiner sperrt den anderen ein, keiner erwartet vom anderen, dass er seine Bahn verlässt. Sie leuchten einfach, Tag für Tag und Nacht für Nacht, jeder auf seine Art. Und in den Momenten, in denen Tag und Nacht sich sanft berühren, begegnen sie sich in wahrhaftiger Liebe.
+          </p>
 
-        <p className="leading-relaxed">
-          Und zwischen ihnen funkeln die Sterne, kleine, leuchtende Lichter. Sie füllen den Raum mit Leben und Freude – von Liebe getragen, behütet und beschützt.
-        </p>
+          <p className="leading-relaxed">
+            Und zwischen ihnen funkeln die Sterne, kleine, leuchtende Lichter. Sie füllen den Raum mit Leben und Freude – von Liebe getragen, behütet und beschützt.
+          </p>
+        </div>
+
+        <button
+          onClick={() => setIsExpanded(!isExpanded)}
+          className="flex items-center gap-3 text-[#dfba61] hover:text-[#ebd8c8] transition-all text-sm font-bold uppercase tracking-[0.15em] mt-4 group"
+        >
+          <div className={`flex items-center justify-center w-8 h-8 rounded-full bg-[#dfba61]/10 border border-[#dfba61]/30 group-hover:bg-[#dfba61]/20 group-hover:scale-110 transition-all ${isExpanded ? 'rotate-45' : ''}`}>
+            <Plus className="w-4 h-4" />
+          </div>
+          <span>{isExpanded ? 'Weniger lesen' : 'Mehr lesen'}</span>
+        </button>
 
       </div>
 
@@ -228,17 +242,6 @@ export const StorySanctuary: React.FC<StorySanctuaryProps> = ({ onGoToBreath, on
             <p className="text-xs text-white/70">Entdecke leuchtende Gedanken oder schenke eigene Sterne.</p>
           </div>
         </button>
-      </div>
-
-      {/* Closing */}
-      <div className="text-center mt-10 pt-6 border-t border-[#dfba61]/30">
-        <p className="font-serif-serif text-2xl sm:text-3xl font-medium flex items-center justify-center gap-2">
-          <span className="gold-gradient-text font-semibold">Schön, dass es dich gibt.</span>
-          <span className="text-[#e6d3a3] animate-pulse">✨</span>
-        </p>
-        <p className="font-script text-2xl text-[#dfba61] mt-2">
-          Manuel & Stefanie
-        </p>
       </div>
 
     </div>

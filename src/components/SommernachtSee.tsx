@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Sparkles, Sun, Moon, Play, Pause, Music, RefreshCw, Heart } from 'lucide-react';
+import { Sparkles, Sun, Moon, Play, Pause, Music, RefreshCw, Heart, Plus } from 'lucide-react';
 
 export const SommernachtSee: React.FC = () => {
   const audioRef = useRef<HTMLAudioElement | null>(null);
@@ -88,6 +88,8 @@ export const SommernachtSee: React.FC = () => {
     return `${m}:${s < 10 ? '0' : ''}${s}`;
   };
 
+  const [isExpanded, setIsExpanded] = useState(false);
+
   return (
     <div className="w-full max-w-4xl mx-auto space-y-8 pb-12">
       
@@ -163,45 +165,46 @@ export const SommernachtSee: React.FC = () => {
           Es gibt Begegnungen im Leben, in denen Raum und Zeit verschmelzen und ein magischer Augenblick entsteht, der alles überdauert.
         </p>
 
-        <p className="leading-relaxed pt-3">
-          Es war in jener Sommernacht, damals vor so vielen Jahren. 
-          Ein leises Absetzen, ein heimliches Entkommen und ein Zusammengehen, 
-          Schritt für Schritt, bei dem die Welt um uns herum versank. 
-          Die Zeit stand still – nur der Moment, in dem wir einander in die Augen sahen. Ein Blick, der zwei Herzen berührte, ein Verlieben von einer Reinheit 
-          und Intensität, wie wir sie beide nie zuvor gekannt hatten. 
-          Es war, als ob zwei Seelen sich nach langer Reise endlich wiedererkannten.
-        </p>
+        <div className={`space-y-6 transition-all duration-700 overflow-hidden ${isExpanded ? 'max-h-[1500px] opacity-100 mb-6' : 'max-h-0 opacity-0'}`}>
+          <p className="leading-relaxed pt-3">
+            Es war in jener Sommernacht, damals vor so vielen Jahren. 
+            Ein leises Absetzen, ein heimliches Entkommen und ein Zusammengehen, 
+            Schritt für Schritt, bei dem die Welt um uns herum versank. 
+            Die Zeit stand still – nur der Moment, in dem wir einander in die Augen sahen. Ein Blick, der zwei Herzen berührte, ein Verlieben von einer Reinheit 
+            und Intensität, wie wir sie beide nie zuvor gekannt hatten. 
+            Es war, als ob zwei Seelen sich nach langer Reise endlich wiedererkannten.
+          </p>
 
-        <p className="leading-relaxed pt-3">
-          Der See war nicht immer von sanften Wellen getragen, und manchmal 
-          lagen Steine am Ufer, doch ebenso oft fing das Wasser das warme Licht ein. Durch all das hindurch trug uns eine Verbindung, die stärker ist als jede Zeit 
-          und die das Leben niemals zu trennen wagte.
-        </p>
+          <p className="leading-relaxed pt-3">
+            Der See war nicht immer von sanften Wellen getragen, und manchmal 
+            lagen Steine am Ufer, doch ebenso oft fing das Wasser das warme Licht ein. Durch all das hindurch trug uns eine Verbindung, die stärker ist als jede Zeit 
+            und die das Leben niemals zu trennen wagte.
+          </p>
 
-        <p className="leading-relaxed pt-3">
-          Wenn ich heute die Augen schließe, kann ich sie sehen, riechen und spüren: 
-          Das Mädchen vom See. Und wenn ich sie wieder öffne, 
-          blicke ich in deine Augen – in die Augen der wundervollen Frau, 
-          die du geworden bist, mit jedem Tag und mit jedem Jahr nur noch schöner, 
-          von innen und von außen, in deinem ganzen Wesen.
-        </p>
+          <p className="leading-relaxed pt-3">
+            Wenn ich heute die Augen schließe, kann ich sie sehen, riechen und spüren: 
+            Das Mädchen vom See. Und wenn ich sie wieder öffne, 
+            blicke ich in deine Augen – in die Augen der wundervollen Frau, 
+            die du geworden bist, mit jedem Tag und mit jedem Jahr nur noch schöner, 
+            von innen und von außen, in deinem ganzen Wesen.
+          </p>
 
-        <p className="leading-relaxed pt-3">
-          Mein Herz war von dieser ersten Sommernacht an vergeben. 
-          Es gehört dir, nur dir – gestern, heute, morgen und für alle Zeit.
-        </p>
+          <p className="leading-relaxed pt-3">
+            Mein Herz war von dieser ersten Sommernacht an vergeben. 
+            Es gehört dir, nur dir – gestern, heute, morgen und für alle Zeit.
+          </p>
+        </div>
 
-      </div>
+        <button
+          onClick={() => setIsExpanded(!isExpanded)}
+          className="flex items-center gap-3 text-[#dfba61] hover:text-[#ebd8c8] transition-all text-sm font-bold uppercase tracking-[0.15em] mt-4 group"
+        >
+          <div className={`flex items-center justify-center w-8 h-8 rounded-full bg-[#dfba61]/10 border border-[#dfba61]/30 group-hover:bg-[#dfba61]/20 group-hover:scale-110 transition-all ${isExpanded ? 'rotate-45' : ''}`}>
+            <Plus className="w-4 h-4" />
+          </div>
+          <span>{isExpanded ? 'Weniger lesen' : 'Mehr lesen'}</span>
+        </button>
 
-      {/* Closing */}
-      <div className="text-center mt-10 pt-6 border-t border-[#dfba61]/30">
-        <p className="font-serif-serif text-2xl sm:text-3xl font-medium flex items-center justify-center gap-2">
-          <span className="gold-gradient-text font-semibold">Schön, dass es dich gibt.</span>
-          <span className="text-[#e6d3a3] animate-pulse">✨</span>
-        </p>
-        <p className="font-script text-2xl text-[#dfba61] mt-2">
-          Manuel & Stefanie
-        </p>
       </div>
 
     </div>

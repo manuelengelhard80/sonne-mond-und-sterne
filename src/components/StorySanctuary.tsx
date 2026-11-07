@@ -14,10 +14,10 @@ export const StorySanctuary: React.FC<StorySanctuaryProps> = ({ onGoToBreath, on
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(180);
 
-  // Set audio src directly to proxy endpoint for instant streaming & playback
+  // Set audio src directly to local static asset for 100% reliable online & mobile playback
   useEffect(() => {
     if (audioRef.current) {
-      audioRef.current.src = '/api/proxy-audio';
+      audioRef.current.src = '/story.wav';
       audioRef.current.load();
     }
   }, []);

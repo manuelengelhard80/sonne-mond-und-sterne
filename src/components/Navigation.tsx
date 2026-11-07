@@ -39,7 +39,7 @@ export const Navigation: React.FC<NavigationProps> = ({
     { id: 'stars', label: 'Sternschnuppen', icon: Sparkles },
     { id: 'meditation', label: 'Meditation', icon: Compass },
     { id: 'traumreisen', label: 'Traumreisen', icon: Feather },
-    { id: 'lake', label: 'Sommernacht am See', icon: Waves },
+    { id: 'lake', label: 'Das Mädchen vom See', icon: Waves },
     { id: 'journal', label: 'Gedanken teilen', icon: Heart },
     { id: 'settings', label: 'Einstellungen', icon: Settings },
   ] as const;

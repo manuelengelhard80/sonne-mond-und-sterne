@@ -43,25 +43,26 @@ const RESET_STEPS: ResetStep[] = [
 ];
 
 const MEDITATION_FILES = [
-  { title: 'Kopf abschalten und erholen', url: '/meditations/med1.mp3' },
-  { title: 'Inneren Kritiker abstellen', url: '/meditations/med2.mp3' },
-  { title: 'Gedankenkarussell beruhigen', url: '/meditations/med3.mp3' },
-  { title: 'Gedanken und Grübeln loslassen', url: '/meditations/med4.mp3' },
-  { title: 'Emotionen schnell beruhigen', url: '/meditations/med5.mp3' },
-  { title: 'Angst sofort loslassen', url: '/meditations/med6.mp3' },
-  { title: 'Limitierende Glaubenssätze auflösen', url: '/meditations/med7.mp3' },
-  { title: 'Unsicherheit loslassen & Ideales Selbst', url: '/meditations/med8.mp3' },
-  { title: 'Dankbarkeit kultivieren', url: '/meditations/med9.mp3' },
-  { title: 'Dankbarkeit & Positives Denken', url: '/meditations/med10.mp3' }
+  { title: 'Kopf abschalten und erholen', url: '/m1.mp3' },
+  { title: 'Inneren Kritiker abstellen', url: '/m2.mp3' },
+  { title: 'Gedankenkarussell beruhigen', url: '/m3.mp3' },
+  { title: 'Gedanken und Grübeln loslassen', url: '/m4.mp3' },
+  { title: 'Emotionen schnell beruhigen', url: '/m5.mp3' },
+  { title: 'Angst sofort loslassen', url: '/m6.mp3' },
+  { title: 'Limitierende Glaubenssätze auflösen', url: '/m7.mp3' },
+  { title: 'Unsicherheit loslassen & Ideales Selbst', url: '/m8.mp3' },
+  { title: 'Angst auflösen (Fassung 2)', url: '/m6.mp3' },
+  { title: 'Dankbarkeit kultivieren', url: '/m9.mp3' },
+  { title: 'Dankbarkeit & Positives Denken', url: '/m10.mp3' }
 ];
 
-// Reusable Audio Player Component (Local Asset optimized like Home Page)
+// Reusable Audio Player Component
 interface AudioPlayerProps {
   title: string;
   audioUrl: string;
 }
 
-const AudioPlayer: React.FC<AudioPlayerProps> = ({ title, audioUrl }) => {
+const MeditationPlayer: React.FC<AudioPlayerProps> = ({ title, audioUrl }) => {
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const [isPlaying, setIsPlaying] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
@@ -69,15 +70,11 @@ const AudioPlayer: React.FC<AudioPlayerProps> = ({ title, audioUrl }) => {
   const [duration, setDuration] = useState(0);
 
   useEffect(() => {
-    if (audioRef.current) {
-      audioRef.current.src = audioUrl;
-      audioRef.current.load();
-    }
-  }, [audioUrl]);
-
-  useEffect(() => {
     const audio = audioRef.current;
     if (!audio) return;
+
+    // Direct assignment
+    audio.src = audioUrl;
 
     const updateTime = () => setCurrentTime(audio.currentTime);
     const handleLoaded = () => {
@@ -94,12 +91,18 @@ const AudioPlayer: React.FC<AudioPlayerProps> = ({ title, audioUrl }) => {
       setIsLoading(false);
       setIsPlaying(true);
     };
+    const handleError = () => {
+      console.error('Audio error on:', title);
+      setIsLoading(false);
+      setIsPlaying(false);
+    };
 
     audio.addEventListener('timeupdate', updateTime);
     audio.addEventListener('loadedmetadata', handleLoaded);
     audio.addEventListener('ended', handleEnded);
     audio.addEventListener('waiting', handleWaiting);
     audio.addEventListener('playing', handlePlaying);
+    audio.addEventListener('error', handleError);
 
     return () => {
       audio.removeEventListener('timeupdate', updateTime);
@@ -107,9 +110,10 @@ const AudioPlayer: React.FC<AudioPlayerProps> = ({ title, audioUrl }) => {
       audio.removeEventListener('ended', handleEnded);
       audio.removeEventListener('waiting', handleWaiting);
       audio.removeEventListener('playing', handlePlaying);
+      audio.removeEventListener('error', handleError);
       audio.pause();
     };
-  }, []);
+  }, [audioUrl]);
 
   const togglePlay = () => {
     const audio = audioRef.current;
@@ -120,18 +124,19 @@ const AudioPlayer: React.FC<AudioPlayerProps> = ({ title, audioUrl }) => {
       setIsPlaying(false);
     } else {
       setIsLoading(true);
+      // Ensure we actually try to load/play
       audio.play().then(() => {
         setIsPlaying(true);
         setIsLoading(false);
       }).catch((err) => {
-        console.warn('Audio playback error:', err);
+        console.error('Audio playback error:', err);
         setIsLoading(false);
       });
     }
   };
 
   const formatTime = (secs: number) => {
-    if (isNaN(secs)) return '0:00';
+    if (isNaN(secs) || secs === 0) return '0:00';
     const m = Math.floor(secs / 60);
     const s = Math.floor(secs % 60);
     return `${m}:${s < 10 ? '0' : ''}${s}`;
@@ -139,7 +144,11 @@ const AudioPlayer: React.FC<AudioPlayerProps> = ({ title, audioUrl }) => {
 
   return (
     <div className="bg-[#071920]/90 border-2 border-[#c79b78]/70 rounded-2xl p-3.5 sm:p-5 shadow-xl backdrop-blur-md flex flex-row items-center gap-3.5 sm:gap-4 relative overflow-hidden">
-      <audio ref={audioRef} preload="auto" />
+      <audio
+        ref={audioRef}
+        preload="metadata" 
+        crossOrigin="anonymous"
+      />
 
       <button
         onClick={togglePlay}
@@ -162,7 +171,7 @@ const AudioPlayer: React.FC<AudioPlayerProps> = ({ title, audioUrl }) => {
             <span className="truncate">{title}</span>
           </div>
           <span className="text-white/70 font-mono text-[11px] shrink-0">
-            {isLoading ? 'Lädt...' : `${formatTime(currentTime)} / ${formatTime(duration)}`}
+            {isLoading ? 'Lädt...' : duration > 0 ? `${formatTime(currentTime)} / ${formatTime(duration)}` : '0:00'}
           </span>
         </div>
 
@@ -190,142 +199,104 @@ const AudioPlayer: React.FC<AudioPlayerProps> = ({ title, audioUrl }) => {
 };
 
 export const MeditationSpace: React.FC = () => {
-  const [currentStep, setCurrentStep] = useState<number>(0); 
+  const [currentResetStep, setCurrentResetStep] = useState<number>(0); 
 
-  const handleNext = () => {
-    if (currentStep < RESET_STEPS.length + 1) {
-      setCurrentStep(prev => prev + 1);
+  const handleNextReset = () => {
+    if (currentResetStep < RESET_STEPS.length + 1) {
+      setCurrentResetStep(prev => prev + 1);
       soundSynth.playSoftBell();
     }
   };
 
-  const handleBack = () => {
-    setCurrentStep(prev => Math.max(0, prev - 1));
-  };
-
-  const resetExercise = () => {
-    setCurrentStep(0);
-    soundSynth.playSoftBell();
+  const handleBackReset = () => {
+    setCurrentResetStep(prev => Math.max(0, prev - 1));
   };
 
   return (
-    <div className="w-full max-w-3xl mx-auto space-y-12 pb-12">
+    <div className="w-full max-w-4xl mx-auto space-y-12 pb-24">
       
-      {/* Container 1: 5-Finger-Reset */}
+      {/* 1. 5-Finger-Reset */}
       <div className="space-y-8 p-6 sm:p-10 rounded-2xl bg-[#0a232c] shadow-2xl border-2 border-[#dfba61] text-white">
         <div className="text-center space-y-2">
           <h2 className="font-serif-serif text-3xl sm:text-4xl font-bold gold-gradient-text">
             5-Finger-Nervensystem-Reset
           </h2>
           <p className="text-sm text-white/80 max-w-md mx-auto">
-            Lerne die Griffe kennen, um dein Nervensystem herunterzufahren und Stress abzubauen.
+            Eine einfache Anleitung, um dein Nervensystem herunterzufahren.
           </p>
         </div>
 
         <div className="p-6 sm:p-10 rounded-2xl bg-[#071920] border-2 border-[#dfba61] shadow-xl space-y-8 relative overflow-hidden">
           <div className="min-h-[300px] flex flex-col items-center justify-center text-center space-y-6 relative z-10">
-            {currentStep === 0 && (
+            {currentResetStep === 0 && (
               <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-700">
                 <div className="p-4 rounded-full bg-[#dfba61]/10 border border-[#dfba61]/30 inline-block">
                   <Hand className="w-10 h-10 text-[#dfba61]" />
                 </div>
                 <p className="font-serif-serif text-lg sm:text-xl leading-relaxed max-w-lg">
-                  Diese Übung hilft dir, im Sitzen oder Stehen sofort zur Ruhe zu kommen. Schau dir zuerst die vier Finger-Verbindungen an.
+                  Schau dir zuerst die vier Finger-Verbindungen an, bevor du die Übung mit geschlossenen Augen beginnst.
                 </p>
-                <button onClick={handleNext} className="gold-gradient-btn px-8 py-3 rounded-xl text-[#0a232c] font-bold shadow-lg hover:scale-105 transition-all">
-                  Erklärung starten
+                <button onClick={handleNextReset} className="gold-gradient-btn px-8 py-3 rounded-xl text-[#0a232c] font-bold shadow-lg hover:scale-105 transition-all">
+                  Anleitung starten
                 </button>
               </div>
             )}
 
-            {currentStep >= 1 && currentStep <= 4 && (
-              <div key={currentStep} className="w-full space-y-6 animate-in zoom-in-95 duration-500">
-                <div className="space-y-2">
-                  <span className="text-[#dfba61] font-mono text-sm tracking-widest uppercase">Schritt {currentStep} von 4</span>
-                  <h3 className="font-serif-serif text-3xl font-bold text-white">
-                    {RESET_STEPS[currentStep - 1].title}
-                  </h3>
-                </div>
+            {currentResetStep >= 1 && currentResetStep <= 4 && (
+              <div key={currentResetStep} className="w-full space-y-6 animate-in zoom-in-95 duration-500">
+                <span className="text-[#dfba61] font-mono text-sm uppercase">Schritt {currentResetStep} von 4</span>
+                <h3 className="font-serif-serif text-3xl font-bold">{RESET_STEPS[currentResetStep - 1].title}</h3>
                 <div className="flex flex-col md:flex-row gap-8 items-center bg-[#0a232c] p-6 rounded-2xl border border-[#dfba61]/20">
-                  <div className="w-full md:w-1/2 aspect-video rounded-xl overflow-hidden border border-[#dfba61]/30 shadow-lg bg-[#0a232c]">
-                    <img src={RESET_STEPS[currentStep - 1].image} alt={RESET_STEPS[currentStep - 1].title} className="w-full h-full object-cover" />
+                  <div className="w-full md:w-1/2 aspect-video rounded-xl overflow-hidden border border-[#dfba61]/30 bg-[#0a232c]">
+                    <img src={RESET_STEPS[currentResetStep - 1].image} alt="" className="w-full h-full object-cover" />
                   </div>
                   <div className="w-full md:w-1/2 text-left space-y-4">
-                    <p className="text-xl font-serif-serif text-[#ebd8c8] italic leading-tight">
-                      "{RESET_STEPS[currentStep - 1].effect}"
-                    </p>
-                    <div className="flex items-start gap-3 text-white/90">
-                      <div className="mt-1 p-1 rounded-full bg-[#dfba61]/20">
-                        <Wind className="w-4 h-4 text-[#dfba61]" />
-                      </div>
-                      <p className="text-lg">
-                        <span className="text-[#dfba61] font-bold">Wichtig:</span> Nimm bei diesem Griff <span className="font-bold">3 tiefe Atemzüge</span> (ein- und ausatmen).
-                      </p>
-                    </div>
+                    <p className="text-xl font-serif-serif text-[#ebd8c8] italic leading-tight">"{RESET_STEPS[currentResetStep - 1].effect}"</p>
+                    <p className="text-lg"><span className="text-[#dfba61] font-bold">Wichtig:</span> Nimm 3 tiefe Atemzüge.</p>
                   </div>
                 </div>
-                <p className="text-white/60 text-sm">Griff: {RESET_STEPS[currentStep - 1].instruction}</p>
               </div>
             )}
 
-            {currentStep === 5 && (
-              <div className="space-y-8 animate-in fade-in zoom-in-90 duration-700">
-                <h3 className="font-serif-serif text-3xl font-bold gold-gradient-text">Jetzt bist du bereit</h3>
-                <div className="space-y-4 max-w-lg mx-auto bg-[#0a232c] p-6 rounded-2xl border border-[#dfba61]/30">
-                  <p className="text-xl font-serif-serif leading-relaxed">
-                    <strong className="text-[#dfba61]">Schließe nun deine Augen.</strong>
-                  </p>
-                  <p className="text-white/80 leading-relaxed text-left">
-                    Verbinde nacheinander deinen Daumen mit den Fingern und nimm <span className="text-[#dfba61] font-bold">pro Finger 3 tiefe Atemzüge</span> (ein und aus).
-                  </p>
-                </div>
-                <button onClick={resetExercise} className="text-white/40 hover:text-[#dfba61] text-xs transition-colors mx-auto">
-                  Anleitung noch einmal lesen
-                </button>
+            {currentResetStep === 5 && (
+              <div className="space-y-6 animate-in fade-in zoom-in-90 duration-700">
+                <h3 className="font-serif-serif text-3xl font-bold gold-gradient-text">Bereit für die Ruhe</h3>
+                <p className="text-xl font-serif-serif">Schließe nun deine Augen.</p>
+                <p className="text-white/80 max-w-md mx-auto">Gehe alle vier Griffe nacheinander durch und nimm pro Griff 3 tiefe Atemzüge.</p>
+                <button onClick={() => setCurrentResetStep(0)} className="text-white/40 hover:text-[#dfba61] text-xs transition-colors">Anleitung wiederholen</button>
               </div>
             )}
           </div>
 
-          {currentStep > 0 && currentStep < 5 && (
-            <div className="space-y-6 pt-4 border-t border-white/10">
-              <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
-                <button onClick={handleBack} className="w-full sm:w-auto flex items-center justify-center gap-2 px-6 py-3 rounded-xl bg-white/5 border border-white/10 hover:bg-white/10 transition text-sm font-semibold">
-                  <ChevronLeft className="w-4 h-4" /> Zurück
-                </button>
-                <div className="flex gap-1.5">
-                  {[1, 2, 3, 4].map(num => (
-                    <div key={num} className={`h-1.5 rounded-full transition-all duration-300 ${currentStep === num ? 'w-8 bg-[#dfba61]' : 'w-2 bg-white/20'}`} />
-                  ))}
-                </div>
-                <button onClick={handleNext} className="w-full sm:w-auto flex items-center justify-center gap-2 px-6 py-3 rounded-xl gold-gradient-btn text-[#0a232c] font-bold shadow-lg transition">
-                  {currentStep === 4 ? 'Abschluss' : 'Weiter'}
-                </button>
-              </div>
+          {currentResetStep > 0 && currentResetStep < 5 && (
+            <div className="flex flex-col sm:flex-row items-center justify-between gap-4 pt-6 border-t border-white/10">
+              <button onClick={handleBackReset} className="w-full sm:w-auto px-6 py-3 rounded-xl bg-white/5 border border-white/10 hover:bg-white/10 transition text-sm font-semibold">← Zurück</button>
+              <button onClick={handleNextReset} className="w-full sm:w-auto px-10 py-3 rounded-xl gold-gradient-btn text-[#0a232c] font-bold shadow-lg transition">{currentResetStep === 4 ? 'Abschluss' : 'Weiter'}</button>
             </div>
           )}
         </div>
       </div>
 
-      {/* Container 2: Geführte Meditationen */}
+      {/* 2. Geführte Meditationen */}
       <div className="space-y-8 p-6 sm:p-10 rounded-2xl bg-[#0a232c] shadow-2xl border-2 border-[#dfba61] text-white">
         <div className="text-center space-y-2">
           <h2 className="font-serif-serif text-3xl sm:text-4xl font-bold gold-gradient-text">
             Geführte Meditationen
           </h2>
           <p className="text-sm text-white/80 max-w-md mx-auto">
-            Tauche ein in die Stille und finde neue Kraft in deiner inneren Mitte.
+            Tauche ein in die Stille und finde neue Kraft.
           </p>
         </div>
 
         <div className="space-y-6">
           {MEDITATION_FILES.map((med, idx) => (
-            <AudioPlayer key={idx} title={med.title} audioUrl={med.url} />
+            <MeditationPlayer key={idx} title={med.title} audioUrl={med.url} />
           ))}
         </div>
 
-        <div className="bg-black/20 p-4 rounded-xl border border-[#dfba61]/20 italic text-sm text-[#ebd8c8] text-center">
-          <Volume2 className="w-4 h-4 text-[#dfba61] inline-block mr-2" />
-          Schenke dir diese Zeit der Ruhe und Geborgenheit.
+        <div className="text-center pt-2 border-t border-white/10 flex items-center justify-center gap-2 text-xs text-white/60">
+          <Volume2 className="w-3.5 h-3.5 text-[#dfba61]" />
+          <span>Schenke dir diese Zeit der Ruhe und Geborgenheit.</span>
         </div>
       </div>
 

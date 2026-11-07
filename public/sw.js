@@ -35,6 +35,17 @@ self.addEventListener('activate', (event) => {
 // Fetch event listener required by Chromium Android to qualify for beforeinstallprompt
 self.addEventListener('fetch', (event) => {
   if (event.request.method !== 'GET') return;
+
+  // IMPORTANT: Never intercept media files or Range requests in Service Worker
+  // Browsers require direct HTTP 206 Range streaming for audio without Service Worker interference
+  const url = new URL(event.request.url);
+  if (
+    event.request.headers.has('range') ||
+    url.pathname.match(/\.(mp3|wav|ogg|m4a|aac|mp4|webm)$/i)
+  ) {
+    return;
+  }
+
   event.respondWith(
     fetch(event.request)
       .then((response) => {

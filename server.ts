@@ -13,49 +13,99 @@ async function startServer() {
     appType: 'spa',
   });
 
-  // ROBUST STREAMING ROUTE with full Range Support (Required for MP3 and seekable audio)
-  app.get(['/*.mp3', '/*.wav'], (req, res, next) => {
-    const filePath = path.join(process.cwd(), 'public', req.path);
-    
+  // ROBUST STREAMING ROUTE with full RFC 7233 Range Support (Essential for MP3 seeking & metadata)
+  app.all(['/*.mp3', '/*.wav'], (req, res, next) => {
+    const filePath = path.join(process.cwd(), 'public', decodeURIComponent(req.path));
+
     if (!fs.existsSync(filePath)) {
       return next();
     }
 
     const stat = fs.statSync(filePath);
     const fileSize = stat.size;
-    const range = req.headers.range;
+    const isWav = req.path.toLowerCase().endsWith('.wav');
+    const contentType = isWav ? 'audio/wav' : 'audio/mpeg';
 
-    // Set common headers for audio
+    // Standard headers for all audio streaming
     res.setHeader('Accept-Ranges', 'bytes');
     res.setHeader('Access-Control-Allow-Origin', '*');
+    res.setHeader('Access-Control-Allow-Methods', 'GET, HEAD, OPTIONS');
+    res.setHeader('Access-Control-Allow-Headers', 'Range, Content-Range, Accept-Ranges, Origin, X-Requested-With, Content-Type, Accept');
+    res.setHeader('Access-Control-Expose-Headers', 'Content-Range, Accept-Ranges, Content-Length');
+
+    if (req.method === 'OPTIONS') {
+      res.status(204).end();
+      return;
+    }
+
+    const range = req.headers.range;
 
     if (range) {
-      const parts = range.replace(/bytes=/, "").split("-");
-      const start = parseInt(parts[0], 10);
-      const end = parts[1] ? parseInt(parts[1], 10) : fileSize - 1;
-
-      if (start >= fileSize) {
-        res.status(416).send('Requested range not satisfiable');
+      // Parse Range header according to RFC 7233: bytes=start-end, bytes=start-, bytes=-suffix
+      const matches = range.match(/bytes=(\d*)-(\d*)/);
+      if (!matches) {
+        res.status(416).set('Content-Range', `bytes */${fileSize}`).send('Requested range not satisfiable');
         return;
       }
 
-      const chunksize = (end - start) + 1;
-      const file = fs.createReadStream(filePath, { start, end });
-      const head = {
-        'Content-Range': `bytes ${start}-${end}/${fileSize}`,
-        'Content-Length': chunksize,
-        'Content-Type': req.path.endsWith('.wav') ? 'audio/wav' : 'audio/mpeg',
-      };
+      let start: number;
+      let end: number;
 
-      res.writeHead(206, head);
-      file.pipe(res);
+      if (matches[1] === '' && matches[2] !== '') {
+        // Suffix range: bytes=-128 (last 128 bytes, e.g. ID3v1 trailer check by browsers for MP3)
+        const suffix = parseInt(matches[2], 10);
+        start = Math.max(0, fileSize - suffix);
+        end = fileSize - 1;
+      } else if (matches[1] !== '' && matches[2] === '') {
+        // Open range: bytes=500- (from 500 to end of file)
+        start = parseInt(matches[1], 10);
+        end = fileSize - 1;
+      } else {
+        // Closed range: bytes=0-1000
+        start = parseInt(matches[1], 10);
+        end = parseInt(matches[2], 10);
+      }
+
+      if (isNaN(start) || isNaN(end) || start > end || start >= fileSize) {
+        res.status(416).set('Content-Range', `bytes */${fileSize}`).send('Requested range not satisfiable');
+        return;
+      }
+
+      end = Math.min(end, fileSize - 1);
+      const chunkSize = (end - start) + 1;
+
+      res.writeHead(206, {
+        'Content-Range': `bytes ${start}-${end}/${fileSize}`,
+        'Content-Length': chunkSize,
+        'Content-Type': contentType,
+      });
+
+      if (req.method === 'HEAD') {
+        res.end();
+        return;
+      }
+
+      const fileStream = fs.createReadStream(filePath, { start, end });
+      fileStream.on('error', () => {
+        if (!res.headersSent) res.status(500).end();
+      });
+      fileStream.pipe(res);
     } else {
-      const head = {
+      res.writeHead(200, {
         'Content-Length': fileSize,
-        'Content-Type': req.path.endsWith('.wav') ? 'audio/wav' : 'audio/mpeg',
-      };
-      res.writeHead(200, head);
-      fs.createReadStream(filePath).pipe(res);
+        'Content-Type': contentType,
+      });
+
+      if (req.method === 'HEAD') {
+        res.end();
+        return;
+      }
+
+      const fileStream = fs.createReadStream(filePath);
+      fileStream.on('error', () => {
+        if (!res.headersSent) res.status(500).end();
+      });
+      fileStream.pipe(res);
     }
   });
 

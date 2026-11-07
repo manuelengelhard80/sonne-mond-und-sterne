@@ -43,6 +43,7 @@ const RESET_STEPS: ResetStep[] = [
 ];
 
 const MEDITATION_FILES = [
+  { title: 'Tantra Meditation für Paare – Achtsam begegnen', url: '/tantra.mp3' },
   { title: 'Kopf abschalten und erholen', url: '/m1.mp3' },
   { title: 'Inneren Kritiker abstellen', url: '/m2.mp3' },
   { title: 'Gedankenkarussell beruhigen', url: '/m3.mp3' },
@@ -73,12 +74,15 @@ const MeditationPlayer: React.FC<AudioPlayerProps> = ({ title, audioUrl }) => {
     const audio = audioRef.current;
     if (!audio) return;
 
-    // Direct assignment
+    // Direct assignment and load metadata
     audio.src = audioUrl;
+    audio.load();
 
     const updateTime = () => setCurrentTime(audio.currentTime);
     const handleLoaded = () => {
-      if (audio.duration && !isNaN(audio.duration)) setDuration(audio.duration);
+      if (audio.duration && !isNaN(audio.duration) && isFinite(audio.duration)) {
+        setDuration(audio.duration);
+      }
       setIsLoading(false);
     };
     const handleEnded = () => {
@@ -92,28 +96,40 @@ const MeditationPlayer: React.FC<AudioPlayerProps> = ({ title, audioUrl }) => {
       setIsPlaying(true);
     };
     const handleError = () => {
-      console.error('Audio error on:', title);
+      console.warn('Audio playback info:', title, audio.error);
       setIsLoading(false);
       setIsPlaying(false);
     };
 
+    const handleGlobalPause = (e: any) => {
+      if (e.detail?.id !== audioUrl && !audio.paused) {
+        audio.pause();
+        setIsPlaying(false);
+      }
+    };
+
     audio.addEventListener('timeupdate', updateTime);
     audio.addEventListener('loadedmetadata', handleLoaded);
+    audio.addEventListener('durationchange', handleLoaded);
+    audio.addEventListener('canplay', () => setIsLoading(false));
     audio.addEventListener('ended', handleEnded);
     audio.addEventListener('waiting', handleWaiting);
     audio.addEventListener('playing', handlePlaying);
     audio.addEventListener('error', handleError);
+    window.addEventListener('app-audio-play', handleGlobalPause);
 
     return () => {
       audio.removeEventListener('timeupdate', updateTime);
       audio.removeEventListener('loadedmetadata', handleLoaded);
+      audio.removeEventListener('durationchange', handleLoaded);
       audio.removeEventListener('ended', handleEnded);
       audio.removeEventListener('waiting', handleWaiting);
       audio.removeEventListener('playing', handlePlaying);
       audio.removeEventListener('error', handleError);
+      window.removeEventListener('app-audio-play', handleGlobalPause);
       audio.pause();
     };
-  }, [audioUrl]);
+  }, [audioUrl, title]);
 
   const togglePlay = () => {
     const audio = audioRef.current;
@@ -123,13 +139,17 @@ const MeditationPlayer: React.FC<AudioPlayerProps> = ({ title, audioUrl }) => {
       audio.pause();
       setIsPlaying(false);
     } else {
+      window.dispatchEvent(new CustomEvent('app-audio-play', { detail: { id: audioUrl } }));
       setIsLoading(true);
-      // Ensure we actually try to load/play
+      if (!audio.src || !audio.src.includes(audioUrl)) {
+        audio.src = audioUrl;
+        audio.load();
+      }
       audio.play().then(() => {
         setIsPlaying(true);
         setIsLoading(false);
       }).catch((err) => {
-        console.error('Audio playback error:', err);
+        console.warn('Audio playback error:', err);
         setIsLoading(false);
       });
     }
@@ -146,8 +166,8 @@ const MeditationPlayer: React.FC<AudioPlayerProps> = ({ title, audioUrl }) => {
     <div className="bg-[#071920]/90 border-2 border-[#c79b78]/70 rounded-2xl p-3.5 sm:p-5 shadow-xl backdrop-blur-md flex flex-row items-center gap-3.5 sm:gap-4 relative overflow-hidden">
       <audio
         ref={audioRef}
+        src={audioUrl}
         preload="metadata" 
-        crossOrigin="anonymous"
       />
 
       <button

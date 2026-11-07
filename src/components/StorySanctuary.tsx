@@ -116,8 +116,8 @@ export const StorySanctuary: React.FC<StorySanctuaryProps> = ({ onGoToBreath, on
         <div className="bg-[#071920]/90 border-2 border-[#c79b78]/70 rounded-2xl p-3.5 sm:p-5 shadow-xl backdrop-blur-md flex flex-row items-center gap-3.5 sm:gap-4 relative overflow-hidden mb-6">
           <audio
             ref={audioRef}
+            src="/story.wav"
             preload="auto"
-            crossOrigin="anonymous"
           />
 
           {/* Play/Pause Button in Copper Design with Loading Spinner */}

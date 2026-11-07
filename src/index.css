@@ -200,3 +200,15 @@
     background: rgba(212, 175, 55, 0.7);
   }
 }
+
+@keyframes marquee {
+  0% { transform: translateX(0); }
+  100% { transform: translateX(-50%); }
+}
+
+.animate-marquee {
+  display: inline-block;
+  white-space: nowrap;
+  animation: marquee 14s linear infinite;
+}
+

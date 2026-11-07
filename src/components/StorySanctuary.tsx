@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { CelestialTouch } from './CelestialTouch';
-import { Sparkles, Sun, Moon, Play, Pause, Music } from 'lucide-react';
+import { Sparkles, Sun, Moon, Play, Pause, Music, RefreshCw } from 'lucide-react';
 
 interface StorySanctuaryProps {
   onGoToBreath: () => void;
@@ -10,6 +10,7 @@ interface StorySanctuaryProps {
 export const StorySanctuary: React.FC<StorySanctuaryProps> = ({ onGoToBreath, onGoToStars }) => {
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const [isPlaying, setIsPlaying] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(180);
 
@@ -25,21 +26,36 @@ export const StorySanctuary: React.FC<StorySanctuaryProps> = ({ onGoToBreath, on
       if (audio.duration && !isNaN(audio.duration)) {
         setDuration(audio.duration);
       }
+      setIsLoading(false);
     };
 
     const handleEnded = () => {
       setIsPlaying(false);
       setCurrentTime(0);
+      setIsLoading(false);
+    };
+
+    const handleWaiting = () => {
+      setIsLoading(true);
+    };
+
+    const handlePlaying = () => {
+      setIsLoading(false);
+      setIsPlaying(true);
     };
 
     audio.addEventListener('timeupdate', updateTime);
     audio.addEventListener('loadedmetadata', handleLoaded);
     audio.addEventListener('ended', handleEnded);
+    audio.addEventListener('waiting', handleWaiting);
+    audio.addEventListener('playing', handlePlaying);
 
     return () => {
       audio.removeEventListener('timeupdate', updateTime);
       audio.removeEventListener('loadedmetadata', handleLoaded);
       audio.removeEventListener('ended', handleEnded);
+      audio.removeEventListener('waiting', handleWaiting);
+      audio.removeEventListener('playing', handlePlaying);
       audio.pause();
     };
   }, []);
@@ -52,10 +68,13 @@ export const StorySanctuary: React.FC<StorySanctuaryProps> = ({ onGoToBreath, on
       audio.pause();
       setIsPlaying(false);
     } else {
+      setIsLoading(true);
       audio.play().then(() => {
         setIsPlaying(true);
+        setIsLoading(false);
       }).catch((err) => {
         console.warn('Audio playback error:', err);
+        setIsLoading(false);
       });
     }
   };
@@ -70,9 +89,14 @@ export const StorySanctuary: React.FC<StorySanctuaryProps> = ({ onGoToBreath, on
   return (
     <div className="w-full max-w-4xl mx-auto space-y-8 pb-12">
       
-      {/* Main Section Title */}
-      <div className="text-center">
-        <h2 className="font-serif-serif text-3xl sm:text-4xl font-bold gold-gradient-text">
+      {/* Main Section Title with Marquee Scrolling Effect on Mobile */}
+      <div className="text-center overflow-hidden py-2 max-w-full relative">
+        <div className="sm:hidden w-full overflow-hidden whitespace-nowrap relative">
+          <div className="inline-block animate-marquee font-serif-serif text-2xl sm:text-4xl font-bold gold-gradient-text px-4">
+            Die Geschichte von Sonne, Mond und Sternen &nbsp;&nbsp; ✨ &nbsp;&nbsp; Die Geschichte von Sonne, Mond und Sternen &nbsp;&nbsp; ✨
+          </div>
+        </div>
+        <h2 className="hidden sm:block font-serif-serif text-3xl sm:text-4xl font-bold gold-gradient-text">
           Die Geschichte von Sonne, Mond und Sternen
         </h2>
       </div>
@@ -83,22 +107,25 @@ export const StorySanctuary: React.FC<StorySanctuaryProps> = ({ onGoToBreath, on
         {/* Subtle background glow accent */}
         <div className="absolute -top-12 -right-12 w-48 h-48 bg-[#dfba61]/10 rounded-full blur-3xl pointer-events-none" />
 
-        {/* Compact Audio Player Card Inside Story Container (Left-aligned play button on mobile & desktop) */}
+        {/* Compact Audio Player Card Inside Story Container */}
         <div className="bg-[#071920]/90 border-2 border-[#c79b78]/70 rounded-2xl p-3.5 sm:p-5 shadow-xl backdrop-blur-md flex flex-row items-center gap-3.5 sm:gap-4 relative overflow-hidden mb-6">
           <audio
             ref={audioRef}
-            src="https://www.dropbox.com/scl/fi/g6r348wj1jvmudtzjfujd/Die-Geschichte-von-Sonne-Mond-und-Sternen.wav?rlkey=96zbrlfjd9mxkmgh1dnonexy1&st=ulwscj36&raw=1"
+            src="/api/proxy-audio"
             preload="auto"
             crossOrigin="anonymous"
           />
 
-          {/* Play/Pause Button in Copper Design */}
+          {/* Play/Pause Button in Copper Design with Loading Spinner */}
           <button
             onClick={togglePlay}
-            className="w-11 h-11 sm:w-12 sm:h-12 rounded-xl bg-[#0a232c] border-2 border-[#c79b78] flex items-center justify-center shrink-0 shadow-lg transition active:scale-95 group"
-            title={isPlaying ? 'Audio pausieren' : 'Audio abspielen'}
+            disabled={isLoading}
+            className="w-11 h-11 sm:w-12 sm:h-12 rounded-xl bg-[#0a232c] border-2 border-[#c79b78] flex items-center justify-center shrink-0 shadow-lg transition active:scale-95 group disabled:opacity-75"
+            title={isLoading ? 'Audio wird geladen...' : isPlaying ? 'Audio pausieren' : 'Audio abspielen'}
           >
-            {isPlaying ? (
+            {isLoading ? (
+              <RefreshCw className="w-5 h-5 text-[#c79b78] animate-spin" />
+            ) : isPlaying ? (
               <Pause className="w-5 h-5 text-[#c79b78] fill-[#c79b78]" />
             ) : (
               <Play className="w-5 h-5 text-[#c79b78] fill-[#c79b78] ml-0.5" />
@@ -108,12 +135,19 @@ export const StorySanctuary: React.FC<StorySanctuaryProps> = ({ onGoToBreath, on
           {/* Info & Animated Waveform */}
           <div className="flex-1 w-full space-y-1.5 min-w-0">
             <div className="flex items-center justify-between text-xs gap-2">
-              <span className="font-serif-serif font-bold text-[#ebd8c8] flex items-center gap-1.5 truncate">
+              <div className="font-serif-serif font-bold text-[#ebd8c8] flex items-center gap-1.5 overflow-hidden relative max-w-[190px] sm:max-w-none">
                 <Music className="w-3.5 h-3.5 text-[#c79b78] shrink-0" />
-                <span className="truncate">Die Geschichte anhören (Hörfassung)</span>
-              </span>
+                <div className="sm:hidden overflow-hidden whitespace-nowrap w-full">
+                  <div className="inline-block animate-marquee text-xs">
+                    Die Geschichte von Sonne, Mond und Sternen &nbsp;&nbsp; ✨ &nbsp;&nbsp; Die Geschichte von Sonne, Mond und Sternen
+                  </div>
+                </div>
+                <span className="hidden sm:inline truncate">
+                  Die Geschichte von Sonne, Mond und Sternen
+                </span>
+              </div>
               <span className="text-white/70 font-mono text-[11px] shrink-0">
-                {formatTime(currentTime)} / {formatTime(duration || 180)}
+                {isLoading ? 'Lädt...' : `${formatTime(currentTime)} / ${formatTime(duration || 180)}`}
               </span>
             </div>
 
@@ -196,7 +230,7 @@ export const StorySanctuary: React.FC<StorySanctuaryProps> = ({ onGoToBreath, on
           </div>
           <div>
             <h4 className="font-semibold text-base mb-1 gold-gradient-text">Sternschnuppen</h4>
-            <p className="text-xs text-white/70">Entdecke leuchtende Gedanken oder schenke eigene Sterne.,</p>
+            <p className="text-xs text-white/70">Entdecke leuchtende Gedanken oder schenke eigene Sterne.</p>
           </div>
         </button>
       </div>

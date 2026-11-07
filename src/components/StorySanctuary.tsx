@@ -14,41 +14,12 @@ export const StorySanctuary: React.FC<StorySanctuaryProps> = ({ onGoToBreath, on
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(180);
 
-  // Load audio via blob object URL to guarantee 100% reliable mobile playback (iOS Safari & Android Chrome)
+  // Set audio src directly to proxy endpoint for instant streaming & playback
   useEffect(() => {
-    let objectUrl: string | null = null;
-    let isMounted = true;
-
-    async function loadAudioBlob() {
-      setIsLoading(true);
-      try {
-        const res = await fetch('/api/proxy-audio');
-        if (!res.ok) {
-          setIsLoading(false);
-          return;
-        }
-        const blob = await res.blob();
-        if (!isMounted) return;
-        objectUrl = URL.createObjectURL(blob);
-        if (audioRef.current) {
-          audioRef.current.src = objectUrl;
-          audioRef.current.load();
-        }
-      } catch (err) {
-        console.warn('Failed to load audio blob:', err);
-      } finally {
-        if (isMounted) setIsLoading(false);
-      }
+    if (audioRef.current) {
+      audioRef.current.src = '/api/proxy-audio';
+      audioRef.current.load();
     }
-
-    loadAudioBlob();
-
-    return () => {
-      isMounted = false;
-      if (objectUrl) {
-        URL.revokeObjectURL(objectUrl);
-      }
-    };
   }, []);
 
   useEffect(() => {

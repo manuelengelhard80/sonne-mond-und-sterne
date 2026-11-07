@@ -211,11 +211,14 @@ export const SettingsSpace: React.FC = () => {
     <div className="w-full max-w-2xl mx-auto space-y-6 animate-fade-in pb-16 px-2 sm:px-0">
       
       {/* Page Header */}
-      <div className="text-center space-y-2">
-        <div className="inline-flex items-center justify-center w-12 h-12 rounded-2xl bg-[#0a232c] border-2 border-[#c79b78] text-[#ebd8c8] shadow-xl">
-          <Settings className="w-6 h-6 animate-spin-slow text-[#c79b78]" />
+      <div className="text-center space-y-1">
+        <div>
+          <div className="inline-flex items-center justify-center w-12 h-12 rounded-2xl bg-[#0a232c] border-2 border-[#c79b78] text-[#ebd8c8] shadow-xl">
+            <Settings className="w-6 h-6 animate-spin-slow text-[#c79b78]" />
+          </div>
         </div>
-        <h2 className="text-2xl sm:text-3xl font-serif-serif font-bold gold-gradient-text tracking-wide">
+        <br />
+        <h2 className="text-2xl sm:text-3xl font-serif-serif font-bold gold-gradient-text tracking-wide pt-1">
           Einstellungen
         </h2>
         <p className="text-xs sm:text-sm text-white/70 max-w-md mx-auto">

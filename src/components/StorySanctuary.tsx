@@ -1,6 +1,6 @@
-import React from 'react';
+import React, { useState, useRef } from 'react';
 import { CelestialTouch } from './CelestialTouch';
-import { Sparkles, Sun, Moon } from 'lucide-react';
+import { Sparkles, Sun, Moon, Play, Pause, Music } from 'lucide-react';
 
 interface StorySanctuaryProps {
   onGoToBreath: () => void;
@@ -8,6 +8,49 @@ interface StorySanctuaryProps {
 }
 
 export const StorySanctuary: React.FC<StorySanctuaryProps> = ({ onGoToBreath, onGoToStars }) => {
+  const audioRef = useRef<HTMLAudioElement | null>(null);
+  const [isPlaying, setIsPlaying] = useState(false);
+  const [currentTime, setCurrentTime] = useState(0);
+  const [duration, setDuration] = useState(180);
+
+  const togglePlay = () => {
+    if (!audioRef.current) return;
+    if (isPlaying) {
+      audioRef.current.pause();
+      setIsPlaying(false);
+    } else {
+      audioRef.current.play().then(() => {
+        setIsPlaying(true);
+      }).catch((err) => {
+        console.warn('Audio playback error:', err);
+      });
+    }
+  };
+
+  const handleTimeUpdate = () => {
+    if (audioRef.current) {
+      setCurrentTime(audioRef.current.currentTime);
+    }
+  };
+
+  const handleLoadedMetadata = () => {
+    if (audioRef.current) {
+      setDuration(audioRef.current.duration);
+    }
+  };
+
+  const handleEnded = () => {
+    setIsPlaying(false);
+    setCurrentTime(0);
+  };
+
+  const formatTime = (secs: number) => {
+    if (isNaN(secs)) return '0:00';
+    const m = Math.floor(secs / 60);
+    const s = Math.floor(secs % 60);
+    return `${m}:${s < 10 ? '0' : ''}${s}`;
+  };
+
   return (
     <div className="w-full max-w-4xl mx-auto space-y-8 pb-12">
       
@@ -18,27 +61,78 @@ export const StorySanctuary: React.FC<StorySanctuaryProps> = ({ onGoToBreath, on
         </h2>
       </div>
 
-      {/* 1. Story Text in Content Box with Golden Frame */}
+      {/* 1. Story Text in Content Box with Golden Frame & Audio Player Inside */}
       <div className="bg-[#0a232c] border-2 border-[#dfba61] rounded-2xl p-6 sm:p-8 shadow-2xl space-y-6 text-white/90 font-serif-serif text-base sm:text-lg leading-relaxed relative overflow-hidden">
         
         {/* Subtle background glow accent */}
         <div className="absolute -top-12 -right-12 w-48 h-48 bg-[#dfba61]/10 rounded-full blur-3xl pointer-events-none" />
 
-        <p className="leading-relaxed space-y-3">
-          <span className="block">
-            <span className="inline-flex items-center gap-1.5 mr-1.5">
-              <Sun className="w-4 h-4 text-[#ffe89c] shrink-0" style={{ verticalAlign: 'middle' }} />
-              <span className="font-semibold text-white">Die Sonne</span>
-            </span>
-            strahlt in ihrer ganz eigenen, schönen Wildheit. Sie spendet Wärme, erhellt den Tag und schenkt dem Leben seine bunten Farben.
-          </span>
-          <span className="block pt-2">
-            <span className="inline-flex items-center gap-1.5 mr-1.5">
-              <Moon className="w-4 h-4 text-[#c79b78] shrink-0" style={{ verticalAlign: 'middle' }} />
-              <span className="font-semibold text-white">Der Mond</span>
-            </span>
-            zieht bedacht seine Bahnen im weiten Raum. Er wacht über die Stille der Nacht und schenkt der Welt Ruhe und inneren Frieden.
-          </span>
+        {/* Compact Audio Player Card Inside Story Container */}
+        <div className="bg-[#071920]/90 border-2 border-[#c79b78]/70 rounded-2xl p-4 sm:p-5 shadow-xl backdrop-blur-md flex flex-col sm:flex-row items-center gap-4 relative overflow-hidden mb-6">
+          <audio
+            ref={audioRef}
+            src="https://www.dropbox.com/scl/fi/g6r348wj1jvmudtzjfujd/Die-Geschichte-von-Sonne-Mond-und-Sternen.wav?rlkey=96zbrlfjd9mxkmgh1dnonexy1&st=ulwscj36&raw=1"
+            onTimeUpdate={handleTimeUpdate}
+            onLoadedMetadata={handleLoadedMetadata}
+            onEnded={handleEnded}
+            preload="metadata"
+          />
+
+          {/* Play/Pause Button in Copper Design */}
+          <button
+            onClick={togglePlay}
+            className="w-12 h-12 rounded-xl bg-[#0a232c] border-2 border-[#c79b78] flex items-center justify-center shrink-0 shadow-lg transition active:scale-95 group"
+            title={isPlaying ? 'Audio pausieren' : 'Audio abspielen'}
+          >
+            {isPlaying ? (
+              <Pause className="w-5 h-5 text-[#c79b78] fill-[#c79b78]" />
+            ) : (
+              <Play className="w-5 h-5 text-[#c79b78] fill-[#c79b78] ml-0.5" />
+            )}
+          </button>
+
+          {/* Info & Animated Waveform */}
+          <div className="flex-1 w-full space-y-1.5">
+            <div className="flex items-center justify-between text-xs">
+              <span className="font-serif-serif font-bold text-[#ebd8c8] flex items-center gap-1.5">
+                <Music className="w-3.5 h-3.5 text-[#c79b78]" />
+                <span>Die Geschichte anhören (Hörfassung)</span>
+              </span>
+              <span className="text-white/70 font-mono text-[11px]">
+                {formatTime(currentTime)} / {formatTime(duration || 180)}
+              </span>
+            </div>
+
+            {/* Animated Waveform Bars in Copper/Gold */}
+            <div className="flex items-center justify-between h-7 px-2 bg-[#0a232c] rounded-lg border border-[#c79b78]/30 gap-1 overflow-hidden">
+              {Array.from({ length: 28 }).map((_, i) => {
+                const heights = [35, 65, 45, 80, 50, 75, 90, 40, 70, 85, 30, 75, 55, 80, 45, 60];
+                const h = heights[i % heights.length];
+                return (
+                  <div
+                    key={i}
+                    className={`w-1 rounded-full transition-all duration-300 ${
+                      isPlaying ? 'bg-gradient-to-t from-[#c79b78] to-[#ebd8c8] animate-pulse' : 'bg-white/20'
+                    }`}
+                    style={{
+                      height: isPlaying ? `${Math.max(15, (h * (Math.sin(i + currentTime) + 1.5)) / 2.5)}%` : `${h * 0.35}%`,
+                      animationDelay: `${i * 0.08}s`,
+                    }}
+                  />
+                );
+              })}
+            </div>
+          </div>
+        </div>
+
+        <p className="leading-relaxed">
+          <Sun className="w-4 h-4 text-[#ffe89c] inline-block mr-2 align-middle shrink-0" />
+          <strong className="font-semibold text-white">Die Sonne</strong> strahlt in ihrer ganz eigenen, schönen Wildheit. Sie spendet Wärme, erhellt den Tag und schenkt dem Leben seine bunten Farben.
+        </p>
+
+        <p className="leading-relaxed pt-3">
+          <Moon className="w-4 h-4 text-[#c79b78] inline-block mr-2 align-middle shrink-0" />
+          <strong className="font-semibold text-white">Der Mond</strong> zieht bedacht seine Bahnen im weiten Raum. Er wacht über die Stille der Nacht und schenkt der Welt Ruhe und inneren Frieden.
         </p>
 
         <p className="leading-relaxed">

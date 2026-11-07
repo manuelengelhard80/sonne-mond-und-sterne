@@ -14,6 +14,43 @@ export const StorySanctuary: React.FC<StorySanctuaryProps> = ({ onGoToBreath, on
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(180);
 
+  // Load audio via blob object URL to guarantee 100% reliable mobile playback (iOS Safari & Android Chrome)
+  useEffect(() => {
+    let objectUrl: string | null = null;
+    let isMounted = true;
+
+    async function loadAudioBlob() {
+      setIsLoading(true);
+      try {
+        const res = await fetch('/api/proxy-audio');
+        if (!res.ok) {
+          setIsLoading(false);
+          return;
+        }
+        const blob = await res.blob();
+        if (!isMounted) return;
+        objectUrl = URL.createObjectURL(blob);
+        if (audioRef.current) {
+          audioRef.current.src = objectUrl;
+          audioRef.current.load();
+        }
+      } catch (err) {
+        console.warn('Failed to load audio blob:', err);
+      } finally {
+        if (isMounted) setIsLoading(false);
+      }
+    }
+
+    loadAudioBlob();
+
+    return () => {
+      isMounted = false;
+      if (objectUrl) {
+        URL.revokeObjectURL(objectUrl);
+      }
+    };
+  }, []);
+
   useEffect(() => {
     const audio = audioRef.current;
     if (!audio) return;
@@ -89,14 +126,9 @@ export const StorySanctuary: React.FC<StorySanctuaryProps> = ({ onGoToBreath, on
   return (
     <div className="w-full max-w-4xl mx-auto space-y-8 pb-12">
       
-      {/* Main Section Title with Marquee Scrolling Effect on Mobile */}
-      <div className="text-center overflow-hidden py-2 max-w-full relative">
-        <div className="sm:hidden w-full overflow-hidden whitespace-nowrap relative">
-          <div className="inline-block animate-marquee font-serif-serif text-2xl sm:text-4xl font-bold gold-gradient-text px-4">
-            Die Geschichte von Sonne, Mond und Sternen &nbsp;&nbsp; ✨ &nbsp;&nbsp; Die Geschichte von Sonne, Mond und Sternen &nbsp;&nbsp; ✨
-          </div>
-        </div>
-        <h2 className="hidden sm:block font-serif-serif text-3xl sm:text-4xl font-bold gold-gradient-text">
+      {/* Main Section Title (Identical on mobile and desktop, no marquee, no emojis) */}
+      <div className="text-center">
+        <h2 className="font-serif-serif text-3xl sm:text-4xl font-bold gold-gradient-text">
           Die Geschichte von Sonne, Mond und Sternen
         </h2>
       </div>
@@ -111,7 +143,6 @@ export const StorySanctuary: React.FC<StorySanctuaryProps> = ({ onGoToBreath, on
         <div className="bg-[#071920]/90 border-2 border-[#c79b78]/70 rounded-2xl p-3.5 sm:p-5 shadow-xl backdrop-blur-md flex flex-row items-center gap-3.5 sm:gap-4 relative overflow-hidden mb-6">
           <audio
             ref={audioRef}
-            src="/api/proxy-audio"
             preload="auto"
             crossOrigin="anonymous"
           />
@@ -135,16 +166,9 @@ export const StorySanctuary: React.FC<StorySanctuaryProps> = ({ onGoToBreath, on
           {/* Info & Animated Waveform */}
           <div className="flex-1 w-full space-y-1.5 min-w-0">
             <div className="flex items-center justify-between text-xs gap-2">
-              <div className="font-serif-serif font-bold text-[#ebd8c8] flex items-center gap-1.5 overflow-hidden relative max-w-[190px] sm:max-w-none">
+              <div className="font-serif-serif font-bold text-[#ebd8c8] flex items-center gap-1.5 truncate">
                 <Music className="w-3.5 h-3.5 text-[#c79b78] shrink-0" />
-                <div className="sm:hidden overflow-hidden whitespace-nowrap w-full">
-                  <div className="inline-block animate-marquee text-xs">
-                    Die Geschichte von Sonne, Mond und Sternen &nbsp;&nbsp; ✨ &nbsp;&nbsp; Die Geschichte von Sonne, Mond und Sternen
-                  </div>
-                </div>
-                <span className="hidden sm:inline truncate">
-                  Die Geschichte von Sonne, Mond und Sternen
-                </span>
+                <span className="truncate">Die Geschichte von Sonne, Mond und Sternen</span>
               </div>
               <span className="text-white/70 font-mono text-[11px] shrink-0">
                 {isLoading ? 'Lädt...' : `${formatTime(currentTime)} / ${formatTime(duration || 180)}`}

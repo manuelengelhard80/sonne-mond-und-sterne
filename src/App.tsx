@@ -133,7 +133,7 @@ function MainApp() {
 
   if (!isOnboardingCompleted) {
     return (
-      <div className="fixed inset-0 z-50 bg-[#071920] flex items-center justify-center p-4 overflow-y-auto select-none">
+      <div className="fixed inset-0 z-50 bg-[#071920] flex items-center justify-center p-4 overflow-hidden select-none">
         <AndroidBottomHelperBar />
       </div>
     );
@@ -172,8 +172,8 @@ function MainApp() {
         </div>
       )}
 
-      {/* 1. Full Bleed Hero Header Image (Optimized for both Portrait and Mobile Landscape) */}
-      <div className="relative w-full bg-[#0a232c] overflow-hidden flex items-center justify-center h-[45vh] min-h-[220px] max-h-[540px] landscape:max-sm:h-[35vh] landscape:max-sm:min-h-[160px] landscape:max-sm:max-h-[240px] sm:h-[55vh] sm:min-h-[380px] sm:max-h-[680px]">
+      {/* 1. Full Bleed Hero Header Image */}
+      <div className="relative w-full bg-[#0a232c] overflow-hidden flex items-center justify-center portrait:h-[50vh] portrait:min-h-[380px] portrait:max-h-[540px] landscape:h-[60vh] landscape:min-h-[440px] landscape:max-h-[720px] sm:h-[60vh] sm:min-h-[440px] sm:max-h-[700px]">
         <img
           src="/assets/aistudio/SMS-Banner.png"
           alt="Sonne, Mond und Sterne - Manuel & Stefanie"

@@ -207,8 +207,13 @@
 }
 
 .animate-marquee {
-  display: inline-block;
+  display: inline-flex;
   white-space: nowrap;
-  animation: marquee 14s linear infinite;
+  animation: marquee 16s linear infinite;
+  will-change: transform;
+}
+
+.animate-marquee:hover {
+  animation-play-state: paused;
 }
 

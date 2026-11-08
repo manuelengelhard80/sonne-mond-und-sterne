@@ -3,17 +3,16 @@ import { Play, Pause, Music, RefreshCw, Volume2 } from 'lucide-react';
 
 const MEDITATION_FILES = [
   { title: 'Tantra Meditation für Paare – Achtsam begegnen', url: '/tantra.mp3' },
-  { title: 'Kopf abschalten und erholen', url: '/m1.mp3' },
-  { title: 'Inneren Kritiker abstellen', url: '/m2.mp3' },
-  { title: 'Gedankenkarussell beruhigen', url: '/m3.mp3' },
-  { title: 'Gedanken und Grübeln loslassen', url: '/m4.mp3' },
-  { title: 'Emotionen schnell beruhigen', url: '/m5.mp3' },
-  { title: 'Angst sofort loslassen', url: '/m6.mp3' },
-  { title: 'Limitierende Glaubenssätze auflösen', url: '/m7.mp3' },
-  { title: 'Unsicherheit loslassen & Ideales Selbst', url: '/m8.mp3' },
-  { title: 'Angst auflösen (Fassung 2)', url: '/m6.mp3' },
-  { title: 'Dankbarkeit kultivieren', url: '/m9.mp3' },
-  { title: 'Dankbarkeit & Positives Denken', url: '/m10.mp3' }
+  { title: 'Kopf abschalten und erholen – Geführte Meditation', url: '/m1.mp3' },
+  { title: 'Inneren Kritiker abstellen – Geführte Meditation', url: '/m2.mp3' },
+  { title: 'Gedankenkarussell und inneren Kritiker beruhigen – Selbstmitgefühl', url: '/m3.mp3' },
+  { title: 'Gedanken und Grübeln loslassen – Tief entspannen', url: '/m4.mp3' },
+  { title: 'Aufgebrachte Emotionen wie Wut, Angst und Panik schnell beruhigen', url: '/m5.mp3' },
+  { title: 'Angst sofort loslassen – Geführte Meditation', url: '/m6.mp3' },
+  { title: 'Limitierende Glaubenssätze auflösen – Geführte Meditation', url: '/m7.mp3' },
+  { title: 'Unsicherheit & Angst loslassen – Ideales Selbst werden', url: '/m8.mp3' },
+  { title: 'Dankbarkeit kultivieren – Geführte Meditation', url: '/m9.mp3' },
+  { title: 'Dankbarkeit und positives Denken – Geführte Meditation', url: '/m10.mp3' }
 ];
 
 // Reusable Audio Player Component
@@ -145,9 +144,16 @@ const MeditationPlayer: React.FC<AudioPlayerProps> = ({ title, audioUrl }) => {
 
       <div className="flex-1 w-full space-y-1.5 min-w-0">
         <div className="flex items-center justify-between text-xs gap-2">
-          <div className="font-serif-serif font-bold text-[#ebd8c8] flex items-center gap-1.5 truncate">
+          <div className="flex items-center gap-1.5 min-w-0 flex-1 overflow-hidden">
             <Music className="w-3.5 h-3.5 text-[#c79b78] shrink-0" />
-            <span className="truncate">{title}</span>
+            <div className="overflow-hidden whitespace-nowrap min-w-0 flex-1 relative [mask-image:linear-gradient(to_right,black_85%,transparent_100%)]">
+              <div className="animate-marquee inline-flex items-center gap-6 font-serif-serif font-bold text-[#ebd8c8]">
+                <span>{title}</span>
+                <span className="text-[#c79b78]/60 text-[10px]">✦</span>
+                <span>{title}</span>
+                <span className="text-[#c79b78]/60 text-[10px]">✦</span>
+              </div>
+            </div>
           </div>
           <span className="text-white/70 font-mono text-[11px] shrink-0">
             {isLoading ? 'Lädt...' : duration > 0 ? `${formatTime(currentTime)} / ${formatTime(duration)}` : '0:00'}

@@ -423,6 +423,7 @@ export interface YouTubeAudioPlayerProps {
 export const YouTubeAudioPlayer: React.FC<YouTubeAudioPlayerProps> = ({ title, videoId }) => {
   const [isPlaying, setIsPlaying] = useState(false);
   const [elapsedTime, setElapsedTime] = useState(0);
+  const totalDuration = 600; // Estimated 10 min default for YouTube stream
   const audioId = `youtube-${videoId}`;
 
   const togglePlay = () => {
@@ -438,11 +439,11 @@ export const YouTubeAudioPlayer: React.FC<YouTubeAudioPlayerProps> = ({ title, v
     let timer: NodeJS.Timeout;
     if (isPlaying) {
       timer = setInterval(() => {
-        setElapsedTime((prev) => prev + 1);
+        setElapsedTime((prev) => (prev >= totalDuration ? 0 : prev + 1));
       }, 1000);
     }
     return () => clearInterval(timer);
-  }, [isPlaying]);
+  }, [isPlaying, totalDuration]);
 
   useEffect(() => {
     const handleGlobalPause = (e: any) => {
@@ -454,6 +455,14 @@ export const YouTubeAudioPlayer: React.FC<YouTubeAudioPlayerProps> = ({ title, v
     return () => window.removeEventListener('app-audio-play', handleGlobalPause);
   }, [audioId]);
 
+  const handleSeek = (e: React.MouseEvent<HTMLDivElement> | React.TouchEvent<HTMLDivElement>) => {
+    const rect = e.currentTarget.getBoundingClientRect();
+    const clientX = 'touches' in e && e.touches.length > 0 ? e.touches[0].clientX : (e as React.MouseEvent).clientX;
+    const clickX = clientX - rect.left;
+    const percentage = Math.max(0, Math.min(1, clickX / rect.width));
+    setElapsedTime(Math.floor(percentage * totalDuration));
+  };
+
   const formatTime = (secs: number) => {
     if (isNaN(secs) || secs === 0) return '0:00';
     const m = Math.floor(secs / 60);
@@ -461,12 +470,14 @@ export const YouTubeAudioPlayer: React.FC<YouTubeAudioPlayerProps> = ({ title, v
     return `${m}:${s < 10 ? '0' : ''}${s}`;
   };
 
+  const progressPercent = totalDuration > 0 ? (elapsedTime / totalDuration) : 0;
+
   return (
     <div className="bg-[#071920]/90 border-2 border-[#c79b78]/70 rounded-2xl p-3.5 sm:p-5 shadow-xl backdrop-blur-md flex flex-row items-center gap-3.5 sm:gap-4 relative overflow-hidden">
       {/* Hidden YouTube audio iframe engine */}
       {isPlaying && (
         <iframe
-          src={`https://www.youtube-nocookie.com/embed/${videoId}?autoplay=1&enablejsapi=1&playsinline=1`}
+          src={`https://www.youtube-nocookie.com/embed/${videoId}?autoplay=1&enablejsapi=1&playsinline=1&start=${elapsedTime}`}
           title={title}
           className="w-px h-px opacity-0 pointer-events-none absolute top-0 left-0"
           allow="autoplay; encrypted-media"
@@ -499,14 +510,20 @@ export const YouTubeAudioPlayer: React.FC<YouTubeAudioPlayerProps> = ({ title, v
             </div>
           </div>
           <span className="text-white/70 font-mono text-[11px] shrink-0">
-            {formatTime(elapsedTime)}
+            {formatTime(elapsedTime)} / {formatTime(totalDuration)}
           </span>
         </div>
 
-        <div className="flex items-center justify-between h-7 px-2 bg-[#0a232c] rounded-lg border border-[#c79b78]/30 gap-1 overflow-hidden">
+        <div
+          onClick={handleSeek}
+          onTouchStart={handleSeek}
+          title="Klicken oder tippen zum Spulen"
+          className="flex items-center justify-between h-7 px-2 bg-[#0a232c] rounded-lg border border-[#c79b78]/30 hover:border-[#c79b78]/70 gap-1 overflow-hidden cursor-pointer transition touch-action-none select-none"
+        >
           {Array.from({ length: 28 }).map((_, i) => {
             const heights = [35, 65, 45, 80, 50, 75, 90, 40, 70, 85, 30, 75, 55, 80, 45, 60];
             const h = heights[i % heights.length];
+            const isPassed = (i / 28) <= progressPercent;
 
             return (
               <div
@@ -514,10 +531,12 @@ export const YouTubeAudioPlayer: React.FC<YouTubeAudioPlayerProps> = ({ title, v
                 className={`w-1 rounded-full transition-all duration-300 pointer-events-none ${
                   isPlaying
                     ? 'bg-gradient-to-t from-[#c79b78] to-[#ebd8c8] animate-pulse'
+                    : isPassed
+                    ? 'bg-[#c79b78]'
                     : 'bg-white/20'
                 }`}
                 style={{
-                  height: isPlaying ? `${Math.max(15, (h * (Math.sin(i + 1) + 1.5)) / 2.5)}%` : `${h * 0.35}%`,
+                  height: isPlaying ? `${Math.max(15, (h * (Math.sin(i + elapsedTime) + 1.5)) / 2.5)}%` : `${h * 0.35}%`,
                   animationDelay: `${i * 0.08}s`,
                 }}
               />

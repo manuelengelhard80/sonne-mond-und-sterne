@@ -134,13 +134,6 @@ export const StarrySky: React.FC = () => {
     ensureAuthenticated().then(() => {
       const unsubscribe = onSnapshot(collection(db, 'shooting_stars'), (snapshot) => {
         const now = Date.now();
-        if (snapshot.empty) {
-          // If Firestore is completely fresh, seed default stars so heaven is never empty
-          DEFAULT_STARS.forEach((s) => {
-            setDoc(doc(db, 'shooting_stars', s.id), s).catch(console.error);
-          });
-          return;
-        }
 
         const cloudStars: StarNote[] = [];
         snapshot.docs.forEach((d) => {
@@ -396,12 +389,12 @@ export const StarrySky: React.FC = () => {
       <div
         ref={skyContainerRef}
         onClick={handleSkyClick}
-        className="relative w-full h-[460px] sm:h-[540px] rounded-2xl overflow-hidden bg-gradient-to-b from-[#02060e] via-[#050f1e] to-[#0a172e] border-2 border-[#dfba61]/60 shadow-2xl cursor-crosshair group select-none"
+        className="relative w-full h-[460px] sm:h-[540px] rounded-2xl overflow-hidden bg-gradient-to-b from-[#050505] via-[#101010] to-[#1a1a1a] border-2 border-[#dfba61]/60 shadow-2xl cursor-crosshair group select-none"
       >
         
         {/* Celestial Deep Space Atmospheric Glows */}
-        <div className="absolute top-1/4 left-1/3 w-80 h-80 rounded-full bg-[#1e2952]/20 blur-3xl pointer-events-none" />
-        <div className="absolute bottom-10 right-1/4 w-96 h-96 rounded-full bg-[#dfba61]/12 blur-3xl pointer-events-none" />
+        <div className="absolute top-1/4 left-1/3 w-80 h-80 rounded-full bg-[#dfba61]/5 blur-3xl pointer-events-none" />
+        <div className="absolute bottom-10 right-1/4 w-96 h-96 rounded-full bg-[#dfba61]/5 blur-3xl pointer-events-none" />
 
         {/* Ambient background micro-stars */}
         <div className="absolute inset-0 pointer-events-none opacity-45">
@@ -530,6 +523,32 @@ export const StarrySky: React.FC = () => {
 
       </div>
 
+      {stars.length > 0 && (
+        <div className="bg-[#0a232c] border-2 border-[#dfba61] rounded-2xl p-6 shadow-2xl text-white">
+          <h3 className="font-serif-serif text-xl font-bold gold-gradient-text mb-4 text-center">
+            Alle Sternschnuppen im Überblick
+          </h3>
+          <div className="space-y-4">
+            {stars.map((s) => (
+              <div
+                key={s.id}
+                className="p-4 rounded-xl bg-black/40 border border-white/10 hover:border-[#dfba61]/50 transition cursor-pointer"
+                onClick={() => setSelectedStar(s)}
+              >
+                <div className="flex justify-between items-start mb-1">
+                  <h4 className="font-bold text-white/90 text-sm truncate">{s.title}</h4>
+                  <span className="text-[10px] text-white/40 shrink-0 ml-2">{s.date}</span>
+                </div>
+                <p className="text-xs text-white/60 line-clamp-2">{s.content}</p>
+                <div className="flex items-center gap-2 mt-2 text-[10px] text-white/40">
+                  <span>{s.author}</span>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
       {/* Shooting Star View Modal */}
       {selectedStar && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/75 backdrop-blur-md animate-fade-in">
@@ -543,66 +562,73 @@ export const StarrySky: React.FC = () => {
               <X className="w-5 h-5" />
             </button>
 
-            <div className="flex items-center gap-3 border-b border-white/10 pb-4">
-              <div className="w-10 h-10 rounded-full gold-gradient-btn flex items-center justify-center text-[#0a232c] font-bold">
-                {selectedStar.authorRole === 'mond' ? (
-                  <Moon className="w-5 h-5 text-[#0a232c]" />
-                ) : (
-                  <Sun className="w-5 h-5 text-[#0a232c]" />
+            {/* Edit Mode Content */}
+            <div className="space-y-4">
+              <input
+                type="text"
+                value={selectedStar.title}
+                onChange={(e) => setSelectedStar({ ...selectedStar, title: e.target.value })}
+                className="w-full px-3 py-2 rounded-lg bg-black/40 border border-white/20 text-white text-lg font-bold focus:outline-none focus:border-[#dfba61]"
+              />
+              <textarea
+                rows={3}
+                value={selectedStar.content}
+                onChange={(e) => setSelectedStar({ ...selectedStar, content: e.target.value })}
+                className="w-full px-3 py-2 rounded-lg bg-black/40 border border-white/20 text-white text-sm focus:outline-none focus:border-[#dfba61]"
+              />
+              
+              {/* Expiry Editor */}
+              <div className="p-3.5 rounded-xl bg-black/30 border border-white/15 space-y-3">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <Calendar className="w-4 h-4 text-[#dfba61]" />
+                    <span className="text-xs font-medium text-white/90">
+                      Termin setzen
+                    </span>
+                  </div>
+                  <input
+                    type="checkbox"
+                    checked={!!selectedStar.expiresAt}
+                    onChange={(e) => {
+                      const newExpiry = e.target.checked ? new Date(new Date().setHours(23, 59, 0, 0)).toISOString() : null;
+                      setSelectedStar({ ...selectedStar, expiresAt: newExpiry });
+                    }}
+                    className="w-4 h-4 accent-[#dfba61] rounded cursor-pointer"
+                  />
+                </div>
+                {selectedStar.expiresAt && (
+                  <input
+                    type="datetime-local"
+                    value={selectedStar.expiresAt.substring(0, 16)}
+                    onChange={(e) => setSelectedStar({ ...selectedStar, expiresAt: new Date(e.target.value).toISOString() })}
+                    className="w-full px-3 py-1.5 rounded-lg bg-black/50 border border-white/20 text-white text-xs focus:outline-none focus:border-[#dfba61]"
+                  />
                 )}
               </div>
-              <div>
-                <h3 className="font-serif-serif text-2xl font-bold gold-gradient-text">
-                  {selectedStar.title}
-                </h3>
-                <span className="text-xs text-white/70 flex items-center gap-1.5 mt-0.5">
-                  <span>Vom {selectedStar.date}</span>
-                  <span>·</span>
-                  <span className="text-[#f5d77f]">Von {selectedStar.author}</span>
-                </span>
-              </div>
             </div>
-
-            <div className="font-serif-serif text-lg leading-relaxed text-white/95 bg-black/40 p-5 rounded-xl border border-[#dfba61]/30 italic whitespace-pre-line">
-              "{selectedStar.content}"
-            </div>
-
-            {/* Expiration notice if appointment set */}
-            {selectedStar.expiresAt && (() => {
-              const info = formatExpiryNotice(selectedStar.expiresAt);
-              if (!info) return null;
-              return (
-                <div className="p-3.5 rounded-xl bg-[#071920] border border-[#dfba61]/40 flex items-center justify-between text-xs text-white/80">
-                  <div className="flex items-center gap-2">
-                    <Clock className="w-4 h-4 text-[#dfba61]" />
-                    <div>
-                      <div className="font-semibold text-[#f5d77f]">Termin / Gültig bis:</div>
-                      <div>{info.formattedDate} ({info.relativeStr})</div>
-                    </div>
-                  </div>
-                  <span className="text-[10px] text-white/60 bg-white/10 px-2 py-1 rounded">
-                    Löscht sich bei Ablauf automatisch
-                  </span>
-                </div>
-              );
-            })()}
-
+            
             <div className="flex items-center justify-between pt-2">
               <button
                 type="button"
-                onClick={() => handleDeleteStar(selectedStar.id)}
-                className="flex items-center gap-1.5 text-xs text-red-300/80 hover:text-red-300 hover:bg-red-500/10 px-3 py-2 rounded-lg transition"
-                title="Sternschnuppe aus dem Himmel entfernen"
+                onClick={() => { handleDeleteStar(selectedStar.id); setSelectedStar(null); }}
+                className="p-2 text-white/50 hover:text-red-400 rounded-lg hover:bg-white/5 transition"
+                title="Sternschnuppe löschen"
               >
-                <Trash2 className="w-3.5 h-3.5" />
-                <span>Sternschnuppe verabschieden</span>
+                <Trash2 className="w-5 h-5" />
               </button>
 
               <button
-                onClick={() => setSelectedStar(null)}
+                onClick={async () => {
+                  try {
+                    await setDoc(doc(db, 'shooting_stars', selectedStar.id), selectedStar);
+                    setSelectedStar(null);
+                  } catch (err) {
+                    console.error('Failed to update star:', err);
+                  }
+                }}
                 className="px-6 py-2.5 rounded-xl gold-gradient-btn text-[#0a232c] font-bold text-xs transition shadow"
               >
-                Schließen
+                Speichern
               </button>
             </div>
 

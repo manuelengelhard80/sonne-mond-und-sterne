@@ -91,6 +91,17 @@ function MainApp() {
 
   const mindfulnessAudioRef = useRef<HTMLAudioElement | null>(null);
 
+  useEffect(() => {
+    const handleGlobalPause = (e: any) => {
+      if (e.detail?.id !== '/five_min.mp3' && isMindfulnessPlaying) {
+        mindfulnessAudioRef.current?.pause();
+        setIsMindfulnessPlaying(false);
+      }
+    };
+    window.addEventListener('app-audio-play', handleGlobalPause);
+    return () => window.removeEventListener('app-audio-play', handleGlobalPause);
+  }, [isMindfulnessPlaying]);
+
   // Countdown timer for 5 Minuten Achtsamkeit audio
   useEffect(() => {
     let interval: NodeJS.Timeout;
@@ -112,20 +123,27 @@ function MainApp() {
 
   const toggleMindfulnessAudio = () => {
     const audio = mindfulnessAudioRef.current;
+    if (!audio) return;
+
     if (isMindfulnessPlaying) {
-      audio?.pause();
+      audio.pause();
       setIsMindfulnessPlaying(false);
       setCurrentSound('off');
     } else {
-      if (audio) {
-        audio.currentTime = 0;
-        audio.play().catch((err) => console.warn('Mindfulness audio play notice:', err));
-      }
-      setIsMindfulnessPlaying(true);
-      setCurrentSound('sun');
-      if (mindfulnessTimeLeft <= 0) {
-        setMindfulnessTimeLeft(300);
-      }
+      window.dispatchEvent(new CustomEvent('app-audio-play', { detail: { id: '/five_min.mp3' } }));
+      audio.currentTime = 0;
+      audio.play()
+        .then(() => {
+          setIsMindfulnessPlaying(true);
+          setCurrentSound('sun');
+          if (mindfulnessTimeLeft <= 0) {
+            setMindfulnessTimeLeft(300);
+          }
+        })
+        .catch((err) => {
+          console.warn('Mindfulness audio play notice:', err);
+          setIsMindfulnessPlaying(false);
+        });
     }
   };
 
@@ -148,7 +166,7 @@ function MainApp() {
       <audio
         ref={mindfulnessAudioRef}
         src="/five_min.mp3"
-        preload="metadata"
+        preload="auto"
       />
       
       {/* Floating Notification Toast Banner */}

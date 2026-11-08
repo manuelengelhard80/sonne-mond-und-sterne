@@ -81,6 +81,17 @@ export const SommernachtSee: React.FC = () => {
     }
   };
 
+  const handleSeek = (e: React.MouseEvent<HTMLDivElement> | React.TouchEvent<HTMLDivElement>) => {
+    const audio = audioRef.current;
+    if (!audio || !duration || duration <= 0) return;
+    const rect = e.currentTarget.getBoundingClientRect();
+    const clientX = 'touches' in e && e.touches.length > 0 ? e.touches[0].clientX : (e as React.MouseEvent).clientX;
+    const clickX = clientX - rect.left;
+    const percentage = Math.max(0, Math.min(1, clickX / rect.width));
+    audio.currentTime = percentage * duration;
+    setCurrentTime(audio.currentTime);
+  };
+
   const formatTime = (secs: number) => {
     if (isNaN(secs)) return '0:00';
     const m = Math.floor(secs / 60);
@@ -89,6 +100,8 @@ export const SommernachtSee: React.FC = () => {
   };
 
   const [isExpanded, setIsExpanded] = useState(false);
+  const progressPercent = duration > 0 ? (currentTime / duration) : 0;
+  const storyTitle = 'Das Mädchen vom See';
 
   return (
     <div className="w-full max-w-4xl mx-auto space-y-8 pb-12">
@@ -131,24 +144,42 @@ export const SommernachtSee: React.FC = () => {
 
           <div className="flex-1 w-full space-y-1.5 min-w-0">
             <div className="flex items-center justify-between text-xs gap-2">
-              <div className="font-serif-serif font-bold text-[#ebd8c8] flex items-center gap-1.5 truncate">
+              <div className="flex items-center gap-1.5 min-w-0 flex-1 overflow-hidden">
                 <Music className="w-3.5 h-3.5 text-[#c79b78] shrink-0" />
-                <span className="truncate">Das Mädchen vom See</span>
+                <div className="overflow-hidden whitespace-nowrap min-w-0 flex-1 relative [mask-image:linear-gradient(to_right,black_85%,transparent_100%)]">
+                  <div className="animate-marquee inline-flex items-center gap-6 font-serif-serif font-bold text-[#ebd8c8]">
+                    <span>{storyTitle}</span>
+                    <span className="text-[#c79b78]/60 text-[10px]">✦</span>
+                    <span>{storyTitle}</span>
+                    <span className="text-[#c79b78]/60 text-[10px]">✦</span>
+                  </div>
+                </div>
               </div>
               <span className="text-white/70 font-mono text-[11px] shrink-0">
                 {isLoading ? 'Lädt...' : `${formatTime(currentTime)} / ${formatTime(duration)}`}
               </span>
             </div>
 
-            <div className="flex items-center justify-between h-7 px-2 bg-[#0a232c] rounded-lg border border-[#c79b78]/30 gap-1 overflow-hidden">
+            <div
+              onClick={handleSeek}
+              onTouchStart={handleSeek}
+              title="Klicken oder tippen zum Spulen"
+              className="flex items-center justify-between h-7 px-2 bg-[#0a232c] rounded-lg border border-[#c79b78]/30 hover:border-[#c79b78]/70 gap-1 overflow-hidden cursor-pointer transition touch-action-none select-none"
+            >
               {Array.from({ length: 28 }).map((_, i) => {
                 const heights = [35, 65, 45, 80, 50, 75, 90, 40, 70, 85, 30, 75, 55, 80, 45, 60];
                 const h = heights[i % heights.length];
+                const isPassed = (i / 28) <= progressPercent;
+
                 return (
                   <div
                     key={i}
-                    className={`w-1 rounded-full transition-all duration-300 ${
-                      isPlaying ? 'bg-gradient-to-t from-[#c79b78] to-[#ebd8c8] animate-pulse' : 'bg-white/20'
+                    className={`w-1 rounded-full transition-all duration-300 pointer-events-none ${
+                      isPlaying
+                        ? 'bg-gradient-to-t from-[#c79b78] to-[#ebd8c8] animate-pulse'
+                        : isPassed
+                        ? 'bg-[#c79b78]'
+                        : 'bg-white/20'
                     }`}
                     style={{
                       height: isPlaying ? `${Math.max(15, (h * (Math.sin(i + currentTime) + 1.5)) / 2.5)}%` : `${h * 0.35}%`,

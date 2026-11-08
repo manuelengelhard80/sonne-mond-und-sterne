@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Play, Pause, Music, RefreshCw, Volume2, Plus, Heart } from 'lucide-react';
+import { Play, Pause, Music, RefreshCw, Volume2, Plus, Heart, Sparkles } from 'lucide-react';
 
 const GUIDED_MEDITATIONS = [
   { title: 'Kopf abschalten und erholen – Geführte Meditation', url: '/m1.mp3' },
@@ -15,7 +15,8 @@ const GUIDED_MEDITATIONS = [
 ];
 
 const TANTRA_MEDITATIONS = [
-  { title: 'Tantra Meditation für Paare – Achtsam begegnen', url: '/tantra.mp3' }
+  { title: 'Tantra Meditation für Paare – Achtsam begegnen', url: '/tantra.mp3', type: 'audio' as const },
+  { title: 'Entspannende Tantra - Meditationsmusik für tiefe Liebe und Verbundenheit', videoId: 'pg52OPw7uhw', type: 'youtube' as const }
 ];
 
 // Reusable Audio Player Component
@@ -34,6 +35,9 @@ const MeditationPlayer: React.FC<AudioPlayerProps> = ({ title, audioUrl }) => {
   useEffect(() => {
     const audio = audioRef.current;
     if (!audio) return;
+
+    audio.src = audioUrl;
+    audio.load();
 
     const updateTime = () => setCurrentTime(audio.currentTime);
     const handleLoaded = () => {
@@ -101,6 +105,10 @@ const MeditationPlayer: React.FC<AudioPlayerProps> = ({ title, audioUrl }) => {
       window.dispatchEvent(new CustomEvent('app-audio-play', { detail: { id: audioUrl } }));
       setIsLoading(true);
 
+      if (!audio.src || audio.src === '' || audio.src === window.location.href) {
+        audio.src = audioUrl;
+      }
+
       const playPromise = audio.play();
       if (playPromise !== undefined) {
         playPromise
@@ -109,7 +117,9 @@ const MeditationPlayer: React.FC<AudioPlayerProps> = ({ title, audioUrl }) => {
             setIsLoading(false);
           })
           .catch((err) => {
-            console.warn('Initial play promise notice, retrying:', err);
+            console.warn('Initial play notice, setting src & retrying:', err);
+            audio.src = audioUrl;
+            audio.load();
             audio.play()
               .then(() => {
                 setIsPlaying(true);
@@ -217,6 +227,123 @@ const MeditationPlayer: React.FC<AudioPlayerProps> = ({ title, audioUrl }) => {
   );
 };
 
+
+
+// Reusable Pure Audio Player for YouTube Streams (No Video Display)
+export interface YouTubeAudioPlayerProps {
+  title: string;
+  videoId: string;
+}
+
+export const YouTubeAudioPlayer: React.FC<YouTubeAudioPlayerProps> = ({ title, videoId }) => {
+  const [isPlaying, setIsPlaying] = useState(false);
+  const [elapsedTime, setElapsedTime] = useState(0);
+  const audioId = `youtube-${videoId}`;
+
+  const togglePlay = () => {
+    if (isPlaying) {
+      setIsPlaying(false);
+    } else {
+      window.dispatchEvent(new CustomEvent('app-audio-play', { detail: { id: audioId } }));
+      setIsPlaying(true);
+    }
+  };
+
+  useEffect(() => {
+    let timer: NodeJS.Timeout;
+    if (isPlaying) {
+      timer = setInterval(() => {
+        setElapsedTime((prev) => prev + 1);
+      }, 1000);
+    }
+    return () => clearInterval(timer);
+  }, [isPlaying]);
+
+  useEffect(() => {
+    const handleGlobalPause = (e: any) => {
+      if (e.detail?.id !== audioId) {
+        setIsPlaying(false);
+      }
+    };
+    window.addEventListener('app-audio-play', handleGlobalPause);
+    return () => window.removeEventListener('app-audio-play', handleGlobalPause);
+  }, [audioId]);
+
+  const formatTime = (secs: number) => {
+    if (isNaN(secs) || secs === 0) return '0:00';
+    const m = Math.floor(secs / 60);
+    const s = Math.floor(secs % 60);
+    return `${m}:${s < 10 ? '0' : ''}${s}`;
+  };
+
+  return (
+    <div className="bg-[#071920]/90 border-2 border-[#c79b78]/70 rounded-2xl p-3.5 sm:p-5 shadow-xl backdrop-blur-md flex flex-row items-center gap-3.5 sm:gap-4 relative overflow-hidden">
+      {/* Hidden YouTube audio iframe engine */}
+      {isPlaying && (
+        <iframe
+          src={`https://www.youtube-nocookie.com/embed/${videoId}?autoplay=1&enablejsapi=1&playsinline=1`}
+          title={title}
+          className="w-px h-px opacity-0 pointer-events-none absolute top-0 left-0"
+          allow="autoplay; encrypted-media"
+        />
+      )}
+
+      <button
+        onClick={togglePlay}
+        aria-label={isPlaying ? 'Pause' : 'Play'}
+        className="w-11 h-11 sm:w-12 sm:h-12 rounded-xl bg-[#0a232c] border-2 border-[#c79b78] flex items-center justify-center shrink-0 shadow-lg transition active:scale-95 group cursor-pointer"
+      >
+        {isPlaying ? (
+          <Pause className="w-5 h-5 text-[#c79b78] fill-[#c79b78]" />
+        ) : (
+          <Play className="w-5 h-5 text-[#c79b78] fill-[#c79b78] ml-0.5" />
+        )}
+      </button>
+
+      <div className="flex-1 w-full space-y-1.5 min-w-0">
+        <div className="flex items-center justify-between text-xs gap-2">
+          <div className="flex items-center gap-1.5 min-w-0 flex-1 overflow-hidden">
+            <Music className="w-3.5 h-3.5 text-[#c79b78] shrink-0" />
+            <div className="overflow-hidden whitespace-nowrap min-w-0 flex-1 relative [mask-image:linear-gradient(to_right,black_85%,transparent_100%)]">
+              <div className="animate-marquee inline-flex items-center gap-6 font-serif-serif font-bold text-[#ebd8c8]">
+                <span>{title}</span>
+                <span className="text-[#c79b78]/60 text-[10px]">✦</span>
+                <span>{title}</span>
+                <span className="text-[#c79b78]/60 text-[10px]">✦</span>
+              </div>
+            </div>
+          </div>
+          <span className="text-white/70 font-mono text-[11px] shrink-0">
+            {formatTime(elapsedTime)}
+          </span>
+        </div>
+
+        <div className="flex items-center justify-between h-7 px-2 bg-[#0a232c] rounded-lg border border-[#c79b78]/30 gap-1 overflow-hidden">
+          {Array.from({ length: 28 }).map((_, i) => {
+            const heights = [35, 65, 45, 80, 50, 75, 90, 40, 70, 85, 30, 75, 55, 80, 45, 60];
+            const h = heights[i % heights.length];
+
+            return (
+              <div
+                key={i}
+                className={`w-1 rounded-full transition-all duration-300 pointer-events-none ${
+                  isPlaying
+                    ? 'bg-gradient-to-t from-[#c79b78] to-[#ebd8c8] animate-pulse'
+                    : 'bg-white/20'
+                }`}
+                style={{
+                  height: isPlaying ? `${Math.max(15, (h * (Math.sin(i + 1) + 1.5)) / 2.5)}%` : `${h * 0.35}%`,
+                  animationDelay: `${i * 0.08}s`,
+                }}
+              />
+            );
+          })}
+        </div>
+      </div>
+    </div>
+  );
+};
+
 export const MeditationSpace: React.FC = () => {
   const [isGuidedExpanded, setIsGuidedExpanded] = useState(false);
   const [isTantraExpanded, setIsTantraExpanded] = useState(false);
@@ -232,10 +359,9 @@ export const MeditationSpace: React.FC = () => {
           <h2 className="font-serif-serif text-3xl sm:text-4xl font-bold gold-gradient-text">
             Geführte Meditationen
           </h2>
-          <div className="text-sm text-white/80 max-w-md mx-auto space-y-1">
-            <p className="font-serif-serif italic text-[#ebd8c8]">by Alexander Wahler</p>
-            <p>Tauche ein in die Stille und finde innere Ruhe und neue Kraft.</p>
-          </div>
+          <p className="text-sm text-white/80 max-w-md mx-auto">
+            Tauche ein in die Stille und finde innere Ruhe und neue Kraft.
+          </p>
         </div>
 
         <div className="space-y-6">
@@ -262,9 +388,9 @@ export const MeditationSpace: React.FC = () => {
           </div>
         )}
 
-        <div className="text-center pt-2 border-t border-white/10 flex items-center justify-center gap-2 text-xs text-white/60">
-          <Volume2 className="w-3.5 h-3.5 text-[#dfba61]" />
-          <span>Schenke dir diese Zeit der Ruhe und Geborgenheit.</span>
+        <div className="text-center pt-4 border-t border-white/10 flex items-center justify-center gap-2 text-xs text-white/70">
+          <Sparkles className="w-4 h-4 text-[#c79b78] shrink-0" />
+          <span className="font-serif-serif italic text-[#ebd8c8]">Meditationen by Alexander Wahler</span>
         </div>
       </div>
 
@@ -281,7 +407,11 @@ export const MeditationSpace: React.FC = () => {
 
         <div className="space-y-6">
           {displayedTantra.map((med, idx) => (
-            <MeditationPlayer key={idx} title={med.title} audioUrl={med.url} />
+            med.type === 'youtube' ? (
+              <YouTubeAudioPlayer key={idx} title={med.title} videoId={med.videoId!} />
+            ) : (
+              <MeditationPlayer key={idx} title={med.title} audioUrl={med.url!} />
+            )
           ))}
         </div>
 

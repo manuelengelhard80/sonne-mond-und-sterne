@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { ActiveTab, SoundMode } from './types';
 import { Navigation } from './components/Navigation';
 import { StorySanctuary } from './components/StorySanctuary';
@@ -89,6 +89,8 @@ function MainApp() {
     };
   }, []);
 
+  const mindfulnessAudioRef = useRef<HTMLAudioElement | null>(null);
+
   // Countdown timer for 5 Minuten Achtsamkeit audio
   useEffect(() => {
     let interval: NodeJS.Timeout;
@@ -96,8 +98,7 @@ function MainApp() {
       interval = setInterval(() => {
         setMindfulnessTimeLeft((prev) => {
           if (prev <= 1) {
-            soundSynth.playSoftBell();
-            soundSynth.stopCurrent();
+            mindfulnessAudioRef.current?.pause();
             setIsMindfulnessPlaying(false);
             setCurrentSound('off');
             return 300;
@@ -110,13 +111,16 @@ function MainApp() {
   }, [isMindfulnessPlaying, mindfulnessTimeLeft]);
 
   const toggleMindfulnessAudio = () => {
+    const audio = mindfulnessAudioRef.current;
     if (isMindfulnessPlaying) {
-      soundSynth.stopCurrent();
+      audio?.pause();
       setIsMindfulnessPlaying(false);
       setCurrentSound('off');
     } else {
-      soundSynth.playSoftBell();
-      soundSynth.playSound('sun');
+      if (audio) {
+        audio.currentTime = 0;
+        audio.play().catch((err) => console.warn('Mindfulness audio play notice:', err));
+      }
       setIsMindfulnessPlaying(true);
       setCurrentSound('sun');
       if (mindfulnessTimeLeft <= 0) {
@@ -141,6 +145,11 @@ function MainApp() {
 
   return (
     <div className="min-h-screen bg-[#071920] text-white flex flex-col justify-between transition-colors duration-700 w-full overflow-x-hidden relative">
+      <audio
+        ref={mindfulnessAudioRef}
+        src="/five_min.mp3"
+        preload="metadata"
+      />
       
       {/* Floating Notification Toast Banner */}
       {activeToast && (

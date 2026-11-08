@@ -40,6 +40,13 @@
         } catch (e) {}
       })();
 
+      // Ensure mobile screen orientation is completely unlocked for landscape rotation
+      if (window.screen && window.screen.orientation && typeof window.screen.orientation.unlock === 'function') {
+        try {
+          window.screen.orientation.unlock().catch(function() {});
+        } catch (e) {}
+      }
+
       window.deferredInstallPrompt = null;
       window.addEventListener('beforeinstallprompt', function(e) {
         e.preventDefault();

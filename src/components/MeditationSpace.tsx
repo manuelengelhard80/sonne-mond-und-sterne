@@ -1,8 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Play, Pause, Music, RefreshCw, Volume2 } from 'lucide-react';
+import { Play, Pause, Music, RefreshCw, Volume2, Plus, Heart } from 'lucide-react';
 
-const MEDITATION_FILES = [
-  { title: 'Tantra Meditation für Paare – Achtsam begegnen', url: '/tantra.mp3' },
+const GUIDED_MEDITATIONS = [
   { title: 'Kopf abschalten und erholen – Geführte Meditation', url: '/m1.mp3' },
   { title: 'Inneren Kritiker abstellen – Geführte Meditation', url: '/m2.mp3' },
   { title: 'Gedankenkarussell und inneren Kritiker beruhigen – Selbstmitgefühl', url: '/m3.mp3' },
@@ -13,6 +12,10 @@ const MEDITATION_FILES = [
   { title: 'Unsicherheit & Angst loslassen – Ideales Selbst werden', url: '/m8.mp3' },
   { title: 'Dankbarkeit kultivieren – Geführte Meditation', url: '/m9.mp3' },
   { title: 'Dankbarkeit und positives Denken – Geführte Meditation', url: '/m10.mp3' }
+];
+
+const TANTRA_MEDITATIONS = [
+  { title: 'Tantra Meditation für Paare – Achtsam begegnen', url: '/tantra.mp3' }
 ];
 
 // Reusable Audio Player Component
@@ -31,10 +34,6 @@ const MeditationPlayer: React.FC<AudioPlayerProps> = ({ title, audioUrl }) => {
   useEffect(() => {
     const audio = audioRef.current;
     if (!audio) return;
-
-    // Direct assignment and load metadata
-    audio.src = audioUrl;
-    audio.load();
 
     const updateTime = () => setCurrentTime(audio.currentTime);
     const handleLoaded = () => {
@@ -80,6 +79,7 @@ const MeditationPlayer: React.FC<AudioPlayerProps> = ({ title, audioUrl }) => {
       audio.removeEventListener('timeupdate', updateTime);
       audio.removeEventListener('loadedmetadata', handleLoaded);
       audio.removeEventListener('durationchange', handleLoaded);
+      audio.removeEventListener('canplay', () => setIsLoading(false));
       audio.removeEventListener('ended', handleEnded);
       audio.removeEventListener('waiting', handleWaiting);
       audio.removeEventListener('playing', handlePlaying);
@@ -96,21 +96,43 @@ const MeditationPlayer: React.FC<AudioPlayerProps> = ({ title, audioUrl }) => {
     if (isPlaying) {
       audio.pause();
       setIsPlaying(false);
+      setIsLoading(false);
     } else {
       window.dispatchEvent(new CustomEvent('app-audio-play', { detail: { id: audioUrl } }));
       setIsLoading(true);
-      if (!audio.src || !audio.src.includes(audioUrl)) {
-        audio.src = audioUrl;
-        audio.load();
+
+      const playPromise = audio.play();
+      if (playPromise !== undefined) {
+        playPromise
+          .then(() => {
+            setIsPlaying(true);
+            setIsLoading(false);
+          })
+          .catch((err) => {
+            console.warn('Initial play promise notice, retrying:', err);
+            audio.play()
+              .then(() => {
+                setIsPlaying(true);
+                setIsLoading(false);
+              })
+              .catch((retryErr) => {
+                console.warn('Retry playback error:', retryErr);
+                setIsLoading(false);
+                setIsPlaying(false);
+              });
+          });
       }
-      audio.play().then(() => {
-        setIsPlaying(true);
-        setIsLoading(false);
-      }).catch((err) => {
-        console.warn('Audio playback error:', err);
-        setIsLoading(false);
-      });
     }
+  };
+
+  const handleSeek = (e: React.MouseEvent<HTMLDivElement>) => {
+    const audio = audioRef.current;
+    if (!audio || !duration || duration <= 0) return;
+    const rect = e.currentTarget.getBoundingClientRect();
+    const clickX = e.clientX - rect.left;
+    const percentage = Math.max(0, Math.min(1, clickX / rect.width));
+    audio.currentTime = percentage * duration;
+    setCurrentTime(audio.currentTime);
   };
 
   const formatTime = (secs: number) => {
@@ -120,18 +142,20 @@ const MeditationPlayer: React.FC<AudioPlayerProps> = ({ title, audioUrl }) => {
     return `${m}:${s < 10 ? '0' : ''}${s}`;
   };
 
+  const progressPercent = duration > 0 ? (currentTime / duration) : 0;
+
   return (
     <div className="bg-[#071920]/90 border-2 border-[#c79b78]/70 rounded-2xl p-3.5 sm:p-5 shadow-xl backdrop-blur-md flex flex-row items-center gap-3.5 sm:gap-4 relative overflow-hidden">
       <audio
         ref={audioRef}
         src={audioUrl}
-        preload="metadata" 
+        preload="metadata"
       />
 
       <button
         onClick={togglePlay}
-        disabled={isLoading}
-        className="w-11 h-11 sm:w-12 sm:h-12 rounded-xl bg-[#0a232c] border-2 border-[#c79b78] flex items-center justify-center shrink-0 shadow-lg transition active:scale-95 group disabled:opacity-75"
+        aria-label={isPlaying ? 'Pause' : 'Play'}
+        className="w-11 h-11 sm:w-12 sm:h-12 rounded-xl bg-[#0a232c] border-2 border-[#c79b78] flex items-center justify-center shrink-0 shadow-lg transition active:scale-95 group cursor-pointer"
       >
         {isLoading ? (
           <RefreshCw className="w-5 h-5 text-[#c79b78] animate-spin" />
@@ -160,15 +184,25 @@ const MeditationPlayer: React.FC<AudioPlayerProps> = ({ title, audioUrl }) => {
           </span>
         </div>
 
-        <div className="flex items-center justify-between h-7 px-2 bg-[#0a232c] rounded-lg border border-[#c79b78]/30 gap-1 overflow-hidden">
+        <div
+          onClick={handleSeek}
+          title="Klicken zum Spulen"
+          className="flex items-center justify-between h-7 px-2 bg-[#0a232c] rounded-lg border border-[#c79b78]/30 hover:border-[#c79b78]/70 gap-1 overflow-hidden cursor-pointer transition"
+        >
           {Array.from({ length: 28 }).map((_, i) => {
             const heights = [35, 65, 45, 80, 50, 75, 90, 40, 70, 85, 30, 75, 55, 80, 45, 60];
             const h = heights[i % heights.length];
+            const isPassed = (i / 28) <= progressPercent;
+
             return (
               <div
                 key={i}
-                className={`w-1 rounded-full transition-all duration-300 ${
-                  isPlaying ? 'bg-gradient-to-t from-[#c79b78] to-[#ebd8c8] animate-pulse' : 'bg-white/20'
+                className={`w-1 rounded-full transition-all duration-300 pointer-events-none ${
+                  isPlaying
+                    ? 'bg-gradient-to-t from-[#c79b78] to-[#ebd8c8] animate-pulse'
+                    : isPassed
+                    ? 'bg-[#c79b78]'
+                    : 'bg-white/20'
                 }`}
                 style={{
                   height: isPlaying ? `${Math.max(15, (h * (Math.sin(i + currentTime) + 1.5)) / 2.5)}%` : `${h * 0.35}%`,
@@ -184,28 +218,94 @@ const MeditationPlayer: React.FC<AudioPlayerProps> = ({ title, audioUrl }) => {
 };
 
 export const MeditationSpace: React.FC = () => {
+  const [isGuidedExpanded, setIsGuidedExpanded] = useState(false);
+  const [isTantraExpanded, setIsTantraExpanded] = useState(false);
+
+  const displayedGuided = isGuidedExpanded ? GUIDED_MEDITATIONS : GUIDED_MEDITATIONS.slice(0, 3);
+  const displayedTantra = isTantraExpanded ? TANTRA_MEDITATIONS : TANTRA_MEDITATIONS.slice(0, 3);
+
   return (
     <div className="w-full max-w-4xl mx-auto space-y-12 pb-24">
-      {/* Geführte Meditationen */}
+      {/* 1. Geführte Meditationen Container */}
       <div className="space-y-8 p-6 sm:p-10 rounded-2xl bg-[#0a232c] shadow-2xl border-2 border-[#dfba61] text-white">
         <div className="text-center space-y-2">
           <h2 className="font-serif-serif text-3xl sm:text-4xl font-bold gold-gradient-text">
             Geführte Meditationen
           </h2>
-          <p className="text-sm text-white/80 max-w-md mx-auto">
-            Tauche ein in die Stille und finde neue Kraft.
-          </p>
+          <div className="text-sm text-white/80 max-w-md mx-auto space-y-1">
+            <p className="font-serif-serif italic text-[#ebd8c8]">by Alexander Wahler</p>
+            <p>Tauche ein in die Stille und finde innere Ruhe und neue Kraft.</p>
+          </div>
         </div>
 
         <div className="space-y-6">
-          {MEDITATION_FILES.map((med, idx) => (
+          {displayedGuided.map((med, idx) => (
             <MeditationPlayer key={idx} title={med.title} audioUrl={med.url} />
           ))}
         </div>
 
+        {GUIDED_MEDITATIONS.length > 3 && (
+          <div className="flex justify-center pt-2">
+            <button
+              onClick={() => setIsGuidedExpanded(!isGuidedExpanded)}
+              className="flex items-center gap-3 text-[#dfba61] hover:text-[#ebd8c8] transition-all text-sm font-bold uppercase tracking-[0.15em] group cursor-pointer"
+            >
+              <div
+                className={`flex items-center justify-center w-8 h-8 rounded-full bg-[#dfba61]/10 border border-[#dfba61]/30 group-hover:bg-[#dfba61]/20 group-hover:scale-110 transition-all ${
+                  isGuidedExpanded ? 'rotate-45' : ''
+                }`}
+              >
+                <Plus className="w-4 h-4 text-[#dfba61]" />
+              </div>
+              <span>{isGuidedExpanded ? 'Weniger hören' : 'Mehr hören'}</span>
+            </button>
+          </div>
+        )}
+
         <div className="text-center pt-2 border-t border-white/10 flex items-center justify-center gap-2 text-xs text-white/60">
           <Volume2 className="w-3.5 h-3.5 text-[#dfba61]" />
           <span>Schenke dir diese Zeit der Ruhe und Geborgenheit.</span>
+        </div>
+      </div>
+
+      {/* 2. Tantra Meditation für Paare Container */}
+      <div className="space-y-8 p-6 sm:p-10 rounded-2xl bg-[#0a232c] shadow-2xl border-2 border-[#dfba61] text-white">
+        <div className="text-center space-y-2">
+          <h2 className="font-serif-serif text-3xl sm:text-4xl font-bold gold-gradient-text">
+            Tantra Meditation für Paare
+          </h2>
+          <p className="text-sm text-white/80 max-w-md mx-auto">
+            Achtsam begegnen, tiefe Verbundenheit spüren und gemeinsame Ruhe finden.
+          </p>
+        </div>
+
+        <div className="space-y-6">
+          {displayedTantra.map((med, idx) => (
+            <MeditationPlayer key={idx} title={med.title} audioUrl={med.url} />
+          ))}
+        </div>
+
+        {TANTRA_MEDITATIONS.length > 3 && (
+          <div className="flex justify-center pt-2">
+            <button
+              onClick={() => setIsTantraExpanded(!isTantraExpanded)}
+              className="flex items-center gap-3 text-[#dfba61] hover:text-[#ebd8c8] transition-all text-sm font-bold uppercase tracking-[0.15em] group cursor-pointer"
+            >
+              <div
+                className={`flex items-center justify-center w-8 h-8 rounded-full bg-[#dfba61]/10 border border-[#dfba61]/30 group-hover:bg-[#dfba61]/20 group-hover:scale-110 transition-all ${
+                  isTantraExpanded ? 'rotate-45' : ''
+                }`}
+              >
+                <Plus className="w-4 h-4 text-[#dfba61]" />
+              </div>
+              <span>{isTantraExpanded ? 'Weniger hören' : 'Mehr hören'}</span>
+            </button>
+          </div>
+        )}
+
+        <div className="text-center pt-2 border-t border-white/10 flex items-center justify-center gap-2 text-xs text-white/60">
+          <Heart className="w-3.5 h-3.5 text-[#dfba61] fill-[#dfba61]" />
+          <span>Ein geschützter Raum für Liebe, Vertrauen und echte Nähe.</span>
         </div>
       </div>
     </div>

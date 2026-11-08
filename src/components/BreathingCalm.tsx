@@ -56,7 +56,6 @@ export const BreathingCalm: React.FC = () => {
   const handleNextReset = () => {
     if (currentResetStep < RESET_STEPS.length + 1) {
       setCurrentResetStep(prev => prev + 1);
-      soundSynth.playSoftBell();
     }
   };
 
@@ -147,14 +146,14 @@ export const BreathingCalm: React.FC = () => {
   return (
     <div className="w-full max-w-4xl mx-auto space-y-12 pb-24">
       {/* 1. Innehalten Atemübung Container */}
-      <div className="w-full max-w-2xl mx-auto space-y-8 p-6 sm:p-10 rounded-2xl bg-[#0a232c] shadow-2xl border-2 border-[#dfba61] text-white">
+      <div className="space-y-8 p-6 sm:p-10 rounded-2xl bg-[#0a232c] shadow-2xl border-2 border-[#dfba61] text-white">
         
         <div className="text-center space-y-2">
           <h2 className="font-serif-serif text-3xl sm:text-4xl font-bold gold-gradient-text">
             Innehalten
           </h2>
           <p className="text-sm text-white/80 max-w-md mx-auto">
-            "Kein Ort für Pflichten, keine Aufgabenliste, kein Müssen. Nimm dir diesen Augenblick nur für dich."
+            Beruhigende Atemreise. Nimm dir diesen Augenblick nur für dich.
           </p>
         </div>
 
@@ -303,7 +302,7 @@ export const BreathingCalm: React.FC = () => {
           </div>
 
           {currentResetStep > 0 && currentResetStep < 5 && (
-            <div className="flex flex-col sm:flex-row items-center justify-between gap-4 pt-6 border-t border-white/10">
+            <div className="flex flex-col-reverse sm:flex-row items-center justify-between gap-4 pt-6 border-t border-white/10">
               <button
                 onClick={handleBackReset}
                 className="w-full sm:w-auto px-6 py-3 rounded-xl bg-white/5 border border-white/10 hover:bg-white/10 transition text-sm font-semibold"

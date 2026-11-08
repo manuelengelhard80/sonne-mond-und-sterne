@@ -189,42 +189,44 @@ function MainApp() {
         setActiveTab={setActiveTab}
       />
 
-      {/* 3. Dedicated 5 Minuten Achtsamkeit Audio Controller */}
-      <div className="w-full max-w-5xl mx-auto px-4 sm:px-6 md:px-8 pt-3 pb-1 flex justify-end items-center">
-        <button
-          onClick={toggleMindfulnessAudio}
-          className={`gold-gradient-btn px-4 py-2 rounded-full flex items-center justify-center gap-2.5 transition shadow-lg select-none active:scale-95 ${
-            isMindfulnessPlaying
-              ? 'ring-2 ring-[#c79b78]/60 shadow-[0_0_18px_rgba(199,155,120,0.5)]'
-              : ''
-          }`}
-          title={isMindfulnessPlaying ? '5 Minuten Achtsamkeits-Audio pausieren' : '5 Minuten Achtsamkeits-Audio starten'}
-        >
-          {isMindfulnessPlaying ? (
-            <>
-              <span className="relative flex h-2.5 w-2.5 shrink-0">
-                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#c79b78] opacity-75"></span>
-                <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-[#c79b78]"></span>
-              </span>
-              <Pause className="w-3.5 h-3.5 text-[#c79b78] fill-[#c79b78] shrink-0" />
-              <span className="gold-gradient-text text-xs font-bold">
-                Achtsamkeit läuft · {formatTime(mindfulnessTimeLeft)}
-              </span>
-            </>
-          ) : (
-            <>
-              <div className="w-5 h-5 rounded-full bg-[#c79b78]/20 border border-[#c79b78]/40 flex items-center justify-center shrink-0">
-                <svg className="w-3 h-3 text-[#c79b78] block" viewBox="0 0 16 16" fill="currentColor">
-                  <polygon points="4.25,3.6 11.75,8 4.25,12.4" />
-                </svg>
-              </div>
-              <span className="gold-gradient-text font-bold text-xs tracking-wide">
-                5 Minuten Achtsamkeit
-              </span>
-            </>
-          )}
-        </button>
-      </div>
+      {/* 3. Dedicated 5 Minuten Achtsamkeit Audio Controller (nur bei Geschichten, mittig zentriert) */}
+      {activeTab === 'story' && (
+        <div className="w-full max-w-5xl mx-auto px-4 sm:px-6 md:px-8 pt-3 pb-1 flex justify-center items-center">
+          <button
+            onClick={toggleMindfulnessAudio}
+            className={`gold-gradient-btn px-4 py-2 rounded-full flex items-center justify-center gap-2.5 transition shadow-lg select-none active:scale-95 ${
+              isMindfulnessPlaying
+                ? 'ring-2 ring-[#c79b78]/60 shadow-[0_0_18px_rgba(199,155,120,0.5)]'
+                : ''
+            }`}
+            title={isMindfulnessPlaying ? '5 Minuten Achtsamkeits-Audio pausieren' : '5 Minuten Achtsamkeits-Audio starten'}
+          >
+            {isMindfulnessPlaying ? (
+              <>
+                <span className="relative flex h-2.5 w-2.5 shrink-0">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#c79b78] opacity-75"></span>
+                  <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-[#c79b78]"></span>
+                </span>
+                <Pause className="w-3.5 h-3.5 text-[#c79b78] fill-[#c79b78] shrink-0" />
+                <span className="gold-gradient-text text-xs font-bold">
+                  Achtsamkeit läuft · {formatTime(mindfulnessTimeLeft)}
+                </span>
+              </>
+            ) : (
+              <>
+                <div className="w-5 h-5 rounded-full bg-[#c79b78]/20 border border-[#c79b78]/40 flex items-center justify-center shrink-0">
+                  <svg className="w-3 h-3 text-[#c79b78] block" viewBox="0 0 16 16" fill="currentColor">
+                    <polygon points="4.25,3.6 11.75,8 4.25,12.4" />
+                  </svg>
+                </div>
+                <span className="gold-gradient-text font-bold text-xs tracking-wide">
+                  5 Minuten Achtsamkeit
+                </span>
+              </>
+            )}
+          </button>
+        </div>
+      )}
 
       {/* 4. Main Content Area */}
       <main className="flex-1 py-8 px-4 sm:px-6 md:px-8 max-w-5xl mx-auto w-full flex items-center justify-center">

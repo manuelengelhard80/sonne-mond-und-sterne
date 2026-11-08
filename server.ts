@@ -13,6 +13,18 @@ async function startServer() {
     appType: 'spa',
   });
 
+  // Ensure search engines do not index this private site (HTTP header level)
+  app.use((req, res, next) => {
+    res.setHeader('X-Robots-Tag', 'noindex, nofollow, noarchive');
+    next();
+  });
+
+  // Serve robots.txt directly to block all crawlers
+  app.get('/robots.txt', (_req, res) => {
+    res.type('text/plain');
+    res.send('User-agent: *\nDisallow: /\n');
+  });
+
   // ROBUST STREAMING ROUTE with full RFC 7233 Range Support (Essential for MP3 seeking & metadata)
   app.all(['/*.mp3', '/*.wav'], (req, res, next) => {
     const filePath = path.join(process.cwd(), 'public', decodeURIComponent(req.path));

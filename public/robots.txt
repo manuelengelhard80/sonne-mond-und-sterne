@@ -1,0 +1,3 @@
+# Block all search engines and crawlers from indexing this private application
+User-agent: *
+Disallow: /

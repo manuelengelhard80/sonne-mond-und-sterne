@@ -135,6 +135,14 @@ export const StarrySky: React.FC = () => {
       const unsubscribe = onSnapshot(collection(db, 'shooting_stars'), (snapshot) => {
         const now = Date.now();
 
+        if (snapshot.empty) {
+          // If Firestore is completely fresh, seed default stars so heaven is never empty
+          DEFAULT_STARS.forEach((s) => {
+            setDoc(doc(db, 'shooting_stars', s.id), s).catch(console.error);
+          });
+          return;
+        }
+
         const cloudStars: StarNote[] = [];
         snapshot.docs.forEach((d) => {
           const data = d.data() as StarNote;

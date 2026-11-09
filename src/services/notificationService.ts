@@ -202,11 +202,11 @@ export const getShootingStarPushNotification = (
   const title = '🌠 Neue Sternschnuppe am Himmel!';
   const defaultBody =
     userRole === 'sonne'
-      ? 'Ein Wunsch vom Mond an dich, meine liebe Sonne. ☀️'
-      : 'Ein Wunsch von der Sonne an dich, meine lieber Mond 🌕';
+      ? 'Ein Wunsch vom Mond an dich, meine liebe Sonne. ☀️\nSchau ihn dir an!'
+      : 'Ein Wunsch von der Sonne an dich, meine lieber Mond 🌕\nSchau ihn dir an!';
 
   const body = starTitle && starTitle.trim().length > 0
-    ? `${defaultBody}\n„${starTitle.trim()}“`
+    ? `${starTitle.trim()}\n${defaultBody}`
     : defaultBody;
 
   return { title, body };
@@ -232,18 +232,20 @@ export const getSharedThoughtPushNotification = (
   thoughtNote?: { title?: string; content?: string }
 ): { title: string; body: string } => {
   const isSonne = userRole === 'sonne';
-  const title = isSonne
-    ? '💌 Der Mond 🌕  hat einen Gedanken mit dir geteilt, meine liebe Sonne. ☀️'
-    : '💌 Die  Sonne ☀️ hat einen Gedanken mit dir geteilt, mein lieber Mond. 🌕';
+  const title = '💌 Gedanken teilen...';
 
-  let body = '„In der Stille des Abends spüre ich unsere tiefe Verbundenheit.“ – Neuer Gedanke im SoulSpace.';
+  const baseBody = isSonne
+    ? 'Der Mond 🌕 hat einen Gedanken mit dir geteilt, meine liebe Sonne. ☀️\nSchau ihn dir an!'
+    : 'Die Sonne ☀️ hat einen Gedanken mit dir geteilt, mein lieber Mond. 🌕\nSchau ihn dir an!';
+
+  let body = baseBody;
   if (thoughtNote) {
     if (thoughtNote.title && thoughtNote.content) {
-      body = `„${thoughtNote.title.trim()}“ – ${thoughtNote.content.trim().slice(0, 100)}`;
+      body = `„${thoughtNote.title.trim()}“\n${thoughtNote.content.trim().slice(0, 100)}\n${baseBody}`;
     } else if (thoughtNote.title) {
-      body = `„${thoughtNote.title.trim()}“`;
+      body = `„${thoughtNote.title.trim()}“\n${baseBody}`;
     } else if (thoughtNote.content) {
-      body = `„${thoughtNote.content.trim().slice(0, 100)}“`;
+      body = `„${thoughtNote.content.trim().slice(0, 100)}“\n${baseBody}`;
     }
   }
 
@@ -269,10 +271,10 @@ export const getGuidedMeditationPushNotification = (
   senderRole: UserRoleType
 ): { title: string; body: string } => {
   const isSonne = senderRole === 'sonne';
-  const title = isSonne
-    ? '🧘‍♀️🧘‍♂️ Die Sonne ☀️ lädt dich heute zu einer geführten Meditation ein, mein lieber Mond. 🌕'
-    : '🧘‍♂️🧘‍♀️ Der Mond 🌕 lädt dich heute zu einer geführten Meditation ein, meine liebe Sonne. ☀️';
-  const body = 'Nehmt euch einen Moment, schließt die Augen und findet Ruhe und neue Kraft.';
+  const title = isSonne ? '🧘♀️🧘♂️ Geführten Meditation' : '🧘♂️🧘♀️ Geführten Meditation';
+  const body = isSonne
+    ? 'Die Sonne ☀️ lädt dich heute zu einer geführten Meditation ein, mein lieber Mond. 🌕 Nehmt euch einen Moment, schließt die Augen und findet Ruhe und neue Kraft.'
+    : 'Der Mond 🌕 lädt dich heute zu einer geführten Meditation ein, meine liebe Sonne. ☀️ Nehmt euch einen Moment, schließt die Augen und findet Ruhe und neue Kraft.';
 
   return { title, body };
 };
@@ -296,10 +298,10 @@ export const getCouplesMeditationPushNotification = (
   senderRole: UserRoleType
 ): { title: string; body: string } => {
   const isSonne = senderRole === 'sonne';
-  const title = isSonne
-    ? '🧘‍♀️💞🧘‍♂️ Die Sonne ☀️ lädt dich heute zu einer Paar-Meditation ein, mein lieber Mond. 🌕'
-    : '🧘‍♂️💞🧘‍♀️ Der Mond 🌕 lädt dich heute zu einer Paar-Meditation ein, meine liebe Sonne. ☀️';
-  const body = 'Lass uns gemeinsam in Verbundenheit und tiefe Nähe eintauchen.';
+  const title = '🧘♀️💞🧘♂️ Paar-Meditation';
+  const body = isSonne
+    ? 'Die Sonne ☀️ lädt dich heute zu einer Paar-Meditation ein, mein lieber Mond. 🌕 Lass uns gemeinsam in Verbundenheit und tiefe Nähe eintauchen.'
+    : 'Der Mond 🌕 lädt dich heute zu einer Paar-Meditation ein, meine liebe Sonne. ☀️ Lass uns gemeinsam in Verbundenheit und tiefe Nähe eintauchen.';
 
   return { title, body };
 };

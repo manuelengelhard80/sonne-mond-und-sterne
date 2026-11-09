@@ -241,41 +241,42 @@
   width: 16px;
   height: 16px;
   border-radius: 50%;
-  background: #f5d77f;
+  background: #c79b78;
   border: 2px solid #0a232c;
-  box-shadow: 0 0 10px rgba(245, 215, 127, 0.95), 0 2px 4px rgba(0, 0, 0, 0.6);
+  box-shadow: 0 0 10px rgba(199, 155, 120, 0.75), 0 2px 4px rgba(0, 0, 0, 0.6);
   cursor: grab;
   transition: transform 0.15s ease, background-color 0.15s ease;
 }
 
 .audio-slider::-webkit-slider-thumb:hover {
-  transform: scale(1.25);
-  background: #fff5c5;
+  transform: scale(1.2);
+  background: #c79b78;
 }
 
 .audio-slider::-webkit-slider-thumb:active {
   cursor: grabbing;
-  transform: scale(1.35);
+  transform: scale(1.3);
 }
 
 .audio-slider::-moz-range-thumb {
   width: 16px;
   height: 16px;
   border-radius: 50%;
-  background: #f5d77f;
+  background: #c79b78;
   border: 2px solid #0a232c;
-  box-shadow: 0 0 10px rgba(245, 215, 127, 0.95), 0 2px 4px rgba(0, 0, 0, 0.6);
+  box-shadow: 0 0 10px rgba(199, 155, 120, 0.75), 0 2px 4px rgba(0, 0, 0, 0.6);
   cursor: grab;
   transition: transform 0.15s ease, background-color 0.15s ease;
 }
 
 .audio-slider::-moz-range-thumb:hover {
-  transform: scale(1.25);
-  background: #fff5c5;
+  transform: scale(1.2);
+  background: #c79b78;
 }
 
 .audio-slider::-moz-range-thumb:active {
   cursor: grabbing;
-  transform: scale(1.35);
+  transform: scale(1.3);
 }
+
 

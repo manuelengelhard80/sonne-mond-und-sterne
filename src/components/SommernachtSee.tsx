@@ -83,17 +83,6 @@ export const SommernachtSee: React.FC = () => {
     }
   };
 
-  const handleSeek = (e: React.MouseEvent<HTMLDivElement>) => {
-    const audio = audioRef.current;
-    if (!audio || !duration || duration <= 0) return;
-    const rect = e.currentTarget.getBoundingClientRect();
-    const clickX = e.clientX - rect.left;
-    const percentage = Math.max(0, Math.min(1, clickX / rect.width));
-    const newTime = percentage * duration;
-    audio.currentTime = newTime;
-    setCurrentTime(newTime);
-  };
-
   const formatTime = (secs: number) => {
     if (isNaN(secs) || secs === 0) return '0:00';
     const m = Math.floor(secs / 60);
@@ -107,19 +96,18 @@ export const SommernachtSee: React.FC = () => {
 
   return (
     <div className="w-full max-w-4xl mx-auto space-y-8 pb-12">
-      
-      {/* Main Section Title */}
-      <div className="text-center">
-        <h2 className="font-serif-serif text-3xl sm:text-4xl font-bold gold-gradient-text">
-          Das Mädchen vom See
-        </h2>
-      </div>
-
       {/* Story Content Box */}
       <div className="bg-[#0a232c] border-2 border-[#dfba61] rounded-2xl p-6 sm:p-8 shadow-2xl space-y-6 text-white/90 font-serif-serif text-base sm:text-lg leading-relaxed relative overflow-hidden">
         
         {/* Subtle background glow accent */}
         <div className="absolute -top-12 -right-12 w-48 h-48 bg-[#dfba61]/10 rounded-full blur-3xl pointer-events-none" />
+
+        {/* Story Title inside container above player */}
+        <div className="text-center space-y-2">
+          <h2 className="font-serif-serif text-3xl sm:text-4xl font-bold gold-gradient-text">
+            Das Mädchen vom See
+          </h2>
+        </div>
 
         {/* Audio Player Card */}
         <div className="bg-[#071920]/90 border-2 border-[#c79b78]/70 rounded-2xl p-3.5 sm:p-5 shadow-xl backdrop-blur-md flex flex-row items-center gap-3.5 sm:gap-4 relative overflow-hidden mb-6">
@@ -162,12 +150,8 @@ export const SommernachtSee: React.FC = () => {
               </span>
             </div>
 
-            {/* Interactive Ambient Sound Wave Bar */}
-            <div
-              onClick={handleSeek}
-              title="Klicken zum Spulen"
-              className="flex items-center justify-between h-7 px-2 bg-[#0a232c] rounded-lg border border-[#c79b78]/30 hover:border-[#c79b78]/70 gap-1 overflow-hidden cursor-pointer transition"
-            >
+            {/* Ambient Sound Wave Bar (Non-clickable) */}
+            <div className="flex items-center justify-between h-7 px-2 bg-[#0a232c] rounded-lg border border-[#c79b78]/30 gap-1 overflow-hidden pointer-events-none select-none">
               {Array.from({ length: 28 }).map((_, i) => {
                 const heights = [35, 65, 45, 80, 50, 75, 90, 40, 70, 85, 30, 75, 55, 80, 45, 60];
                 const h = heights[i % heights.length];
@@ -190,6 +174,27 @@ export const SommernachtSee: React.FC = () => {
                   />
                 );
               })}
+            </div>
+
+            {/* Schieberegler zum Vor- und Zurückspulen */}
+            <div className="pt-0.5 flex items-center gap-2">
+              <input
+                type="range"
+                min={0}
+                max={duration && duration > 0 ? duration : 180}
+                step={0.1}
+                value={currentTime}
+                onChange={(e) => {
+                  const newTime = Number(e.target.value);
+                  const audio = audioRef.current;
+                  if (audio) {
+                    audio.currentTime = newTime;
+                    setCurrentTime(newTime);
+                  }
+                }}
+                title="Schieberegler zum Spulen"
+                className="w-full h-1.5 sm:h-2 bg-white/20 rounded-lg appearance-none cursor-pointer accent-[#c79b78] focus:outline-none transition-all"
+              />
             </div>
           </div>
         </div>

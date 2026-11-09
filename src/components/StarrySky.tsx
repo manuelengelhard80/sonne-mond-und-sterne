@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { StarNote } from '../types';
-import { X, Send, Calendar, Clock, Trash2, Sun, Moon, Sparkles, CheckCircle2 } from 'lucide-react';
+import { X, Send, Calendar, Clock, Trash2, Sun, Moon, Sparkles, CheckCircle2, ChevronRight } from 'lucide-react';
 import { CurvedShootingStar } from './CurvedShootingStar';
 import { useUserRole } from '../context/UserRoleContext';
 import { db, ensureAuthenticated } from '../services/firebase';
@@ -101,19 +101,7 @@ interface FlyingMeteorState {
 export const StarrySky: React.FC = () => {
   const { role, displayName, currentUserId } = useUserRole();
 
-  const [stars, setStars] = useState<StarNote[]>(() => {
-    try {
-      const saved = localStorage.getItem('sun_moon_stars');
-      if (saved) {
-        const parsed: StarNote[] = JSON.parse(saved);
-        return parsed.map((s, idx) => normalizeStar(s, idx));
-      }
-      return DEFAULT_STARS;
-    } catch {
-      return DEFAULT_STARS;
-    }
-  });
-
+  const [stars, setStars] = useState<StarNote[]>([]);
   const [selectedStar, setSelectedStar] = useState<StarNote | null>(null);
   const [hoveredStarId, setHoveredStarId] = useState<string | null>(null);
   const [isAdding, setIsAdding] = useState(false);
@@ -134,6 +122,12 @@ export const StarrySky: React.FC = () => {
     ensureAuthenticated().then(() => {
       const unsubscribe = onSnapshot(collection(db, 'shooting_stars'), (snapshot) => {
         const now = Date.now();
+        
+        if (snapshot.empty) {
+          // Fallback to local defaults if nothing in cloud
+          setStars(DEFAULT_STARS.map((s, idx) => normalizeStar(s, idx)));
+          return;
+        }
 
         const cloudStars: StarNote[] = [];
         snapshot.docs.forEach((d) => {
@@ -144,9 +138,8 @@ export const StarrySky: React.FC = () => {
           if (data.expiresAt) {
             const expTime = new Date(data.expiresAt).getTime();
             if (!isNaN(expTime) && expTime <= now) {
-              // Automatically delete expired star from Firestore
               deleteDoc(doc(db, 'shooting_stars', starId)).catch(console.error);
-              return; // Do not display
+              return; 
             }
           }
 
@@ -154,11 +147,6 @@ export const StarrySky: React.FC = () => {
         });
 
         setStars(cloudStars);
-        try {
-          localStorage.setItem('sun_moon_stars', JSON.stringify(cloudStars));
-        } catch {
-          // Ignore storage quota
-        }
       }, (error) => {
         console.warn('Shooting stars listener notice:', error);
       });
@@ -269,7 +257,6 @@ export const StarrySky: React.FC = () => {
 
   const handleSetPresetExpiry = (hoursFromNow: number) => {
     const d = new Date(Date.now() + hoursFromNow * 60 * 60 * 1000);
-    // Format to YYYY-MM-DDTHH:mm for datetime-local input
     const pad = (n: number) => (n < 10 ? '0' + n : n);
     const formatted = `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
     setExpiryDateTime(formatted);
@@ -300,11 +287,10 @@ export const StarrySky: React.FC = () => {
       expiresAt: hasExpiry && expiryDateTime ? new Date(expiryDateTime).toISOString() : null,
     };
 
-    // Save directly to Firestore for live real-time sync with partner
     try {
       await setDoc(doc(db, 'shooting_stars', starId), newStarNote);
     } catch (err) {
-      console.warn('Could not save star to Firestore, keeping locally:', err);
+      console.warn('Firestore error, using local fallback:', err);
       setStars((prev) => [...prev, newStarNote]);
     }
 
@@ -325,7 +311,7 @@ export const StarrySky: React.FC = () => {
     try {
       await deleteDoc(doc(db, 'shooting_stars', starId));
     } catch (err) {
-      console.error('Failed to delete star from cloud:', err);
+      console.error('Delete error:', err);
     }
     setStars((prev) => prev.filter((s) => s.id !== starId));
     setSelectedStar(null);
@@ -338,84 +324,67 @@ export const StarrySky: React.FC = () => {
     const diffMs = expDate.getTime() - now.getTime();
 
     const formattedDate = expDate.toLocaleDateString('de-DE', {
-      day: '2-digit',
-      month: '2-digit',
-      year: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit',
+      day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit',
     });
 
-    if (diffMs <= 0) {
-      return {
-        formattedDate,
-        relativeStr: 'Termin ist erreicht',
-      };
-    }
+    if (diffMs <= 0) return { formattedDate, relativeStr: 'Termin erreicht' };
 
     const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
     const diffDays = Math.floor(diffHours / 24);
 
-    let relativeStr = '';
-    if (diffDays > 0) {
-      relativeStr = `noch ca. ${diffDays} ${diffDays === 1 ? 'Tag' : 'Tage'}`;
-    } else {
-      relativeStr = `noch ca. ${diffHours} ${diffHours === 1 ? 'Stunde' : 'Stunden'}`;
-    }
-
     return {
       formattedDate,
-      relativeStr,
+      relativeStr: diffDays > 0 ? `noch ca. ${diffDays} ${diffDays === 1 ? 'Tag' : 'Tage'}` : `noch ca. ${diffHours} ${diffHours === 1 ? 'Stunde' : 'Stunden'}`,
     };
   };
 
   return (
-    <div className="w-full max-w-5xl mx-auto space-y-6">
+    <div className="w-full max-w-5xl mx-auto space-y-12 pb-24">
       
-      {/* Title & Intro Banner with Cloud Status */}
-      <div className="text-center space-y-2 text-white">
-        <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#dfba61]/20 border border-[#dfba61]/40 text-[#f5d77f] text-xs font-medium">
-          <Sparkles className="w-3.5 h-3.5" />
-          <span>Echtzeit-Sternenhimmel für Sonne & Mond</span>
+      {/* 1. Header Section */}
+      <div className="text-center space-y-4">
+        <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-[#0a232c] border border-[#dfba61]/40 shadow-lg">
+          <Sparkles className="w-4 h-4 text-[#dfba61]" />
+          <span className="text-[#f5d77f] text-xs font-bold uppercase tracking-widest">Himmelsbotschaften</span>
         </div>
-        <h2 className="font-serif-serif text-3xl sm:text-4xl font-bold gold-gradient-text">
-          Sternschnuppen
+        <h2 className="font-serif-serif text-4xl sm:text-5xl font-bold gold-gradient-text leading-tight">
+          Eure Sternschnuppen
         </h2>
-        <p className="text-sm text-white/80 max-w-xl mx-auto leading-relaxed">
-          Tippe auf eine Sternschnuppe, um liebevolle Worte zu lesen – oder klicke an eine freie Stelle am Himmel: Eine feine Sternschnuppe zieht in weicher, sanfter Flugbahn genau an deinen gewählten Ort.
+        <p className="text-sm text-white/70 max-w-2xl mx-auto leading-relaxed font-serif-serif italic">
+          Tippe in den Nachthimmel, um eine neue Sternschnuppe zu schicken. Jede Botschaft leuchtet in Echtzeit für euch beide.
         </p>
       </div>
 
-      {/* Interactive Canvas Sky Box: Deep pure midnight sky */}
+      {/* 2. Interactive Sky Canvas */}
       <div
         ref={skyContainerRef}
         onClick={handleSkyClick}
-        className="relative w-full h-[460px] sm:h-[540px] rounded-2xl overflow-hidden bg-gradient-to-b from-[#050505] via-[#101010] to-[#1a1a1a] border-2 border-[#dfba61]/60 shadow-2xl cursor-crosshair group select-none"
+        className="relative w-full h-[500px] sm:h-[600px] rounded-[2rem] overflow-hidden bg-gradient-to-b from-[#02060e] via-[#050f1e] to-[#0a172e] border-2 border-[#dfba61]/50 shadow-[0_20px_50px_rgba(0,0,0,0.5)] cursor-crosshair group select-none"
       >
-        
-        {/* Celestial Deep Space Atmospheric Glows */}
-        <div className="absolute top-1/4 left-1/3 w-80 h-80 rounded-full bg-[#dfba61]/5 blur-3xl pointer-events-none" />
-        <div className="absolute bottom-10 right-1/4 w-96 h-96 rounded-full bg-[#dfba61]/5 blur-3xl pointer-events-none" />
+        {/* Celestial Atmos */}
+        <div className="absolute top-1/4 left-1/3 w-[500px] h-[500px] rounded-full bg-[#1e2952]/10 blur-[100px] pointer-events-none" />
+        <div className="absolute bottom-10 right-1/4 w-[600px] h-[600px] rounded-full bg-[#dfba61]/5 blur-[120px] pointer-events-none" />
 
-        {/* Ambient background micro-stars */}
-        <div className="absolute inset-0 pointer-events-none opacity-45">
-          {[...Array(40)].map((_, i) => (
+        {/* Distant Stars */}
+        <div className="absolute inset-0 pointer-events-none opacity-40">
+          {[...Array(60)].map((_, i) => (
             <div
               key={i}
               className="absolute bg-white rounded-full"
               style={{
-                top: `${(i * 17) % 95}%`,
-                left: `${(i * 23) % 95}%`,
-                width: `${(i % 3) + 1}px`,
-                height: `${(i % 3) + 1}px`,
-                opacity: 0.25 + (i % 4) * 0.2,
-                animation: `pulse ${(i % 4) + 2.5}s infinite ease-in-out`,
-                animationDelay: `${(i % 5) * 0.7}s`,
+                top: `${(i * 13) % 98}%`,
+                left: `${(i * 31) % 98}%`,
+                width: `${(i % 2) + 1}px`,
+                height: `${(i % 2) + 1}px`,
+                opacity: 0.1 + (i % 5) * 0.15,
+                animation: `pulse ${(i % 3) + 3}s infinite ease-in-out`,
+                animationDelay: `${(i % 5) * 0.8}s`,
               }}
             />
           ))}
         </div>
 
-        {/* Dynamic Flying Shooting Star */}
+        {/* Dynamic Flying Meteor */}
         {flyingMeteor && (
           <div
             className="absolute pointer-events-none z-30 transition-opacity duration-150"
@@ -427,15 +396,15 @@ export const StarrySky: React.FC = () => {
           >
             <CurvedShootingStar
               angle={flyingMeteor.angle}
-              tailLength={38}
+              tailLength={40}
               curvature={flyingMeteor.curvature}
-              starRadius={8.5}
+              starRadius={9}
               glowIntensity="bright"
             />
           </div>
         )}
 
-        {/* Active Landing Beacon (when write modal is open) */}
+        {/* Landing Beacon */}
         {clickPos && isAdding && (
           <div
             className="star-element absolute pointer-events-none z-20"
@@ -443,333 +412,296 @@ export const StarrySky: React.FC = () => {
           >
             <CurvedShootingStar
               angle={clickPos.angle}
-              tailLength={32}
+              tailLength={34}
               curvature={clickPos.curvature}
-              starRadius={8.5}
+              starRadius={9}
               glowIntensity="bright"
             />
-            <div className="absolute -translate-x-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-[#fae298]/30 blur-sm animate-pulse" />
-            <span className="absolute top-6 left-0 -translate-x-1/2 whitespace-nowrap bg-black/90 border border-[#dfba61] text-[#fff5c5] text-[11px] font-medium px-3 py-1 rounded-full shadow-2xl">
-              Stern gelandet · Schreibe deinen Wunsch
-            </span>
+            <div className="absolute -translate-x-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-[#fae298]/20 blur-md animate-pulse" />
           </div>
         )}
 
-        {/* All Existing Authentic Shooting Stars */}
+        {/* Active Stars in the Heavens */}
         {stars.map((s, idx) => {
           const tailAngle = s.angle ?? (idx % 2 === 0 ? 44 : 136);
           const curvature = s.curvature ?? (tailAngle > 90 ? -10 : 10);
-          const isLarge = s.size === 'large';
-          const tailLength = isLarge ? 38 : 32;
-          const starRadius = isLarge ? 9.2 : 8.0;
           const isHovered = hoveredStarId === s.id;
           const hasExpiryDate = Boolean(s.expiresAt);
 
           return (
             <div
               key={s.id}
-              onClick={(e) => {
-                e.stopPropagation();
-                setSelectedStar(s);
-              }}
+              onClick={(e) => { e.stopPropagation(); setSelectedStar(s); }}
               onMouseEnter={() => setHoveredStarId(s.id)}
               onMouseLeave={() => setHoveredStarId(null)}
-              className="star-element absolute cursor-pointer group/meteor z-10 select-none"
+              className="star-element absolute cursor-pointer group/meteor z-10 select-none touch-manipulation"
               style={{ left: `${s.x}%`, top: `${s.y}%` }}
             >
-              {/* Refined Star with all points visible & soft background curved tail */}
               <CurvedShootingStar
                 angle={tailAngle}
-                tailLength={tailLength}
+                tailLength={s.size === 'large' ? 42 : 34}
                 curvature={curvature}
-                starRadius={starRadius}
+                starRadius={s.size === 'large' ? 10 : 8.5}
                 isHovered={isHovered}
               />
 
-              {/* Hit area centered directly over the star */}
-              <div className="absolute -translate-x-1/2 -translate-y-1/2 w-8 h-8 rounded-full flex items-center justify-center">
-                <div className="w-6 h-6 rounded-full bg-[#fae298]/20 blur-sm group-hover/meteor:scale-150 transition-transform duration-300" />
-              </div>
-
-              {/* Elegant Minimal Title Tag with author indicator and expiration badge */}
-              <div className="absolute top-5 left-0 -translate-x-1/2 whitespace-nowrap flex items-center gap-1.5 bg-black/85 border border-[#dfba61]/60 text-[#fae298] text-[11px] font-medium px-2.5 py-0.5 rounded-full opacity-80 group-hover/meteor:opacity-100 transition-opacity shadow-xl pointer-events-none">
-                {s.authorRole === 'sonne' ? (
-                  <Sun className="w-2.5 h-2.5 text-[#dfba61]" />
-                ) : s.authorRole === 'mond' ? (
-                  <Moon className="w-2.5 h-2.5 text-[#f5d77f]" />
-                ) : null}
-                <span>{s.title}</span>
-                {hasExpiryDate && (
-                  <span className="text-[9px] text-[#f5d77f] bg-white/10 px-1 py-0.2 rounded flex items-center gap-0.5">
-                    <Clock className="w-2.5 h-2.5" />
-                    <span>Termin</span>
-                  </span>
-                )}
+              {/* Floating Marquee Label */}
+              <div className="absolute top-6 left-0 -translate-x-1/2 whitespace-nowrap flex items-center gap-2 bg-[#071920]/90 border border-[#dfba61]/40 text-[#ebd8c8] text-[11px] font-bold px-3 py-1 rounded-full opacity-0 group-hover/meteor:opacity-100 transition-all duration-300 shadow-2xl scale-90 group-hover/meteor:scale-100 pointer-events-none overflow-hidden max-w-[150px]">
+                <div className="flex items-center gap-1.5 min-w-0">
+                  {s.authorRole === 'sonne' ? <Sun className="w-3 h-3 text-[#dfba61]" /> : s.authorRole === 'mond' ? <Moon className="w-3 h-3 text-[#f5d77f]" /> : null}
+                  <div className="overflow-hidden whitespace-nowrap relative [mask-image:linear-gradient(to_right,black_85%,transparent_100%)]">
+                    <div className="animate-marquee inline-flex gap-4">
+                      <span>{s.title}</span>
+                      {hasExpiryDate && <Clock className="w-3 h-3 text-[#f5d77f]" />}
+                    </div>
+                  </div>
+                </div>
               </div>
             </div>
           );
         })}
 
-        {/* Instructions overlay banner */}
-        <div className="absolute bottom-4 left-4 right-4 pointer-events-none flex justify-between items-center text-xs text-white/80 bg-black/60 px-4 py-2.5 rounded-xl backdrop-blur-md border border-[#dfba61]/30">
-          <span className="flex items-center gap-2">
-            <span className="w-2 h-2 rounded-full bg-[#fae298] inline-block shadow-[0_0_6px_#fae298]" />
-            Tippe irgendwo am Himmel: Deine Sternschnuppe zieht live für euch beide ein
-          </span>
-          <span className="hidden sm:inline font-medium text-[#fae298]">
-            {stars.length} {stars.length === 1 ? 'Sternschnuppe' : 'Sternschnuppen'} aktiv
-          </span>
+        {/* Instructions */}
+        <div className="absolute bottom-6 left-6 right-6 pointer-events-none flex justify-between items-center text-[10px] sm:text-xs text-white/60 bg-black/40 px-5 py-3 rounded-2xl backdrop-blur-xl border border-white/10">
+          <div className="flex items-center gap-3">
+            <div className="w-2 h-2 rounded-full bg-[#dfba61] shadow-[0_0_10px_#dfba61] animate-pulse" />
+            <span>Klicke am Himmel, um eine Sternschnuppe zu schicken</span>
+          </div>
+          <div className="hidden sm:flex items-center gap-2 text-[#f5d77f]">
+            <Sparkles className="w-3 h-3" />
+            <span className="font-bold">{stars.length} Sterne leuchten</span>
+          </div>
         </div>
-
       </div>
 
+      {/* 3. Redesigned Overview List */}
       {stars.length > 0 && (
-        <div className="bg-[#0a232c] border-2 border-[#dfba61] rounded-2xl p-6 shadow-2xl text-white">
-          <h3 className="font-serif-serif text-xl font-bold gold-gradient-text mb-4 text-center">
-            Alle Sternschnuppen im Überblick
-          </h3>
-          <div className="space-y-4">
+        <div className="space-y-6">
+          <div className="flex items-center gap-4 px-2">
+            <h3 className="font-serif-serif text-2xl font-bold gold-gradient-text">Übersicht aller Wünsche</h3>
+            <div className="h-px flex-1 bg-gradient-to-r from-[#dfba61]/40 to-transparent" />
+          </div>
+          
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
             {stars.map((s) => (
-              <div
+              <button
                 key={s.id}
-                className="p-4 rounded-xl bg-black/40 border border-white/10 hover:border-[#dfba61]/50 transition cursor-pointer"
                 onClick={() => setSelectedStar(s)}
+                className="group relative text-left p-6 rounded-3xl bg-[#0a232c] border-2 border-[#dfba61]/20 hover:border-[#dfba61]/60 transition-all duration-500 shadow-xl hover:shadow-[#dfba61]/10 flex flex-col justify-between min-h-[180px] overflow-hidden"
               >
-                <div className="flex justify-between items-start mb-1">
-                  <h4 className="font-bold text-white/90 text-sm truncate">{s.title}</h4>
-                  <span className="text-[10px] text-white/40 shrink-0 ml-2">{s.date}</span>
+                {/* Subtle Background Icon */}
+                <div className="absolute -bottom-4 -right-4 opacity-5 group-hover:opacity-10 transition-opacity rotate-12 group-hover:rotate-0 duration-700">
+                  {s.authorRole === 'sonne' ? <Sun className="w-32 h-32 text-[#dfba61]" /> : <Moon className="w-32 h-32 text-[#dfba61]" />}
                 </div>
-                <p className="text-xs text-white/60 line-clamp-2">{s.content}</p>
-                <div className="flex items-center gap-2 mt-2 text-[10px] text-white/40">
-                  <span>{s.author}</span>
+
+                <div className="relative z-10 space-y-3">
+                  <div className="flex justify-between items-start">
+                    <div className="flex items-center gap-2">
+                      <div className="w-8 h-8 rounded-full bg-[#dfba61]/10 flex items-center justify-center border border-[#dfba61]/30">
+                        {s.authorRole === 'sonne' ? <Sun className="w-4 h-4 text-[#dfba61]" /> : <Moon className="w-4 h-4 text-[#f5d77f]" />}
+                      </div>
+                      <span className="text-[10px] font-bold text-[#dfba61] uppercase tracking-tighter">{s.author}</span>
+                    </div>
+                    {s.expiresAt && <Clock className="w-3.5 h-3.5 text-[#f5d77f] animate-pulse" />}
+                  </div>
+
+                  <div>
+                    <h4 className="font-serif-serif text-lg font-bold text-[#ebd8c8] group-hover:text-white transition-colors line-clamp-1">{s.title}</h4>
+                    <p className="text-xs text-white/50 line-clamp-3 mt-1 font-serif-serif italic leading-relaxed">"{s.content}"</p>
+                  </div>
                 </div>
-              </div>
+
+                <div className="relative z-10 pt-4 flex justify-between items-center border-t border-white/5 mt-auto">
+                  <span className="text-[10px] text-white/30 font-mono">{s.date}</span>
+                  <div className="flex items-center gap-1 text-[#dfba61] text-[10px] font-bold uppercase tracking-widest opacity-0 group-hover:opacity-100 -translate-x-2 group-hover:translate-x-0 transition-all">
+                    <span>Lesen</span>
+                    <ChevronRight className="w-3 h-3" />
+                  </div>
+                </div>
+              </button>
             ))}
           </div>
         </div>
       )}
 
-      {/* Shooting Star View Modal */}
+      {/* 4. Modals */}
       {selectedStar && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/75 backdrop-blur-md animate-fade-in">
-          <div className="relative w-full max-w-lg bg-[#0a232c] border-2 border-[#dfba61] rounded-2xl shadow-2xl p-6 sm:p-8 text-white space-y-6">
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 sm:p-6">
+          <div className="absolute inset-0 bg-black/80 backdrop-blur-md" onClick={() => setSelectedStar(null)} />
+          <div className="relative w-full max-w-xl bg-[#0a232c] border-2 border-[#dfba61] rounded-[2.5rem] shadow-[0_0_100px_rgba(223,186,97,0.15)] p-8 sm:p-12 text-white animate-fade-in-up">
             
             <button
               onClick={() => setSelectedStar(null)}
-              className="absolute top-4 right-4 p-2 text-white/70 hover:text-white rounded-full bg-white/10 hover:bg-white/20 transition"
-              title="Schließen"
+              className="absolute top-6 right-6 p-2 text-white/40 hover:text-white rounded-full bg-white/5 transition-all"
             >
-              <X className="w-5 h-5" />
+              <X className="w-6 h-6" />
             </button>
 
-            {/* Edit Mode Content */}
-            <div className="space-y-4">
-              <input
-                type="text"
-                value={selectedStar.title}
-                onChange={(e) => setSelectedStar({ ...selectedStar, title: e.target.value })}
-                className="w-full px-3 py-2 rounded-lg bg-black/40 border border-white/20 text-white text-lg font-bold focus:outline-none focus:border-[#dfba61]"
-              />
-              <textarea
-                rows={3}
-                value={selectedStar.content}
-                onChange={(e) => setSelectedStar({ ...selectedStar, content: e.target.value })}
-                className="w-full px-3 py-2 rounded-lg bg-black/40 border border-white/20 text-white text-sm focus:outline-none focus:border-[#dfba61]"
-              />
-              
-              {/* Expiry Editor */}
-              <div className="p-3.5 rounded-xl bg-black/30 border border-white/15 space-y-3">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <Calendar className="w-4 h-4 text-[#dfba61]" />
-                    <span className="text-xs font-medium text-white/90">
-                      Termin setzen
-                    </span>
-                  </div>
-                  <input
-                    type="checkbox"
-                    checked={!!selectedStar.expiresAt}
-                    onChange={(e) => {
-                      const newExpiry = e.target.checked ? new Date(new Date().setHours(23, 59, 0, 0)).toISOString() : null;
-                      setSelectedStar({ ...selectedStar, expiresAt: newExpiry });
-                    }}
-                    className="w-4 h-4 accent-[#dfba61] rounded cursor-pointer"
-                  />
+            <div className="flex flex-col items-center text-center space-y-6">
+              <div className="w-16 h-16 rounded-full gold-gradient-btn flex items-center justify-center text-[#0a232c] shadow-[0_0_30px_rgba(223,186,97,0.4)]">
+                {selectedStar.authorRole === 'mond' ? <Moon className="w-8 h-8" /> : <Sun className="w-8 h-8" />}
+              </div>
+
+              <div className="space-y-2">
+                <h3 className="font-serif-serif text-3xl sm:text-4xl font-bold gold-gradient-text tracking-tight">
+                  {selectedStar.title}
+                </h3>
+                <div className="flex items-center justify-center gap-3 text-xs text-white/50 uppercase tracking-widest font-bold">
+                  <span>{selectedStar.date}</span>
+                  <span className="w-1 h-1 rounded-full bg-[#dfba61]" />
+                  <span className="text-[#f5d77f]">Von {selectedStar.author}</span>
                 </div>
-                {selectedStar.expiresAt && (
-                  <input
-                    type="datetime-local"
-                    value={selectedStar.expiresAt.substring(0, 16)}
-                    onChange={(e) => setSelectedStar({ ...selectedStar, expiresAt: new Date(e.target.value).toISOString() })}
-                    className="w-full px-3 py-1.5 rounded-lg bg-black/50 border border-white/20 text-white text-xs focus:outline-none focus:border-[#dfba61]"
-                  />
-                )}
+              </div>
+
+              <div className="w-full font-serif-serif text-xl sm:text-2xl leading-relaxed text-[#ebd8c8] italic bg-black/30 p-8 rounded-[2rem] border border-[#dfba61]/20 relative">
+                <Sparkles className="absolute -top-3 -left-3 w-8 h-8 text-[#dfba61]/30" />
+                <span className="relative z-10 whitespace-pre-line">"{selectedStar.content}"</span>
+                <Sparkles className="absolute -bottom-3 -right-3 w-8 h-8 text-[#dfba61]/30" />
+              </div>
+
+              {selectedStar.expiresAt && (() => {
+                const info = formatExpiryNotice(selectedStar.expiresAt);
+                if (!info) return null;
+                return (
+                  <div className="w-full p-5 rounded-2xl bg-[#071920] border border-[#dfba61]/30 flex items-center gap-4 text-left">
+                    <div className="w-10 h-10 rounded-full bg-[#dfba61]/10 flex items-center justify-center border border-[#dfba61]/20">
+                      <Clock className="w-5 h-5 text-[#dfba61]" />
+                    </div>
+                    <div>
+                      <div className="text-[10px] font-bold text-[#dfba61] uppercase tracking-widest">Termin Gültig bis</div>
+                      <div className="text-sm font-serif-serif">{info.formattedDate} ({info.relativeStr})</div>
+                    </div>
+                  </div>
+                );
+              })()}
+
+              <div className="flex items-center justify-between w-full pt-4">
+                <button
+                  onClick={() => handleDeleteStar(selectedStar.id)}
+                  className="flex items-center gap-2 text-xs text-white/30 hover:text-red-400 transition-colors group"
+                >
+                  <Trash2 className="w-4 h-4 group-hover:scale-110 transition-transform" />
+                  <span>Stern verabschieden</span>
+                </button>
+                <button
+                  onClick={() => setSelectedStar(null)}
+                  className="gold-gradient-btn px-10 py-3 rounded-full text-[#0a232c] font-black text-sm uppercase tracking-tighter active:scale-95 transition-all shadow-xl"
+                >
+                  Schließen
+                </button>
               </div>
             </div>
-            
-            <div className="flex items-center justify-between pt-2">
-              <button
-                type="button"
-                onClick={() => { handleDeleteStar(selectedStar.id); setSelectedStar(null); }}
-                className="p-2 text-white/50 hover:text-red-400 rounded-lg hover:bg-white/5 transition"
-                title="Sternschnuppe löschen"
-              >
-                <Trash2 className="w-5 h-5" />
-              </button>
-
-              <button
-                onClick={async () => {
-                  try {
-                    await setDoc(doc(db, 'shooting_stars', selectedStar.id), selectedStar);
-                    setSelectedStar(null);
-                  } catch (err) {
-                    console.error('Failed to update star:', err);
-                  }
-                }}
-                className="px-6 py-2.5 rounded-xl gold-gradient-btn text-[#0a232c] font-bold text-xs transition shadow"
-              >
-                Speichern
-              </button>
-            </div>
-
           </div>
         </div>
       )}
 
-      {/* Add Star Modal (Opens calmly after the shooting star arrives) */}
+      {/* Add Star Modal */}
       {isAdding && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/75 backdrop-blur-md animate-fade-in">
-          <div className="relative w-full max-w-lg bg-[#0a232c] border-2 border-[#dfba61] rounded-2xl shadow-2xl p-6 text-white space-y-4">
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 sm:p-6">
+          <div className="absolute inset-0 bg-black/80 backdrop-blur-md" onClick={() => { setIsAdding(false); setClickPos(null); }} />
+          <div className="relative w-full max-w-lg bg-[#0a232c] border-2 border-[#dfba61] rounded-[2.5rem] shadow-2xl p-8 sm:p-10 text-white animate-fade-in-up">
             
             <button
               onClick={() => { setIsAdding(false); setClickPos(null); }}
-              className="absolute top-4 right-4 text-white/70 hover:text-white"
-              title="Abbrechen"
+              className="absolute top-6 right-6 p-2 text-white/40 hover:text-white rounded-full bg-white/5 transition-all"
             >
-              <X className="w-5 h-5" />
+              <X className="w-6 h-6" />
             </button>
 
-            <div className="border-b border-white/10 pb-3">
-              <div className="flex items-center gap-2 text-xs text-[#dfba61] font-semibold mb-1">
-                {role === 'sonne' ? <Sun className="w-3.5 h-3.5" /> : <Moon className="w-3.5 h-3.5" />}
-                <span>Als {displayName}</span>
+            <div className="text-center space-y-4 mb-8">
+              <div className="inline-flex items-center gap-2 text-[10px] font-bold text-[#dfba61] uppercase tracking-widest bg-[#dfba61]/10 px-3 py-1 rounded-full border border-[#dfba61]/20">
+                {role === 'sonne' ? <Sun className="w-3 h-3" /> : <Moon className="w-3 h-3" />}
+                <span>Schreiben als {displayName}</span>
               </div>
-              <h3 className="font-serif-serif text-xl sm:text-2xl font-bold gold-gradient-text">
-                Sternschnuppe verewigen
-              </h3>
-              <p className="text-xs text-white/80 mt-1 leading-relaxed">
-                Deine Sternschnuppe ist gelandet. Sie wird live in der Cloud gespeichert und ist für euch beide sichtbar.
+              <h3 className="font-serif-serif text-3xl font-bold gold-gradient-text">Wunsch verewigen</h3>
+              <p className="text-xs text-white/50 italic leading-relaxed">
+                Deine Sternschnuppe ist gelandet. Verleihe ihr nun deine Worte.
               </p>
             </div>
 
-            <form onSubmit={handleAddStar} className="space-y-4">
-              <div>
-                <label className="block text-xs font-medium text-white/90 mb-1">Titel der Sternschnuppe</label>
+            <form onSubmit={handleAddStar} className="space-y-6">
+              <div className="space-y-1.5">
+                <label className="text-[10px] font-bold text-[#dfba61] uppercase tracking-widest ml-1">Titel</label>
                 <input
                   type="text"
                   required
-                  placeholder="z.B. Für mein Herz, Ein Date am See, Unser Versprechen..."
+                  placeholder="z.B. Unser nächstes Abenteuer..."
                   value={newTitle}
                   onChange={(e) => setNewTitle(e.target.value)}
-                  className="w-full px-3 py-2 rounded-lg bg-black/40 border border-white/20 text-white placeholder-white/40 text-sm focus:outline-none focus:border-[#dfba61]"
+                  className="w-full px-5 py-3 rounded-2xl bg-black/40 border border-white/10 text-white placeholder-white/20 text-sm focus:outline-none focus:border-[#dfba61] transition-all"
                 />
               </div>
 
-              <div>
-                <label className="block text-xs font-medium text-white/90 mb-1">Deine Botschaft / Wunsch</label>
+              <div className="space-y-1.5">
+                <label className="text-[10px] font-bold text-[#dfba61] uppercase tracking-widest ml-1">Botschaft</label>
                 <textarea
                   required
-                  rows={3}
-                  placeholder="Schreibe etwas Liebevolles oder deinen Herzenswunsch..."
+                  rows={4}
+                  placeholder="Was möchtest du sagen? Dein Wunsch wird im Himmel leuchten..."
                   value={newContent}
                   onChange={(e) => setNewContent(e.target.value)}
-                  className="w-full px-3 py-2 rounded-lg bg-black/40 border border-white/20 text-white placeholder-white/40 text-sm focus:outline-none focus:border-[#dfba61]"
+                  className="w-full px-5 py-4 rounded-2xl bg-black/40 border border-white/10 text-white placeholder-white/20 text-sm focus:outline-none focus:border-[#dfba61] transition-all italic font-serif-serif"
                 />
               </div>
 
-              {/* Requirement 2: Optional Appointment / Expiration date */}
-              <div className="p-3.5 rounded-xl bg-black/30 border border-white/15 space-y-3">
+              {/* Appointment / Expiry */}
+              <div className="p-6 rounded-3xl bg-black/30 border border-white/5 space-y-4">
                 <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <Calendar className="w-4 h-4 text-[#dfba61]" />
-                    <span className="text-xs font-medium text-white/90">
-                      Termin setzen (löscht sich nach Ablauf)
-                    </span>
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-full bg-[#dfba61]/10 flex items-center justify-center border border-[#dfba61]/20">
+                      <Calendar className="w-5 h-5 text-[#dfba61]" />
+                    </div>
+                    <div>
+                      <div className="text-[10px] font-bold text-[#dfba61] uppercase tracking-widest">Termin setzen</div>
+                      <div className="text-[9px] text-white/40">Löscht sich nach Ablauf automatisch</div>
+                    </div>
                   </div>
-                  <input
-                    type="checkbox"
-                    id="hasExpiry"
-                    checked={hasExpiry}
-                    onChange={(e) => setHasExpiry(e.target.checked)}
-                    className="w-4 h-4 accent-[#dfba61] rounded cursor-pointer"
-                  />
+                  <div 
+                    onClick={() => setHasExpiry(!hasExpiry)}
+                    className={`w-12 h-6 rounded-full p-1 cursor-pointer transition-colors duration-300 ${hasExpiry ? 'bg-[#dfba61]' : 'bg-white/10'}`}
+                  >
+                    <div className={`w-4 h-4 bg-white rounded-full transition-transform duration-300 ${hasExpiry ? 'translate-x-6' : 'translate-x-0'}`} />
+                  </div>
                 </div>
 
                 {hasExpiry && (
-                  <div className="space-y-2.5 pt-1 animate-fade-in">
-                    <p className="text-[11px] text-white/70">
-                      Sobald dieser Zeitpunkt erreicht ist, verblasst die Sternschnuppe sanft und wird automatisch aus eurem Himmel gelöscht.
-                    </p>
-
-                    {/* Quick Presets */}
-                    <div className="flex flex-wrap gap-1.5 text-xs">
-                      <button
-                        type="button"
-                        onClick={() => handleSetPresetExpiry(12)}
-                        className="px-2.5 py-1 rounded bg-white/10 hover:bg-white/20 text-white/80 transition text-[11px]"
-                      >
-                        In 12 Stunden
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => handleSetPresetExpiry(24)}
-                        className="px-2.5 py-1 rounded bg-white/10 hover:bg-white/20 text-white/80 transition text-[11px]"
-                      >
-                        Morgen
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => handleSetPresetExpiry(72)}
-                        className="px-2.5 py-1 rounded bg-white/10 hover:bg-white/20 text-white/80 transition text-[11px]"
-                      >
-                        In 3 Tagen
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => handleSetPresetExpiry(168)}
-                        className="px-2.5 py-1 rounded bg-white/10 hover:bg-white/20 text-white/80 transition text-[11px]"
-                      >
-                        In 1 Woche
-                      </button>
+                  <div className="space-y-4 pt-2 animate-fade-in">
+                    <div className="flex flex-wrap gap-2">
+                      {[12, 24, 72, 168].map(h => (
+                        <button
+                          key={h}
+                          type="button"
+                          onClick={() => handleSetPresetExpiry(h)}
+                          className="px-3 py-1.5 rounded-xl bg-white/5 border border-white/5 hover:border-[#dfba61]/40 text-[10px] text-white/70 hover:text-[#f5d77f] transition-all"
+                        >
+                          {h === 24 ? 'Morgen' : h === 168 ? '1 Woche' : `${h} Std.`}
+                        </button>
+                      ))}
                     </div>
-
-                    <div className="pt-1">
-                      <label className="block text-[11px] text-white/60 mb-1">Datum & Uhrzeit:</label>
-                      <input
-                        type="datetime-local"
-                        value={expiryDateTime}
-                        onChange={(e) => setExpiryDateTime(e.target.value)}
-                        className="w-full px-3 py-1.5 rounded-lg bg-black/50 border border-white/20 text-white text-xs focus:outline-none focus:border-[#dfba61]"
-                      />
-                    </div>
+                    <input
+                      type="datetime-local"
+                      value={expiryDateTime}
+                      onChange={(e) => setExpiryDateTime(e.target.value)}
+                      className="w-full px-4 py-2.5 rounded-xl bg-black/50 border border-white/10 text-white text-xs focus:outline-none focus:border-[#dfba61]"
+                    />
                   </div>
                 )}
               </div>
 
-              <div className="flex justify-end gap-3 pt-2">
+              <div className="flex items-center gap-4 pt-4">
                 <button
                   type="button"
                   onClick={() => { setIsAdding(false); setClickPos(null); }}
-                  className="px-4 py-2 rounded-lg text-xs font-medium text-white/70 hover:bg-white/10"
+                  className="flex-1 px-6 py-3 rounded-full text-xs font-bold uppercase tracking-widest text-white/40 hover:text-white hover:bg-white/5 transition-all"
                 >
                   Abbrechen
                 </button>
                 <button
                   type="submit"
-                  className="flex items-center gap-1.5 px-5 py-2.5 rounded-lg gold-gradient-btn text-[#0a232c] font-bold text-xs transition shadow"
+                  className="flex-[2] flex items-center justify-center gap-2 px-8 py-4 rounded-full gold-gradient-btn text-[#0a232c] font-black text-xs uppercase tracking-widest transition-all shadow-xl active:scale-95"
                 >
-                  <Send className="w-3.5 h-3.5 text-[#0a232c]" />
-                  <span>Sternschnuppe verewigen</span>
+                  <Send className="w-4 h-4" />
+                  <span>Verewigen</span>
                 </button>
               </div>
             </form>

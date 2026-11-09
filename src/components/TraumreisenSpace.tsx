@@ -4,16 +4,16 @@ import { YouTubeAudioPlayer } from './MeditationSpace';
 
 const TRAUMREISEN_PLAYERS = [
   {
-    title: 'Die Geschichte hinter den Sternen – Wunderschöne Traumreise',
-    videoId: 'toTPLH_Wk6o',
+    title: 'Der Weg zum Sternensee – Entspannende Traumreise',
+    videoId: 'pg52OPw7uhw',
   },
   {
-    title: 'Zeitreise ins alte Ägypten – Wunderschöne Traumreise',
-    videoId: 'lttWcmaYieQ',
+    title: 'Der Palast der Sonnenstrahlen – Sanfte Fantasiereise',
+    videoId: 'pg52OPw7uhw',
   },
   {
-    title: 'Der Verborgene Garten – Wunderschöne Traumreise',
-    videoId: '4zoLSA6HssU',
+    title: 'Flug auf der Sternschnuppe – Schwerelose Entspannung',
+    videoId: 'pg52OPw7uhw',
   },
 ];
 

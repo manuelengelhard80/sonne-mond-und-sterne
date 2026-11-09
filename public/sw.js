@@ -1,5 +1,5 @@
 // Service Worker for Sonne, Mond und Sterne notifications & PWA
-const CACHE_NAME = 'sonne-mond-v6';
+const CACHE_NAME = 'sonne-mond-v8';
 const PRECACHE_ASSETS = [
   '/',
   '/index.html',
@@ -10,6 +10,29 @@ const PRECACHE_ASSETS = [
   '/pwa-icon-maskable-512.png',
   '/apple-touch-icon.png'
 ];
+
+let scheduledMorningNotification = null;
+let morningTimerId = null;
+
+function triggerScheduledNotificationIfDue() {
+  if (!scheduledMorningNotification) return;
+  const now = Date.now();
+  if (now >= scheduledMorningNotification.targetTimestamp) {
+    const { title, body, tag } = scheduledMorningNotification;
+    scheduledMorningNotification = null;
+    if (morningTimerId) {
+      clearTimeout(morningTimerId);
+      morningTimerId = null;
+    }
+    self.registration.showNotification(title, {
+      body,
+      tag: tag || 'daily-morning-affirmation',
+      icon: '/app-icon-selected.jpg',
+      badge: '/app-icon-selected.jpg',
+      vibrate: [200, 100, 200],
+    });
+  }
+}
 
 self.addEventListener('install', (event) => {
   self.skipWaiting();
@@ -28,8 +51,37 @@ self.addEventListener('activate', (event) => {
       return Promise.all(
         keys.filter((key) => key !== CACHE_NAME).map((key) => caches.delete(key))
       );
-    }).then(() => self.clients.claim())
+    }).then(() => {
+      triggerScheduledNotificationIfDue();
+      return self.clients.claim();
+    })
   );
+});
+
+self.addEventListener('message', (event) => {
+  if (event.data && event.data.type === 'SCHEDULE_MORNING_NOTIFICATION') {
+    scheduledMorningNotification = {
+      targetTimestamp: event.data.targetTimestamp,
+      title: event.data.title,
+      body: event.data.body,
+      tag: event.data.tag,
+    };
+    if (morningTimerId) clearTimeout(morningTimerId);
+    const msUntil = scheduledMorningNotification.targetTimestamp - Date.now();
+    if (msUntil > 0 && msUntil < 2147483647) {
+      morningTimerId = setTimeout(() => {
+        triggerScheduledNotificationIfDue();
+      }, msUntil);
+    }
+  }
+});
+
+self.addEventListener('sync', (event) => {
+  triggerScheduledNotificationIfDue();
+});
+
+self.addEventListener('periodicsync', (event) => {
+  triggerScheduledNotificationIfDue();
 });
 
 // Fetch event listener required by Chromium Android to qualify for beforeinstallprompt

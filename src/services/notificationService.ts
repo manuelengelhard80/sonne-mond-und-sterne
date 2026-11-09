@@ -171,13 +171,20 @@ export const sendTestNotification = async (userRole: UserRoleType): Promise<bool
   );
 };
 
+// Helper to return the morning affirmation title based on user role
+export const getMorningAffirmationTitle = (userRole: UserRoleType): string => {
+  return userRole === 'sonne'
+    ? '🌅 Guten Morgen, meine liebe Sonne! ☀️'
+    : '🌅 Guten Morgen, mein lieber Mond! 🌕';
+};
+
 // Test 1: Morgen Affirmation Test
 export const sendTestMorningAffirmation = async (userRole: UserRoleType): Promise<boolean> => {
   const randomIndex = Math.floor(Math.random() * MORNING_AFFIRMATIONS.length);
   const message = MORNING_AFFIRMATIONS[randomIndex];
-  const partnerGreeting = userRole === 'sonne' ? 'meine Sonne ☀️' : 'mein Mond 🌙';
+  const title = getMorningAffirmationTitle(userRole);
   return sendAppNotification(
-    `🌅 Guten Morgen, ${partnerGreeting}!`,
+    title,
     {
       body: `Dein positiver Gedanke für heute: "${message}"`,
       tag: 'test-morgen-affirmation',
@@ -187,13 +194,31 @@ export const sendTestMorningAffirmation = async (userRole: UserRoleType): Promis
   );
 };
 
+// Helper to return the shooting star push notification title and body based on recipient user role
+export const getShootingStarPushNotification = (
+  userRole: UserRoleType,
+  starTitle?: string
+): { title: string; body: string } => {
+  const title = '🌠 Neue Sternschnuppe am Himmel!';
+  const defaultBody =
+    userRole === 'sonne'
+      ? 'Ein Wunsch vom Mond an dich, meine liebe Sonne. ☀️'
+      : 'Ein Wunsch von der Sonne an dich, meine lieber Mond 🌕';
+
+  const body = starTitle && starTitle.trim().length > 0
+    ? `${defaultBody}\n„${starTitle.trim()}“`
+    : defaultBody;
+
+  return { title, body };
+};
+
 // Test 2: Sternschnuppen Test
 export const sendTestShootingStar = async (userRole: UserRoleType): Promise<boolean> => {
-  const partnerName = userRole === 'sonne' ? 'dem Mond' : 'der Sonne';
+  const { title, body } = getShootingStarPushNotification(userRole);
   return sendAppNotification(
-    `✨ Neue Sternschnuppe am Himmel!`,
+    title,
     {
-      body: `Eine neue Wunschnote wurde von ${partnerName} an euren gemeinsamen Sternenhimmel gesetzt.`,
+      body,
       tag: 'test-shooting-star',
     },
     true,
@@ -201,13 +226,37 @@ export const sendTestShootingStar = async (userRole: UserRoleType): Promise<bool
   );
 };
 
+// Helper to return the shared thought push notification title and body based on recipient user role
+export const getSharedThoughtPushNotification = (
+  userRole: UserRoleType,
+  thoughtNote?: { title?: string; content?: string }
+): { title: string; body: string } => {
+  const isSonne = userRole === 'sonne';
+  const title = isSonne
+    ? '💌 Der Mond 🌕  hat einen Gedanken mit dir geteilt, meine liebe Sonne. ☀️'
+    : '💌 Die  Sonne ☀️ hat einen Gedanken mit dir geteilt, mein lieber Mond. 🌕';
+
+  let body = '„In der Stille des Abends spüre ich unsere tiefe Verbundenheit.“ – Neuer Gedanke im SoulSpace.';
+  if (thoughtNote) {
+    if (thoughtNote.title && thoughtNote.content) {
+      body = `„${thoughtNote.title.trim()}“ – ${thoughtNote.content.trim().slice(0, 100)}`;
+    } else if (thoughtNote.title) {
+      body = `„${thoughtNote.title.trim()}“`;
+    } else if (thoughtNote.content) {
+      body = `„${thoughtNote.content.trim().slice(0, 100)}“`;
+    }
+  }
+
+  return { title, body };
+};
+
 // Test 3: Gedanken Teilen Test
 export const sendTestSharedThought = async (userRole: UserRoleType): Promise<boolean> => {
-  const partnerName = userRole === 'sonne' ? 'Der Mond' : 'Die Sonne';
+  const { title, body } = getSharedThoughtPushNotification(userRole);
   return sendAppNotification(
-    `💬 Gedanken geteilt von ${partnerName}`,
+    title,
     {
-      body: `„In der Stille des Abends spüre ich unsere tiefe Verbundenheit.“ – Neuer Gedanke im SoulSpace.`,
+      body,
       tag: 'test-shared-thought',
     },
     true,
@@ -215,13 +264,26 @@ export const sendTestSharedThought = async (userRole: UserRoleType): Promise<boo
   );
 };
 
+// Helper to return the guided meditation push notification based on sender role
+export const getGuidedMeditationPushNotification = (
+  senderRole: UserRoleType
+): { title: string; body: string } => {
+  const isSonne = senderRole === 'sonne';
+  const title = isSonne
+    ? '🧘‍♀️🧘‍♂️ Die Sonne ☀️ lädt dich heute zu einer geführten Meditation ein, mein lieber Mond. 🌕'
+    : '🧘‍♂️🧘‍♀️ Der Mond 🌕 lädt dich heute zu einer geführten Meditation ein, meine liebe Sonne. ☀️';
+  const body = 'Nehmt euch einen Moment, schließt die Augen und findet Ruhe und neue Kraft.';
+
+  return { title, body };
+};
+
 // Invitation 1: Geführte Meditation Einladung
 export const sendGuidedMeditationInvite = async (userRole: UserRoleType): Promise<boolean> => {
-  const senderName = userRole === 'sonne' ? 'Die Sonne' : 'Der Mond';
+  const { title, body } = getGuidedMeditationPushNotification(userRole);
   return sendAppNotification(
-    '🧘 Einladung zu einer Geführten Meditation!',
+    title,
     {
-      body: `${senderName} lädt dich zu einer beruhigenden Geführten Meditation ein. Nimm dir einen Moment für dich, schließe die Augen und finde neue Kraft.`,
+      body,
       tag: 'guided-meditation-invite',
     },
     false,
@@ -229,13 +291,26 @@ export const sendGuidedMeditationInvite = async (userRole: UserRoleType): Promis
   );
 };
 
+// Helper to return the couples meditation push notification based on sender role
+export const getCouplesMeditationPushNotification = (
+  senderRole: UserRoleType
+): { title: string; body: string } => {
+  const isSonne = senderRole === 'sonne';
+  const title = isSonne
+    ? '🧘‍♀️💞🧘‍♂️ Die Sonne ☀️ lädt dich heute zu einer Paar-Meditation ein, mein lieber Mond. 🌕'
+    : '🧘‍♂️💞🧘‍♀️ Der Mond 🌕 lädt dich heute zu einer Paar-Meditation ein, meine liebe Sonne. ☀️';
+  const body = 'Lass uns gemeinsam in Verbundenheit und tiefe Nähe eintauchen.';
+
+  return { title, body };
+};
+
 // Invitation 2: Paar-Meditation Einladung
 export const sendCouplesMeditationInvite = async (userRole: UserRoleType): Promise<boolean> => {
-  const senderName = userRole === 'sonne' ? 'Die Sonne' : 'Der Mond';
+  const { title, body } = getCouplesMeditationPushNotification(userRole);
   return sendAppNotification(
-    '💖 Einladung zu einer Paar-Meditation!',
+    title,
     {
-      body: `${senderName} lädt dich zu einer achtsamen Tantra Paar-Meditation ein. Lass uns gemeinsam in Innehalten, Verbundenheit und tiefe Nähe eintauchen.`,
+      body,
       tag: 'couples-meditation-invite',
     },
     false,
@@ -259,12 +334,40 @@ export const sendDreamJourneyInvite = async (userRole: UserRoleType): Promise<bo
 
 // Test 4: Geführte Meditation Test
 export const sendTestGuidedMeditationInvite = async (userRole: UserRoleType): Promise<boolean> => {
+  const { title, body } = getGuidedMeditationPushNotification(userRole);
+  return sendAppNotification(
+    title,
+    {
+      body,
+      tag: 'test-guided-meditation-invite',
+    },
+    true,
+    'test'
+  );
+};
+
+// Test 6: Himmelsbegegnung Test
+export const sendTestHimmelsbegegnung = async (userRole: UserRoleType): Promise<boolean> => {
+  const isSonne = userRole === 'sonne';
+  return sendAppNotification(
+    isSonne ? '☀️ Sanfte Himmelsbegegnung von deiner Sonne!' : '🌙 Sanfte Himmelsbegegnung von deinem Mond!',
+    {
+      body: 'Sonne & Mond berühren sich... "In den Momenten, in denen Tag und Nacht sich sanft berühren, begegnen sie sich in wahrhaftiger Liebe."',
+      tag: 'test-himmelsbegegnung',
+    },
+    true,
+    'himmelsbegegnung'
+  );
+};
+
+// Test 7: Sommernacht am See Test
+export const sendTestSommernachtAmSeeInvite = async (userRole: UserRoleType): Promise<boolean> => {
   const senderName = userRole === 'sonne' ? 'Die Sonne' : 'Der Mond';
   return sendAppNotification(
-    '🧘 Einladung zu einer Geführten Meditation!',
+    '🌊 Einladung zu einer Sommernacht am See',
     {
-      body: `${senderName} lädt dich zu einer beruhigenden Geführten Meditation ein. Nimm dir einen Moment für dich, schließe die Augen und finde neue Kraft.`,
-      tag: 'test-guided-meditation-invite',
+      body: `${senderName} lädt dich zu einer magischen Sommernacht am See ein. Lass den Alltag hinter dir und genieße die Stille und das sanfte Leuchten der Sterne über dem Wasser.`,
+      tag: 'test-sommernacht-am-see',
     },
     true,
     'test'
@@ -273,11 +376,11 @@ export const sendTestGuidedMeditationInvite = async (userRole: UserRoleType): Pr
 
 // Test 5: Paar-Meditation Test
 export const sendTestCouplesMeditationInvite = async (userRole: UserRoleType): Promise<boolean> => {
-  const senderName = userRole === 'sonne' ? 'Die Sonne' : 'Der Mond';
+  const { title, body } = getCouplesMeditationPushNotification(userRole);
   return sendAppNotification(
-    '💖 Einladung zu einer Paar-Meditation!',
+    title,
     {
-      body: `${senderName} lädt dich zu einer achtsamen Tantra Paar-Meditation ein. Lass uns gemeinsam in Innehalten, Verbundenheit und tiefe Nähe eintauchen.`,
+      body,
       tag: 'test-couples-meditation-invite',
     },
     true,
@@ -300,7 +403,92 @@ export const sendTestDreamJourneyInvite = async (userRole: UserRoleType): Promis
 };
 
 
-// 5:00 AM Morning Positive Message Scheduler
+// Calculate current date/time components in Europe/Berlin timezone
+export const getBerlinDateTimeParts = (date: Date = new Date()) => {
+  const formatter = new Intl.DateTimeFormat('en-US', {
+    timeZone: 'Europe/Berlin',
+    year: 'numeric',
+    month: 'numeric',
+    day: 'numeric',
+    hour: 'numeric',
+    minute: 'numeric',
+    second: 'numeric',
+    hour12: false,
+  });
+
+  const parts = formatter.formatToParts(date);
+  let year = 0;
+  let month = 0;
+  let day = 0;
+  let hour = 0;
+  let minute = 0;
+  let second = 0;
+
+  for (const part of parts) {
+    if (part.type === 'year') year = parseInt(part.value, 10);
+    else if (part.type === 'month') month = parseInt(part.value, 10);
+    else if (part.type === 'day') day = parseInt(part.value, 10);
+    else if (part.type === 'hour') {
+      const h = parseInt(part.value, 10);
+      hour = h === 24 ? 0 : h;
+    } else if (part.type === 'minute') minute = parseInt(part.value, 10);
+    else if (part.type === 'second') second = parseInt(part.value, 10);
+  }
+
+  return { year, month, day, hour, minute, second };
+};
+
+// Returns date string in Berlin timezone: 'YYYY-MM-DD'
+export const getBerlinDateString = (date: Date = new Date()): string => {
+  const { year, month, day } = getBerlinDateTimeParts(date);
+  const m = month < 10 ? `0${month}` : `${month}`;
+  const d = day < 10 ? `0${day}` : `${day}`;
+  return `${year}-${m}-${d}`;
+};
+
+// Returns exact UTC Date object for the next 05:00:00.000 in Europe/Berlin timezone
+export const getNextBerlinFiveAmDate = (): Date => {
+  const now = new Date();
+  const currentBerlin = getBerlinDateTimeParts(now);
+
+  // If currently before 5:00:00 Berlin time, target is today at 5:00:00.
+  // If currently at or after 5:00:00 Berlin time, target is tomorrow at 5:00:00.
+  const isBeforeFive =
+    currentBerlin.hour < 5 ||
+    (currentBerlin.hour === 5 && currentBerlin.minute === 0 && currentBerlin.second === 0);
+
+  let targetYear = currentBerlin.year;
+  let targetMonth = currentBerlin.month; // 1-indexed
+  let targetDay = currentBerlin.day;
+
+  if (!isBeforeFive) {
+    // Tomorrow in Berlin
+    const tomorrowRef = new Date(now.getTime() + 24 * 3600 * 1000);
+    const tomorrowBerlin = getBerlinDateTimeParts(tomorrowRef);
+    targetYear = tomorrowBerlin.year;
+    targetMonth = tomorrowBerlin.month;
+    targetDay = tomorrowBerlin.day;
+  }
+
+  // Start with UTC estimate: 5 AM Berlin is 3 AM (summer) or 4 AM (winter) UTC.
+  let candidate = new Date(Date.UTC(targetYear, targetMonth - 1, targetDay, 3, 0, 0));
+
+  // Iteratively converge to exact 05:00:00 in Europe/Berlin
+  for (let i = 0; i < 5; i++) {
+    const candidateBerlin = getBerlinDateTimeParts(candidate);
+    const diffSeconds =
+      (5 - candidateBerlin.hour) * 3600 +
+      (0 - candidateBerlin.minute) * 60 +
+      (0 - candidateBerlin.second);
+
+    if (diffSeconds === 0) break;
+    candidate = new Date(candidate.getTime() + diffSeconds * 1000);
+  }
+
+  return candidate;
+};
+
+// 5:00 AM Berlin Time Morning Positive Message Scheduler
 export const scheduleDailyMorningAffirmation = (
   userRole: UserRoleType,
   onAffirmationTriggered?: (msg: string) => void
@@ -312,22 +500,27 @@ export const scheduleDailyMorningAffirmation = (
     morningTimerId = null;
   }
 
-  const triggerMorningMessage = () => {
-    const todayStr = new Date().toISOString().slice(0, 10);
+  const triggerMorningMessage = (targetBerlinDateStr?: string) => {
+    const todayBerlinStr = targetBerlinDateStr || getBerlinDateString(new Date());
     const lastSent = localStorage.getItem('last_morning_affirmation_sent');
-    if (lastSent === todayStr) return;
+    if (lastSent === todayBerlinStr) return;
 
     // Pick random affirmation
     const randomIndex = Math.floor(Math.random() * MORNING_AFFIRMATIONS.length);
     const message = MORNING_AFFIRMATIONS[randomIndex];
+    const title = getMorningAffirmationTitle(userRole);
 
-    const partnerGreeting = userRole === 'sonne' ? 'meine Sonne ☀️' : 'mein Mond 🌙';
-    sendAppNotification(`🌅 Guten Morgen, ${partnerGreeting}!`, {
-      body: `Dein positiver Gedanke für heute: "${message}"`,
-      tag: 'daily-morning-affirmation',
-    });
+    sendAppNotification(
+      title,
+      {
+        body: `Dein positiver Gedanke für heute: "${message}"`,
+        tag: `daily-morning-affirmation-${todayBerlinStr}`,
+      },
+      false,
+      'morgen_affirmation'
+    );
 
-    localStorage.setItem('last_morning_affirmation_sent', todayStr);
+    localStorage.setItem('last_morning_affirmation_sent', todayBerlinStr);
     if (onAffirmationTriggered) {
       onAffirmationTriggered(message);
     }
@@ -336,25 +529,67 @@ export const scheduleDailyMorningAffirmation = (
   };
 
   const scheduleNextFiveAm = () => {
-    const now = new Date();
-    const target = new Date();
-    target.setHours(5, 0, 0, 0);
+    const targetDate = getNextBerlinFiveAmDate();
+    const targetBerlinDateStr = getBerlinDateString(targetDate);
+    const msUntilFive = Math.max(1000, targetDate.getTime() - Date.now());
 
-    // If 5:00 AM already passed today, target tomorrow 5:00 AM
-    if (now.getTime() >= target.getTime()) {
-      target.setDate(target.getDate() + 1);
+    // 1. In-page timer
+    if (morningTimerId) {
+      window.clearTimeout(morningTimerId);
     }
+    morningTimerId = window.setTimeout(() => {
+      triggerMorningMessage(targetBerlinDateStr);
+    }, msUntilFive);
 
-    const msUntilFive = target.getTime() - now.getTime();
-    morningTimerId = window.setTimeout(triggerMorningMessage, msUntilFive);
+    // 2. Service Worker Native Scheduling & TimestampTrigger for exact arrival even in background
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.ready.then((reg) => {
+        const randomIndex = Math.floor(Math.random() * MORNING_AFFIRMATIONS.length);
+        const message = MORNING_AFFIRMATIONS[randomIndex];
+        const title = getMorningAffirmationTitle(userRole);
+
+        // A. Chromium Notification Triggers API (schedules directly in Android AlarmManager)
+        if ('showTrigger' in Notification.prototype && typeof (window as any).TimestampTrigger !== 'undefined') {
+          try {
+            reg.showNotification(title, {
+              body: `Dein positiver Gedanke für heute: "${message}"`,
+              icon: '/app-icon-selected.jpg',
+              badge: '/app-icon-selected.jpg',
+              tag: `daily-morning-affirmation-${targetBerlinDateStr}`,
+              showTrigger: new (window as any).TimestampTrigger(targetDate.getTime()),
+            } as any);
+          } catch (e) {
+            console.warn('TimestampTrigger notice:', e);
+          }
+        }
+
+        // B. Send message to Service Worker for background timer check
+        const sw = reg.active || navigator.serviceWorker.controller;
+        if (sw) {
+          sw.postMessage({
+            type: 'SCHEDULE_MORNING_NOTIFICATION',
+            targetTimestamp: targetDate.getTime(),
+            title,
+            body: `Dein positiver Gedanke für heute: "${message}"`,
+            tag: `daily-morning-affirmation-${targetBerlinDateStr}`,
+          });
+        }
+      }).catch((err) => {
+        console.warn('Service worker morning schedule notice:', err);
+      });
+    }
   };
 
-  // If user opens the app in the morning (5:00 AM - 11:59 AM) and hasn't received today's message:
+  // Check if we are currently right at 5:00 AM (within 5:00 - 5:15 AM window)
   const now = new Date();
-  const todayStr = now.toISOString().slice(0, 10);
+  const berlinNow = getBerlinDateTimeParts(now);
+  const todayBerlinStr = getBerlinDateString(now);
   const lastSent = localStorage.getItem('last_morning_affirmation_sent');
-  if (now.getHours() >= 5 && now.getHours() < 12 && lastSent !== todayStr) {
-    setTimeout(triggerMorningMessage, 2500);
+
+  // ONLY catch up if currently between 05:00 and 05:15 Berlin time today.
+  // Never fire hours late (e.g. at 8:00 AM or 11:00 AM) when user opens the app!
+  if (berlinNow.hour === 5 && berlinNow.minute <= 15 && lastSent !== todayBerlinStr) {
+    triggerMorningMessage(todayBerlinStr);
   } else {
     scheduleNextFiveAm();
   }
@@ -391,11 +626,16 @@ export const listenForPartnerActivities = (
           // Check if this star is from the partner
           const isFromPartner = data.authorRole ? data.authorRole !== userRole : (currentUserId ? data.authorUid !== currentUserId : true);
           if (isFromPartner) {
-            const authorTitle = data.authorRole === 'sonne' ? 'der Sonne ☀️' : 'dem Mond 🌙';
-            sendAppNotification('✨ Eine neue Sternschnuppe am Himmel!', {
-              body: `"${data.title || 'Neuer Wunsch'}" – von ${data.author || authorTitle}`,
-              tag: `star-${change.doc.id}`,
-            });
+            const { title, body } = getShootingStarPushNotification(userRole, data.title);
+            sendAppNotification(
+              title,
+              {
+                body,
+                tag: `star-${change.doc.id}`,
+              },
+              false,
+              'sternschnuppe'
+            );
           }
         }
       });
@@ -422,11 +662,19 @@ export const listenForPartnerActivities = (
           // Check if this thought is from the partner
           const isFromPartner = data.authorRole ? data.authorRole !== userRole : (currentUserId ? data.authorUid !== currentUserId : true);
           if (isFromPartner) {
-            const authorTitle = data.authorRole === 'sonne' ? 'Sonne ☀️' : 'Mond 🌙';
-            sendAppNotification(`💌 Neuer Gedanke von ${data.authorName || authorTitle}!`, {
-              body: `"${data.title || 'Gedanke'}" – ${data.content ? data.content.slice(0, 90) : ''}`,
-              tag: `thought-${change.doc.id}`,
+            const { title, body } = getSharedThoughtPushNotification(userRole, {
+              title: data.title,
+              content: data.content,
             });
+            sendAppNotification(
+              title,
+              {
+                body,
+                tag: `thought-${change.doc.id}`,
+              },
+              false,
+              'gedanken'
+            );
           }
         }
       });

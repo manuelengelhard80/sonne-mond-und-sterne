@@ -30,6 +30,8 @@ import {
   sendTestGuidedMeditationInvite,
   sendTestCouplesMeditationInvite,
   sendTestDreamJourneyInvite,
+  sendTestHimmelsbegegnung,
+  sendTestSommernachtAmSeeInvite,
   isNotificationSupported,
   getNotificationLogs,
   clearNotificationLogs,
@@ -179,6 +181,18 @@ export const SettingsSpace: React.FC = () => {
   const handleTestGuidedMeditationInvite = async () => {
     await ensurePermissionAndSend(() => sendTestGuidedMeditationInvite(selectedRole));
     setTestFeedback('Test: Geführte Meditation Einladung gesendet & im Log vermerkt!');
+    setTimeout(() => setTestFeedback(null), 4000);
+  };
+
+  const handleTestHimmelsbegegnung = async () => {
+    await ensurePermissionAndSend(() => sendTestHimmelsbegegnung(selectedRole));
+    setTestFeedback('Test: Himmelsbegegnung-Mitteilung gesendet & im Log vermerkt!');
+    setTimeout(() => setTestFeedback(null), 4000);
+  };
+
+  const handleTestSommernachtAmSee = async () => {
+    await ensurePermissionAndSend(() => sendTestSommernachtAmSeeInvite(selectedRole));
+    setTestFeedback('Test: Sommernacht-Einladung gesendet & im Log vermerkt!');
     setTimeout(() => setTestFeedback(null), 4000);
   };
 
@@ -480,7 +494,7 @@ export const SettingsSpace: React.FC = () => {
             className="p-3 rounded-2xl bg-white/5 border border-[#c79b78]/40 hover:border-[#c79b78] hover:bg-white/10 text-left transition space-y-1.5 group cursor-pointer"
           >
             <div className="flex items-center justify-between">
-              <span className="text-base">✨</span>
+              <span className="text-base">🌠</span>
               <span className="px-2 py-0.5 rounded-full bg-[#c79b78]/20 text-[#ebd8c8] text-[9px] font-bold uppercase">
                 Test
               </span>
@@ -500,7 +514,7 @@ export const SettingsSpace: React.FC = () => {
             className="p-3 rounded-2xl bg-white/5 border border-[#c79b78]/40 hover:border-[#c79b78] hover:bg-white/10 text-left transition space-y-1.5 group cursor-pointer"
           >
             <div className="flex items-center justify-between">
-              <span className="text-base">💬</span>
+              <span className="text-base">💌</span>
               <span className="px-2 py-0.5 rounded-full bg-[#c79b78]/20 text-[#ebd8c8] text-[9px] font-bold uppercase">
                 Test
               </span>
@@ -530,6 +544,46 @@ export const SettingsSpace: React.FC = () => {
             </div>
             <p className="text-[10px] text-white/60 leading-tight">
               Testet die Einladung zu einer Geführten Meditation.
+            </p>
+          </button>
+
+          {/* Test 5: Himmelsbegegnung */}
+          <button
+            type="button"
+            onClick={handleTestHimmelsbegegnung}
+            className="p-3 rounded-2xl bg-white/5 border border-[#c79b78]/40 hover:border-[#c79b78] hover:bg-white/10 text-left transition space-y-1.5 group cursor-pointer"
+          >
+            <div className="flex items-center justify-between">
+              <Heart className="w-4 h-4 text-[#c79b78]" />
+              <span className="px-2 py-0.5 rounded-full bg-[#c79b78]/20 text-[#ebd8c8] text-[9px] font-bold uppercase">
+                Test
+              </span>
+            </div>
+            <div className="font-bold text-xs text-[#ebd8c8] group-hover:underline">
+              Himmelsbegegnung
+            </div>
+            <p className="text-[10px] text-white/60 leading-tight">
+              Testet Himmelsbegegnungs-Mitteilungen.
+            </p>
+          </button>
+
+          {/* Test 6: Sommernacht am See */}
+          <button
+            type="button"
+            onClick={handleTestSommernachtAmSee}
+            className="p-3 rounded-2xl bg-white/5 border border-[#c79b78]/40 hover:border-[#c79b78] hover:bg-white/10 text-left transition space-y-1.5 group cursor-pointer"
+          >
+            <div className="flex items-center justify-between">
+              <span className="text-base">🌊</span>
+              <span className="px-2 py-0.5 rounded-full bg-[#c79b78]/20 text-[#ebd8c8] text-[9px] font-bold uppercase">
+                Test
+              </span>
+            </div>
+            <div className="font-bold text-xs text-[#ebd8c8] group-hover:underline">
+              Sommernacht am See
+            </div>
+            <p className="text-[10px] text-white/60 leading-tight">
+              Testet Sommernacht am See Einladungen.
             </p>
           </button>
 

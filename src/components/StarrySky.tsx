@@ -111,6 +111,13 @@ export const StarrySky: React.FC = () => {
   // Expiration / Appointment state
   const [hasExpiry, setHasExpiry] = useState(false);
   const [expiryDateTime, setExpiryDateTime] = useState('');
+  
+  // Edit state
+  const [isEditing, setIsEditing] = useState(false);
+  const [editTitle, setEditTitle] = useState('');
+  const [editContent, setEditContent] = useState('');
+  const [editHasExpiry, setEditHasExpiry] = useState(false);
+  const [editExpiryDateTime, setEditExpiryDateTime] = useState('');
 
   const [clickPos, setClickPos] = useState<{ x: number; y: number; angle: number; curvature: number } | null>(null);
   const [flyingMeteor, setFlyingMeteor] = useState<FlyingMeteorState | null>(null);
@@ -124,8 +131,7 @@ export const StarrySky: React.FC = () => {
         const now = Date.now();
         
         if (snapshot.empty) {
-          // Fallback to local defaults if nothing in cloud
-          setStars(DEFAULT_STARS.map((s, idx) => normalizeStar(s, idx)));
+          setStars([]);
           return;
         }
 
@@ -284,7 +290,9 @@ export const StarrySky: React.FC = () => {
       size: 'medium',
       angle: clickPos ? clickPos.angle : 44,
       curvature: clickPos ? clickPos.curvature : 10,
-      expiresAt: hasExpiry && expiryDateTime ? new Date(expiryDateTime).toISOString() : null,
+      expiresAt: hasExpiry && expiryDateTime 
+        ? new Date(expiryDateTime).toISOString() 
+        : new Date(new Date().setHours(23, 59, 59, 999)).toISOString(),
     };
 
     try {
@@ -315,6 +323,43 @@ export const StarrySky: React.FC = () => {
     }
     setStars((prev) => prev.filter((s) => s.id !== starId));
     setSelectedStar(null);
+  };
+
+  const handleStartEdit = (star: StarNote) => {
+    setEditTitle(star.title);
+    setEditContent(star.content);
+    setEditHasExpiry(!!star.expiresAt);
+    if (star.expiresAt) {
+      const d = new Date(star.expiresAt);
+      const pad = (n: number) => (n < 10 ? '0' + n : n);
+      const formatted = `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+      setEditExpiryDateTime(formatted);
+    } else {
+      setEditExpiryDateTime('');
+    }
+    setIsEditing(true);
+  };
+
+  const handleSaveEdit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!selectedStar || !editTitle.trim() || !editContent.trim()) return;
+
+    const updatedStar: StarNote = {
+      ...selectedStar,
+      title: editTitle.trim(),
+      content: editContent.trim(),
+      expiresAt: editHasExpiry && editExpiryDateTime ? new Date(editExpiryDateTime).toISOString() : null,
+    };
+
+    try {
+      await setDoc(doc(db, 'shooting_stars', selectedStar.id), updatedStar);
+    } catch (err) {
+      console.error('Update error:', err);
+      setStars((prev) => prev.map(s => s.id === selectedStar.id ? updatedStar : s));
+    }
+
+    setSelectedStar(updatedStar);
+    setIsEditing(false);
   };
 
   const formatExpiryNotice = (expiresAtStr?: string | null): { formattedDate: string; relativeStr: string } | null => {
@@ -476,9 +521,9 @@ export const StarrySky: React.FC = () => {
 
       {/* 3. Redesigned Overview List */}
       {stars.length > 0 && (
-        <div className="space-y-6">
-          <div className="flex items-center gap-4 px-2">
-            <h3 className="font-serif-serif text-2xl font-bold gold-gradient-text">Übersicht aller Wünsche</h3>
+        <div className="p-8 sm:p-10 rounded-[2.5rem] bg-[#0a232c] border-2 border-[#dfba61] shadow-2xl space-y-8">
+          <div className="flex items-center gap-4">
+            <h3 className="font-serif-serif text-2xl sm:text-3xl font-bold gold-gradient-text">Alle Sternschnuppen im Überblick</h3>
             <div className="h-px flex-1 bg-gradient-to-r from-[#dfba61]/40 to-transparent" />
           </div>
           
@@ -487,7 +532,7 @@ export const StarrySky: React.FC = () => {
               <button
                 key={s.id}
                 onClick={() => setSelectedStar(s)}
-                className="group relative text-left p-6 rounded-3xl bg-[#0a232c] border-2 border-[#dfba61]/20 hover:border-[#dfba61]/60 transition-all duration-500 shadow-xl hover:shadow-[#dfba61]/10 flex flex-col justify-between min-h-[180px] overflow-hidden"
+                className="group relative text-left p-6 rounded-3xl bg-[#071920] border-2 border-[#dfba61]/20 hover:border-[#dfba61]/60 transition-all duration-500 shadow-xl hover:shadow-[#dfba61]/10 flex flex-col justify-between min-h-[180px] overflow-hidden"
               >
                 {/* Subtle Background Icon */}
                 <div className="absolute -bottom-4 -right-4 opacity-5 group-hover:opacity-10 transition-opacity rotate-12 group-hover:rotate-0 duration-700">
@@ -514,7 +559,7 @@ export const StarrySky: React.FC = () => {
                 <div className="relative z-10 pt-4 flex justify-between items-center border-t border-white/5 mt-auto">
                   <span className="text-[10px] text-white/30 font-mono">{s.date}</span>
                   <div className="flex items-center gap-1 text-[#dfba61] text-[10px] font-bold uppercase tracking-widest opacity-0 group-hover:opacity-100 -translate-x-2 group-hover:translate-x-0 transition-all">
-                    <span>Lesen</span>
+                    <span>Öffnen</span>
                     <ChevronRight className="w-3 h-3" />
                   </div>
                 </div>
@@ -578,19 +623,122 @@ export const StarrySky: React.FC = () => {
               <div className="flex items-center justify-between w-full pt-4">
                 <button
                   onClick={() => handleDeleteStar(selectedStar.id)}
-                  className="flex items-center gap-2 text-xs text-white/30 hover:text-red-400 transition-colors group"
+                  className="text-white/40 hover:text-red-400 p-2 transition-all rounded-full hover:bg-white/5"
+                  title="Stern löschen"
                 >
-                  <Trash2 className="w-4 h-4 group-hover:scale-110 transition-transform" />
-                  <span>Stern verabschieden</span>
+                  <Trash2 className="w-5 h-5" />
                 </button>
-                <button
-                  onClick={() => setSelectedStar(null)}
-                  className="gold-gradient-btn px-10 py-3 rounded-full text-[#0a232c] font-black text-sm uppercase tracking-tighter active:scale-95 transition-all shadow-xl"
-                >
-                  Schließen
-                </button>
+                <div className="flex items-center gap-3">
+                  <button
+                    onClick={() => handleStartEdit(selectedStar)}
+                    className="px-6 py-3 rounded-full text-white/60 hover:text-white hover:bg-white/5 transition-all text-xs font-bold uppercase tracking-widest"
+                  >
+                    Bearbeiten
+                  </button>
+                  <button
+                    onClick={() => setSelectedStar(null)}
+                    className="gold-gradient-btn px-10 py-3 rounded-full text-[#0a232c] font-black text-sm uppercase tracking-tighter active:scale-95 transition-all shadow-xl"
+                  >
+                    Schließen
+                  </button>
+                </div>
               </div>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Edit Star Modal */}
+      {isEditing && selectedStar && (
+        <div className="fixed inset-0 z-[110] flex items-center justify-center p-4 sm:p-6">
+          <div className="absolute inset-0 bg-black/80 backdrop-blur-md" onClick={() => setIsEditing(false)} />
+          <div className="relative w-full max-w-lg bg-[#0a232c] border-2 border-[#dfba61] rounded-[2.5rem] shadow-2xl p-8 sm:p-10 text-white animate-fade-in-up">
+            
+            <button
+              onClick={() => setIsEditing(false)}
+              className="absolute top-6 right-6 p-2 text-white/40 hover:text-white rounded-full bg-white/5 transition-all"
+            >
+              <X className="w-6 h-6" />
+            </button>
+
+            <div className="text-center space-y-4 mb-8">
+              <h3 className="font-serif-serif text-3xl font-bold gold-gradient-text">Botschaft bearbeiten</h3>
+              <p className="text-xs text-white/50 italic leading-relaxed">
+                Passe deine Worte an, die am Himmel leuchten sollen.
+              </p>
+            </div>
+
+            <form onSubmit={handleSaveEdit} className="space-y-6">
+              <div className="space-y-1.5">
+                <label className="text-[10px] font-bold text-[#dfba61] uppercase tracking-widest ml-1">Titel</label>
+                <input
+                  type="text"
+                  required
+                  value={editTitle}
+                  onChange={(e) => setEditTitle(e.target.value)}
+                  className="w-full px-5 py-3 rounded-2xl bg-black/40 border border-white/10 text-white placeholder-white/20 text-sm focus:outline-none focus:border-[#dfba61] transition-all"
+                />
+              </div>
+
+              <div className="space-y-1.5">
+                <label className="text-[10px] font-bold text-[#dfba61] uppercase tracking-widest ml-1">Botschaft</label>
+                <textarea
+                  required
+                  rows={4}
+                  value={editContent}
+                  onChange={(e) => setEditContent(e.target.value)}
+                  className="w-full px-5 py-4 rounded-2xl bg-black/40 border border-white/10 text-white placeholder-white/20 text-sm focus:outline-none focus:border-[#dfba61] transition-all italic font-serif-serif"
+                />
+              </div>
+
+              {/* Edit Appointment / Expiry */}
+              <div className="p-6 rounded-3xl bg-black/30 border border-white/5 space-y-4">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-full bg-[#dfba61]/10 flex items-center justify-center border border-[#dfba61]/20">
+                      <Calendar className="w-5 h-5 text-[#dfba61]" />
+                    </div>
+                    <div>
+                      <div className="text-[10px] font-bold text-[#dfba61] uppercase tracking-widest">Gültigkeitszeitraum</div>
+                      <div className="text-[9px] text-white/40">Automatische Löschung einstellen</div>
+                    </div>
+                  </div>
+                  <div 
+                    onClick={() => setEditHasExpiry(!editHasExpiry)}
+                    className={`w-12 h-6 rounded-full p-1 cursor-pointer transition-colors duration-300 ${editHasExpiry ? 'bg-[#dfba61]' : 'bg-white/10'}`}
+                  >
+                    <div className={`w-4 h-4 bg-white rounded-full transition-transform duration-300 ${editHasExpiry ? 'translate-x-6' : 'translate-x-0'}`} />
+                  </div>
+                </div>
+
+                {editHasExpiry && (
+                  <div className="space-y-4 pt-2 animate-fade-in">
+                    <input
+                      type="datetime-local"
+                      value={editExpiryDateTime}
+                      onChange={(e) => setEditExpiryDateTime(e.target.value)}
+                      className="w-full px-4 py-2.5 rounded-xl bg-black/50 border border-white/10 text-white text-xs focus:outline-none focus:border-[#dfba61]"
+                    />
+                  </div>
+                )}
+              </div>
+
+              <div className="flex items-center gap-4 pt-4">
+                <button
+                  type="button"
+                  onClick={() => setIsEditing(false)}
+                  className="flex-1 px-6 py-3 rounded-full text-xs font-bold uppercase tracking-widest text-white/40 hover:text-white hover:bg-white/5 transition-all"
+                >
+                  Abbrechen
+                </button>
+                <button
+                  type="submit"
+                  className="flex-[2] flex items-center justify-center gap-2 px-8 py-4 rounded-full gold-gradient-btn text-[#0a232c] font-black text-xs uppercase tracking-widest transition-all shadow-xl active:scale-95"
+                >
+                  <span>Speichern</span>
+                </button>
+              </div>
+            </form>
           </div>
         </div>
       )}

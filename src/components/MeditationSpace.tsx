@@ -1,25 +1,35 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Play, Pause, Music, RefreshCw, Volume2, Plus, Heart, Sparkles } from 'lucide-react';
+import { Play, Pause, Music, RefreshCw, Plus, Heart, Sparkles } from 'lucide-react';
 
 const GUIDED_MEDITATIONS = [
-  { title: 'Kopf abschalten und erholen – Geführte Meditation', url: '/m1.mp3' },
-  { title: 'Inneren Kritiker abstellen – Geführte Meditation', url: '/m2.mp3' },
-  { title: 'Gedankenkarussell und inneren Kritiker beruhigen – Selbstmitgefühl', url: '/m3.mp3' },
-  { title: 'Gedanken und Grübeln loslassen – Tief entspannen', url: '/m4.mp3' },
-  { title: 'Aufgebrachte Emotionen wie Wut, Angst und Panik schnell beruhigen', url: '/m5.mp3' },
-  { title: 'Angst sofort loslassen – Geführte Meditation', url: '/m6.mp3' },
-  { title: 'Limitierende Glaubenssätze auflösen – Geführte Meditation', url: '/m7.mp3' },
-  { title: 'Unsicherheit & Angst loslassen – Ideales Selbst werden', url: '/m8.mp3' },
-  { title: 'Dankbarkeit kultivieren – Geführte Meditation', url: '/m9.mp3' },
-  { title: 'Dankbarkeit und positives Denken – Geführte Meditation', url: '/m10.mp3' }
+  { title: 'Kopf abschalten und erholen – Geführte Meditation', url: 'https://www.dropbox.com/scl/fi/4s4d7cnjv6mho9qng0gwv/Kopf-abschalten-und-erholen-Gef-hrte-Meditation.mp3?rlkey=tngbaqkwuh9z1cbna7wq0nqtz&st=sen68u0y&raw=1' },
+  { title: 'Inneren Kritiker abstellen – Geführte Meditation', url: 'https://www.dropbox.com/scl/fi/cui7t8fhw5tq1mr3tt0ia/Inneren-Kritiker-abstellen-Gef-hrte-Meditation.mp3?rlkey=wot8xbxl1vzrerjqhnnutd2fx&st=ppm7rgym&raw=1' },
+  { title: 'Gedankenkarussell und inneren Kritiker beruhigen – Selbstmitgefühl', url: 'https://www.dropbox.com/scl/fi/6e3d4cdei92jpmej4pgj4/Gedankenkarussell-und-inneren-Kritiker-beruhigen-Gef-hrte-Meditation-f-r-Selbstmitgef-hl.mp3?rlkey=a0vw9qm7n6pfsavr1nk0c2q9r&st=ezepuz22&raw=1' },
+  { title: 'Gedanken und Grübeln loslassen – Tief entspannen', url: 'https://www.dropbox.com/scl/fi/dy4ubv7vrbgmiyhq6vu3y/Gedanken-und-Gr-beln-loslassen-und-tief-entspannen-Gef-hrte-Meditation.mp3?rlkey=vlmpteuf64u1pc76zh7vhxj8t&st=m8970x69&raw=1' },
+  { title: 'Aufgebrachte Emotionen wie Wut, Angst und Panik schnell beruhigen', url: 'https://www.dropbox.com/scl/fi/0c8mbhyvetift6v6lyr7r/Aufgebrachte-Emotionen-wie-Wut-Angst-und-Panik-schnell-beruhigen-Gef-hrte-Meditation.mp3?rlkey=pgju0b0j2trla324d3nb8m71q&st=i9qaa3ii&raw=1' },
+  { title: 'Angst sofort loslassen – Geführte Meditation', url: 'https://www.dropbox.com/scl/fi/h7bj642bto35z8oy3yqbw/Angst-sofort-loslassen-Gef-hrte-Meditation.mp3?rlkey=j6xi6lfxlvjdogkeqly3b9c1a&st=w8nxqiaf&raw=1' },
+  { title: 'Limitierende Glaubenssätze auflösen – Geführte Meditation', url: 'https://www.dropbox.com/scl/fi/xwcl20vry3ns26r633ctm/Limitierende-Glaubenss-tze-aufl-sen-Gef-hrte-Meditation-f-r-Unternehmer.mp3?rlkey=veeg9y1rvmmnivbia0dmz0en6&st=a7blqkdp&raw=1' },
+  { title: 'Unsicherheit & Angst loslassen – Ideales Selbst werden', url: 'https://www.dropbox.com/scl/fi/j1sd0nztu6jkgj6u4texb/Unsicherheit-Angst-loslassen-Ideales-Selbst-werden-Gef-hrte-Meditation-m-chtig.mp3?rlkey=22qgwyap5ab02h84tqjg0zry9&st=mwdhmkbz&raw=1' },
+  { title: 'Angst sofort loslassen – Geführte Meditation (Variante)', url: 'https://www.dropbox.com/scl/fi/h7bj642bto35z8oy3yqbw/Angst-sofort-loslassen-Gef-hrte-Meditation.mp3?rlkey=j6xi6lfxlvjdogkeqly3b9c1a&st=kq5j4jrl&raw=1' },
+  { title: 'Dankbarkeit kultivieren – Geführte Meditation', url: 'https://www.dropbox.com/scl/fi/zbriw8z7doqubrqdlxm5d/Dankbarkeit-kultivieren-Gef-hrte-Meditation.mp3?rlkey=h2letglb94sn94itn3wdicoyc&st=xjbbel31&raw=1' },
+  { title: 'Dankbarkeit und positives Denken – Geführte Meditation', url: 'https://www.dropbox.com/scl/fi/9yquorywt76qcr7gg9ioo/Dankbarkeit-und-positives-Denken-Gef-hrte-Meditation.mp3?rlkey=osdgj0f851zxpos2t1lx9eukb&st=1gh9er2j&raw=1' }
 ];
 
 const TANTRA_MEDITATIONS = [
-  { title: 'Tantra Meditation für Paare – Achtsam begegnen', url: '/tantra.mp3', type: 'audio' as const },
+  { title: 'Tantra Meditation für Paare – Achtsam begegnen', url: 'https://www.dropbox.com/scl/fi/652184vftb1n2knn2u1ux/Tantra-Meditation-f-r-Paare-l-Achtsam-begegnen.mp3?rlkey=1846dow3yff8my65oj67kliw1&st=u3naaeif&raw=1', type: 'audio' as const },
   { title: 'Entspannende Tantra - Meditationsmusik für tiefe Liebe und Verbundenheit', videoId: 'pg52OPw7uhw', type: 'youtube' as const }
 ];
 
-// Reusable Audio Player Component
+const getValidAudioUrl = (url: string) => {
+  if (!url) return '/m4.mp3';
+  if (url.includes('dropbox.com')) {
+    return url.replace('dl=0', 'raw=1').replace('dl=1', 'raw=1');
+  }
+  if (url === '/tantra.mp3') return '/tantra2.mp3';
+  return url;
+};
+
+// Reusable Audio Player Component using the 5-minute player technique
 interface AudioPlayerProps {
   title: string;
   audioUrl: string;
@@ -32,11 +42,13 @@ const MeditationPlayer: React.FC<AudioPlayerProps> = ({ title, audioUrl }) => {
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(0);
 
+  const initialUrl = getValidAudioUrl(audioUrl);
+
   useEffect(() => {
     const audio = audioRef.current;
     if (!audio) return;
 
-    audio.src = audioUrl;
+    audio.src = initialUrl;
     audio.load();
 
     const updateTime = () => setCurrentTime(audio.currentTime);
@@ -57,13 +69,12 @@ const MeditationPlayer: React.FC<AudioPlayerProps> = ({ title, audioUrl }) => {
       setIsPlaying(true);
     };
     const handleError = () => {
-      console.warn('Audio playback info:', title, audio.error);
+      console.warn('Audio notice for:', title, audio.src);
       setIsLoading(false);
-      setIsPlaying(false);
     };
 
     const handleGlobalPause = (e: any) => {
-      if (e.detail?.id !== audioUrl && !audio.paused) {
+      if (e.detail?.id !== audioUrl && e.detail?.id !== initialUrl && !audio.paused) {
         audio.pause();
         setIsPlaying(false);
       }
@@ -91,7 +102,7 @@ const MeditationPlayer: React.FC<AudioPlayerProps> = ({ title, audioUrl }) => {
       window.removeEventListener('app-audio-play', handleGlobalPause);
       audio.pause();
     };
-  }, [audioUrl, title]);
+  }, [audioUrl, initialUrl, title]);
 
   const togglePlay = () => {
     const audio = audioRef.current;
@@ -105,33 +116,22 @@ const MeditationPlayer: React.FC<AudioPlayerProps> = ({ title, audioUrl }) => {
       window.dispatchEvent(new CustomEvent('app-audio-play', { detail: { id: audioUrl } }));
       setIsLoading(true);
 
-      if (!audio.src || audio.src === '' || audio.src === window.location.href) {
-        audio.src = audioUrl;
-      }
-
-      const playPromise = audio.play();
-      if (playPromise !== undefined) {
-        playPromise
+      const attemptPlay = (srcToTry: string) => {
+        audio.src = srcToTry;
+        audio.play()
           .then(() => {
             setIsPlaying(true);
             setIsLoading(false);
           })
           .catch((err) => {
-            console.warn('Initial play notice, setting src & retrying:', err);
-            audio.src = audioUrl;
-            audio.load();
-            audio.play()
-              .then(() => {
-                setIsPlaying(true);
-                setIsLoading(false);
-              })
-              .catch((retryErr) => {
-                console.warn('Retry playback error:', retryErr);
-                setIsLoading(false);
-                setIsPlaying(false);
-              });
+            console.warn(`Play failed for ${srcToTry}:`, err);
+            setIsLoading(false);
+            setIsPlaying(false);
           });
-      }
+      };
+
+      const currentTargetSrc = audio.src && audio.src !== window.location.href ? audio.src : initialUrl;
+      attemptPlay(currentTargetSrc);
     }
   };
 
@@ -158,8 +158,8 @@ const MeditationPlayer: React.FC<AudioPlayerProps> = ({ title, audioUrl }) => {
     <div className="bg-[#071920]/90 border-2 border-[#c79b78]/70 rounded-2xl p-3.5 sm:p-5 shadow-xl backdrop-blur-md flex flex-row items-center gap-3.5 sm:gap-4 relative overflow-hidden">
       <audio
         ref={audioRef}
-        src={audioUrl}
-        preload="metadata"
+        src={initialUrl}
+        preload="auto"
       />
 
       <button
@@ -226,8 +226,6 @@ const MeditationPlayer: React.FC<AudioPlayerProps> = ({ title, audioUrl }) => {
     </div>
   );
 };
-
-
 
 // Reusable Pure Audio Player for YouTube Streams (No Video Display)
 export interface YouTubeAudioPlayerProps {

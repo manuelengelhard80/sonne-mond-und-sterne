@@ -94,15 +94,15 @@ export const StorySanctuary: React.FC<StorySanctuaryProps> = ({ onGoToBreath, on
     return `${m}:${s < 10 ? '0' : ''}${s}`;
   };
 
-  const handleSeek = (e: React.MouseEvent<HTMLDivElement> | React.TouchEvent<HTMLDivElement>) => {
+  const handleSeek = (e: React.MouseEvent<HTMLDivElement>) => {
     const audio = audioRef.current;
     if (!audio || !duration || duration <= 0) return;
     const rect = e.currentTarget.getBoundingClientRect();
-    const clientX = 'touches' in e && e.touches.length > 0 ? e.touches[0].clientX : (e as React.MouseEvent).clientX;
-    const clickX = clientX - rect.left;
+    const clickX = e.clientX - rect.left;
     const percentage = Math.max(0, Math.min(1, clickX / rect.width));
-    audio.currentTime = percentage * duration;
-    setCurrentTime(audio.currentTime);
+    const newTime = percentage * duration;
+    audio.currentTime = newTime;
+    setCurrentTime(newTime);
   };
 
   const [isExpanded, setIsExpanded] = useState(false);
@@ -168,16 +168,16 @@ export const StorySanctuary: React.FC<StorySanctuaryProps> = ({ onGoToBreath, on
               </span>
             </div>
 
-            {/* Animated Waveform Bars in Copper/Gold with Mobile Touch Seek Support */}
+            {/* Interactive Ambient Sound Wave Bar */}
             <div
               onClick={handleSeek}
-              onTouchStart={handleSeek}
-              title="Klicken oder tippen zum Spulen"
-              className="flex items-center justify-between h-7 px-2 bg-[#0a232c] rounded-lg border border-[#c79b78]/30 hover:border-[#c79b78]/70 gap-1 overflow-hidden cursor-pointer transition touch-action-none select-none"
+              title="Klicken zum Spulen"
+              className="flex items-center justify-between h-7 px-2 bg-[#0a232c] rounded-lg border border-[#c79b78]/30 hover:border-[#c79b78]/70 gap-1 overflow-hidden cursor-pointer transition"
             >
               {Array.from({ length: 28 }).map((_, i) => {
                 const heights = [35, 65, 45, 80, 50, 75, 90, 40, 70, 85, 30, 75, 55, 80, 45, 60];
                 const h = heights[i % heights.length];
+                const progressPercent = (duration || 180) > 0 ? (currentTime / (duration || 180)) : 0;
                 const isPassed = (i / 28) <= progressPercent;
 
                 return (

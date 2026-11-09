@@ -93,7 +93,7 @@ export const AndroidBottomHelperBar: React.FC = () => {
   // Step 1: Handle Persona selection
   const handleSelectRole = (r: UserRoleType) => {
     setSelectedRole(r);
-    const newName = r === 'sonne' ? 'Sonne (Stefanie)' : 'Mond (Manuel)';
+    const newName = r === 'sonne' ? 'Die Sonne' : 'Der Mond';
     setRole(r, newName);
     // Auto advance to Step 2
     setStep(2);
@@ -231,7 +231,7 @@ export const AndroidBottomHelperBar: React.FC = () => {
                     }`}
                   >
                     <Sun className="w-4 h-4 text-[#ffe89c]" />
-                    <span className="text-xs font-semibold">Sonne (Stefanie)</span>
+                    <span className="text-xs font-semibold">Die Sonne</span>
                   </button>
 
                   <button
@@ -244,7 +244,7 @@ export const AndroidBottomHelperBar: React.FC = () => {
                     }`}
                   >
                     <Moon className="w-4 h-4 text-[#c79b78]" />
-                    <span className="text-xs font-semibold">Mond (Manuel)</span>
+                    <span className="text-xs font-semibold">Der Mond</span>
                   </button>
                 </div>
 

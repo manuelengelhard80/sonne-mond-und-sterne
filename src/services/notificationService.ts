@@ -159,7 +159,7 @@ export const sendAppNotification = async (
 
 // Send immediate generic test notification
 export const sendTestNotification = async (userRole: UserRoleType): Promise<boolean> => {
-  const partnerName = userRole === 'sonne' ? 'Mond (Manuel)' : 'Sonne (Stefanie)';
+  const partnerName = userRole === 'sonne' ? 'Der Mond' : 'Die Sonne';
   return sendAppNotification(
     '✨ Benachrichtigungstest aktiv',
     {
@@ -189,7 +189,7 @@ export const sendTestMorningAffirmation = async (userRole: UserRoleType): Promis
 
 // Test 2: Sternschnuppen Test
 export const sendTestShootingStar = async (userRole: UserRoleType): Promise<boolean> => {
-  const partnerName = userRole === 'sonne' ? 'dem Mond (Manuel)' : 'der Sonne (Stefanie)';
+  const partnerName = userRole === 'sonne' ? 'dem Mond' : 'der Sonne';
   return sendAppNotification(
     `✨ Neue Sternschnuppe am Himmel!`,
     {
@@ -203,7 +203,7 @@ export const sendTestShootingStar = async (userRole: UserRoleType): Promise<bool
 
 // Test 3: Gedanken Teilen Test
 export const sendTestSharedThought = async (userRole: UserRoleType): Promise<boolean> => {
-  const partnerName = userRole === 'sonne' ? 'Mond (Manuel)' : 'Sonne (Stefanie)';
+  const partnerName = userRole === 'sonne' ? 'Der Mond' : 'Die Sonne';
   return sendAppNotification(
     `💬 Gedanken geteilt von ${partnerName}`,
     {
@@ -212,6 +212,90 @@ export const sendTestSharedThought = async (userRole: UserRoleType): Promise<boo
     },
     true,
     'gedanken'
+  );
+};
+
+// Invitation 1: Geführte Meditation Einladung
+export const sendGuidedMeditationInvite = async (userRole: UserRoleType): Promise<boolean> => {
+  const senderName = userRole === 'sonne' ? 'Die Sonne' : 'Der Mond';
+  return sendAppNotification(
+    '🧘 Einladung zu einer Geführten Meditation!',
+    {
+      body: `${senderName} lädt dich zu einer beruhigenden Geführten Meditation ein. Nimm dir einen Moment für dich, schließe die Augen und finde neue Kraft.`,
+      tag: 'guided-meditation-invite',
+    },
+    false,
+    'system'
+  );
+};
+
+// Invitation 2: Paar-Meditation Einladung
+export const sendCouplesMeditationInvite = async (userRole: UserRoleType): Promise<boolean> => {
+  const senderName = userRole === 'sonne' ? 'Die Sonne' : 'Der Mond';
+  return sendAppNotification(
+    '💖 Einladung zu einer Paar-Meditation!',
+    {
+      body: `${senderName} lädt dich zu einer achtsamen Tantra Paar-Meditation ein. Lass uns gemeinsam in Innehalten, Verbundenheit und tiefe Nähe eintauchen.`,
+      tag: 'couples-meditation-invite',
+    },
+    false,
+    'system'
+  );
+};
+
+// Invitation 3: Traumreise Einladung
+export const sendDreamJourneyInvite = async (userRole: UserRoleType): Promise<boolean> => {
+  const senderName = userRole === 'sonne' ? 'Die Sonne' : 'Der Mond';
+  return sendAppNotification(
+    '✨ Einladung zu einer entspannenden Traumreise!',
+    {
+      body: `${senderName} lädt dich zu einer zauberhaften Traumreise ein. Lass deine Gedanken auf sanften Schwingen davontragen und genieße tiefe Entspannung.`,
+      tag: 'dream-journey-invite',
+    },
+    false,
+    'system'
+  );
+};
+
+// Test 4: Geführte Meditation Test
+export const sendTestGuidedMeditationInvite = async (userRole: UserRoleType): Promise<boolean> => {
+  const senderName = userRole === 'sonne' ? 'Die Sonne' : 'Der Mond';
+  return sendAppNotification(
+    '🧘 Einladung zu einer Geführten Meditation!',
+    {
+      body: `${senderName} lädt dich zu einer beruhigenden Geführten Meditation ein. Nimm dir einen Moment für dich, schließe die Augen und finde neue Kraft.`,
+      tag: 'test-guided-meditation-invite',
+    },
+    true,
+    'test'
+  );
+};
+
+// Test 5: Paar-Meditation Test
+export const sendTestCouplesMeditationInvite = async (userRole: UserRoleType): Promise<boolean> => {
+  const senderName = userRole === 'sonne' ? 'Die Sonne' : 'Der Mond';
+  return sendAppNotification(
+    '💖 Einladung zu einer Paar-Meditation!',
+    {
+      body: `${senderName} lädt dich zu einer achtsamen Tantra Paar-Meditation ein. Lass uns gemeinsam in Innehalten, Verbundenheit und tiefe Nähe eintauchen.`,
+      tag: 'test-couples-meditation-invite',
+    },
+    true,
+    'test'
+  );
+};
+
+// Test 6: Traumreise Test
+export const sendTestDreamJourneyInvite = async (userRole: UserRoleType): Promise<boolean> => {
+  const senderName = userRole === 'sonne' ? 'Die Sonne' : 'Der Mond';
+  return sendAppNotification(
+    '✨ Einladung zu einer entspannenden Traumreise!',
+    {
+      body: `${senderName} lädt dich zu einer zauberhaften Traumreise ein. Lass deine Gedanken auf sanften Schwingen davontragen und genieße tiefe Entspannung.`,
+      tag: 'test-dream-journey-invite',
+    },
+    true,
+    'test'
   );
 };
 

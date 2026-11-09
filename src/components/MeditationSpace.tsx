@@ -1,5 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Play, Pause, Music, RefreshCw, Plus, Heart, Sparkles } from 'lucide-react';
+import { Play, Pause, Music, RefreshCw, Plus, Heart, Compass, Send, Check } from 'lucide-react';
+import { useUserRole } from '../context/UserRoleContext';
+import { sendGuidedMeditationInvite, sendCouplesMeditationInvite } from '../services/notificationService';
 
 const GUIDED_MEDITATIONS = [
   { title: 'Kopf abschalten und erholen – Geführte Meditation', url: 'https://www.dropbox.com/scl/fi/4s4d7cnjv6mho9qng0gwv/Kopf-abschalten-und-erholen-Gef-hrte-Meditation.mp3?rlkey=tngbaqkwuh9z1cbna7wq0nqtz&st=sen68u0y&raw=1' },
@@ -29,7 +31,7 @@ const getValidAudioUrl = (url: string) => {
   return url;
 };
 
-// Reusable Audio Player Component using the 5-minute player technique
+// Reusable Audio Player Component using instant playback & pre-buffering
 interface AudioPlayerProps {
   title: string;
   audioUrl: string;
@@ -48,8 +50,9 @@ const MeditationPlayer: React.FC<AudioPlayerProps> = ({ title, audioUrl }) => {
     const audio = audioRef.current;
     if (!audio) return;
 
-    audio.src = initialUrl;
-    audio.load();
+    if (!audio.src || audio.src === '' || audio.src === window.location.href) {
+      audio.src = initialUrl;
+    }
 
     const updateTime = () => setCurrentTime(audio.currentTime);
     const handleLoaded = () => {
@@ -71,6 +74,7 @@ const MeditationPlayer: React.FC<AudioPlayerProps> = ({ title, audioUrl }) => {
     const handleError = () => {
       console.warn('Audio notice for:', title, audio.src);
       setIsLoading(false);
+      setIsPlaying(false);
     };
 
     const handleGlobalPause = (e: any) => {
@@ -114,24 +118,15 @@ const MeditationPlayer: React.FC<AudioPlayerProps> = ({ title, audioUrl }) => {
       setIsLoading(false);
     } else {
       window.dispatchEvent(new CustomEvent('app-audio-play', { detail: { id: audioUrl } }));
-      setIsLoading(true);
+      setIsPlaying(true);
 
-      const attemptPlay = (srcToTry: string) => {
-        audio.src = srcToTry;
-        audio.play()
-          .then(() => {
-            setIsPlaying(true);
-            setIsLoading(false);
-          })
-          .catch((err) => {
-            console.warn(`Play failed for ${srcToTry}:`, err);
-            setIsLoading(false);
-            setIsPlaying(false);
-          });
-      };
-
-      const currentTargetSrc = audio.src && audio.src !== window.location.href ? audio.src : initialUrl;
-      attemptPlay(currentTargetSrc);
+      audio.play().then(() => {
+        setIsLoading(false);
+      }).catch((err) => {
+        console.warn(`Instant play notice for ${title}:`, err);
+        setIsPlaying(false);
+        setIsLoading(false);
+      });
     }
   };
 
@@ -227,7 +222,7 @@ const MeditationPlayer: React.FC<AudioPlayerProps> = ({ title, audioUrl }) => {
   );
 };
 
-// Reusable Pure Audio Player for YouTube Streams (No Video Display)
+// Reusable Pure Audio Player for YouTube Streams (No Video Display) - Pre-mounted for instant playback
 export interface YouTubeAudioPlayerProps {
   title: string;
   videoId: string;
@@ -236,14 +231,22 @@ export interface YouTubeAudioPlayerProps {
 export const YouTubeAudioPlayer: React.FC<YouTubeAudioPlayerProps> = ({ title, videoId }) => {
   const [isPlaying, setIsPlaying] = useState(false);
   const [elapsedTime, setElapsedTime] = useState(0);
+  const iframeRef = useRef<HTMLIFrameElement | null>(null);
   const audioId = `youtube-${videoId}`;
 
   const togglePlay = () => {
+    const iframe = iframeRef.current;
     if (isPlaying) {
       setIsPlaying(false);
+      if (iframe && iframe.contentWindow) {
+        iframe.contentWindow.postMessage(JSON.stringify({ event: 'command', func: 'pauseVideo', args: [] }), '*');
+      }
     } else {
       window.dispatchEvent(new CustomEvent('app-audio-play', { detail: { id: audioId } }));
       setIsPlaying(true);
+      if (iframe && iframe.contentWindow) {
+        iframe.contentWindow.postMessage(JSON.stringify({ event: 'command', func: 'playVideo', args: [] }), '*');
+      }
     }
   };
 
@@ -259,13 +262,16 @@ export const YouTubeAudioPlayer: React.FC<YouTubeAudioPlayerProps> = ({ title, v
 
   useEffect(() => {
     const handleGlobalPause = (e: any) => {
-      if (e.detail?.id !== audioId) {
+      if (e.detail?.id !== audioId && isPlaying) {
         setIsPlaying(false);
+        if (iframeRef.current && iframeRef.current.contentWindow) {
+          iframeRef.current.contentWindow.postMessage(JSON.stringify({ event: 'command', func: 'pauseVideo', args: [] }), '*');
+        }
       }
     };
     window.addEventListener('app-audio-play', handleGlobalPause);
     return () => window.removeEventListener('app-audio-play', handleGlobalPause);
-  }, [audioId]);
+  }, [audioId, isPlaying]);
 
   const formatTime = (secs: number) => {
     if (isNaN(secs) || secs === 0) return '0:00';
@@ -276,15 +282,14 @@ export const YouTubeAudioPlayer: React.FC<YouTubeAudioPlayerProps> = ({ title, v
 
   return (
     <div className="bg-[#071920]/90 border-2 border-[#c79b78]/70 rounded-2xl p-3.5 sm:p-5 shadow-xl backdrop-blur-md flex flex-row items-center gap-3.5 sm:gap-4 relative overflow-hidden">
-      {/* Hidden YouTube audio iframe engine */}
-      {isPlaying && (
-        <iframe
-          src={`https://www.youtube-nocookie.com/embed/${videoId}?autoplay=1&enablejsapi=1&playsinline=1`}
-          title={title}
-          className="w-px h-px opacity-0 pointer-events-none absolute top-0 left-0"
-          allow="autoplay; encrypted-media"
-        />
-      )}
+      {/* Hidden YouTube audio iframe engine - pre-mounted for instant playback */}
+      <iframe
+        ref={iframeRef}
+        src={`https://www.youtube-nocookie.com/embed/${videoId}?enablejsapi=1&playsinline=1&controls=0`}
+        title={title}
+        className="w-px h-px opacity-0 pointer-events-none absolute top-0 left-0"
+        allow="autoplay; encrypted-media"
+      />
 
       <button
         onClick={togglePlay}
@@ -343,8 +348,24 @@ export const YouTubeAudioPlayer: React.FC<YouTubeAudioPlayerProps> = ({ title, v
 };
 
 export const MeditationSpace: React.FC = () => {
+  const { role } = useUserRole();
   const [isGuidedExpanded, setIsGuidedExpanded] = useState(false);
   const [isTantraExpanded, setIsTantraExpanded] = useState(false);
+
+  const [guidedInviteSent, setGuidedInviteSent] = useState(false);
+  const [couplesInviteSent, setCouplesInviteSent] = useState(false);
+
+  const handleGuidedInvite = async () => {
+    await sendGuidedMeditationInvite(role);
+    setGuidedInviteSent(true);
+    setTimeout(() => setGuidedInviteSent(false), 4000);
+  };
+
+  const handleCouplesInvite = async () => {
+    await sendCouplesMeditationInvite(role);
+    setCouplesInviteSent(true);
+    setTimeout(() => setCouplesInviteSent(false), 4000);
+  };
 
   const displayedGuided = isGuidedExpanded ? GUIDED_MEDITATIONS : GUIDED_MEDITATIONS.slice(0, 3);
   const displayedTantra = isTantraExpanded ? TANTRA_MEDITATIONS : TANTRA_MEDITATIONS.slice(0, 3);
@@ -358,7 +379,7 @@ export const MeditationSpace: React.FC = () => {
             Geführte Meditationen
           </h2>
           <p className="text-sm text-white/80 max-w-md mx-auto">
-            Tauche ein in die Stille und finde innere Ruhe und neue Kraft.
+            Tauche ein in die Stille und finde innere<br />Ruhe und neue Kraft.
           </p>
         </div>
 
@@ -369,7 +390,7 @@ export const MeditationSpace: React.FC = () => {
         </div>
 
         {GUIDED_MEDITATIONS.length > 3 && (
-          <div className="flex justify-center pt-2">
+          <div className="flex flex-col items-center gap-4 pt-2">
             <button
               onClick={() => setIsGuidedExpanded(!isGuidedExpanded)}
               className="flex items-center gap-3 text-[#dfba61] hover:text-[#ebd8c8] transition-all text-sm font-bold uppercase tracking-[0.15em] group cursor-pointer"
@@ -383,12 +404,29 @@ export const MeditationSpace: React.FC = () => {
               </div>
               <span>{isGuidedExpanded ? 'Weniger hören' : 'Mehr hören'}</span>
             </button>
+
+            {isGuidedExpanded && (
+              <div className="flex flex-col items-center gap-2 pt-1 animate-fade-in">
+                <button
+                  onClick={handleGuidedInvite}
+                  className="px-4 py-2.5 rounded-xl bg-[#071920] border-2 border-[#c79b78] hover:border-[#dfba61] text-[#ebd8c8] hover:text-white font-bold text-xs sm:text-sm tracking-wide shadow-lg transition active:scale-95 flex items-center justify-center gap-2 cursor-pointer"
+                >
+                  <Send className="w-4 h-4 text-[#c79b78]" />
+                  <span>Zu einer Geführten Meditation einladen</span>
+                </button>
+                {guidedInviteSent && (
+                  <span className="text-xs text-emerald-400 font-semibold flex items-center gap-1 animate-fade-in">
+                    <Check className="w-3.5 h-3.5" /> Einladung wurde gesendet & im Log vermerkt!
+                  </span>
+                )}
+              </div>
+            )}
           </div>
         )}
 
-        <div className="text-center pt-4 border-t border-white/10 flex items-center justify-center gap-2 text-xs text-white/70">
-          <Sparkles className="w-4 h-4 text-[#c79b78] shrink-0" />
-          <span className="font-serif-serif italic text-[#ebd8c8]">Meditationen by Alexander Wahler</span>
+        <div className="text-center pt-4 border-t border-white/10 flex items-center justify-center gap-2 text-xs text-white/60">
+          <Compass className="w-3.5 h-3.5 text-[#dfba61] shrink-0" />
+          <span>Meditationen by Alexander Wahler</span>
         </div>
       </div>
 
@@ -396,7 +434,7 @@ export const MeditationSpace: React.FC = () => {
       <div className="space-y-8 p-6 sm:p-10 rounded-2xl bg-[#0a232c] shadow-2xl border-2 border-[#dfba61] text-white">
         <div className="text-center space-y-2">
           <h2 className="font-serif-serif text-3xl sm:text-4xl font-bold gold-gradient-text">
-            Tantra Meditation für Paare
+            Tantra Meditationen<br />für Paare
           </h2>
           <p className="text-sm text-white/80 max-w-md mx-auto">
             Achtsam begegnen, tiefe Verbundenheit spüren und gemeinsame Ruhe finden.
@@ -413,8 +451,8 @@ export const MeditationSpace: React.FC = () => {
           ))}
         </div>
 
-        {TANTRA_MEDITATIONS.length > 3 && (
-          <div className="flex justify-center pt-2">
+        <div className="flex flex-col items-center gap-4 pt-2">
+          {TANTRA_MEDITATIONS.length > 3 && (
             <button
               onClick={() => setIsTantraExpanded(!isTantraExpanded)}
               className="flex items-center gap-3 text-[#dfba61] hover:text-[#ebd8c8] transition-all text-sm font-bold uppercase tracking-[0.15em] group cursor-pointer"
@@ -428,14 +466,31 @@ export const MeditationSpace: React.FC = () => {
               </div>
               <span>{isTantraExpanded ? 'Weniger hören' : 'Mehr hören'}</span>
             </button>
-          </div>
-        )}
+          )}
 
-        <div className="text-center pt-2 border-t border-white/10 flex items-center justify-center gap-2 text-xs text-white/60">
-          <Heart className="w-3.5 h-3.5 text-[#dfba61] fill-[#dfba61]" />
-          <span>Ein geschützter Raum für Liebe, Vertrauen und echte Nähe.</span>
+          {/* Invitation button visible under Mehr hören or in section */}
+          <div className="flex flex-col items-center gap-2 pt-1">
+            <button
+              onClick={handleCouplesInvite}
+              className="px-4 py-2.5 rounded-xl bg-[#071920] border-2 border-[#c79b78] hover:border-[#dfba61] text-[#ebd8c8] hover:text-white font-bold text-xs sm:text-sm tracking-wide shadow-lg transition active:scale-95 flex items-center justify-center gap-2 cursor-pointer"
+            >
+              <Send className="w-4 h-4 text-[#c79b78]" />
+              <span>Zu einer Paar-Meditation einladen</span>
+            </button>
+            {couplesInviteSent && (
+              <span className="text-xs text-emerald-400 font-semibold flex items-center gap-1 animate-fade-in">
+                <Check className="w-3.5 h-3.5" /> Einladung wurde gesendet & im Log vermerkt!
+              </span>
+            )}
+          </div>
+        </div>
+
+        <div className="text-center pt-4 border-t border-white/10 flex items-center justify-center gap-2 text-xs text-white/60">
+          <Heart className="w-3.5 h-3.5 text-[#dfba61] fill-[#dfba61] shrink-0" />
+          <span>Ein geschützter Raum für Liebe,<br />Vertrauen und echte Nähe.</span>
         </div>
       </div>
     </div>
   );
 };
+

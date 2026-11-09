@@ -20,8 +20,8 @@ export const RolePickerModal: React.FC = () => {
 
   const handleSelect = (r: UserRoleType) => {
     setSelectedRole(r);
-    if (!nameInput || nameInput === 'Sonne (Stefanie)' || nameInput === 'Mond (Manuel)') {
-      setNameInput(r === 'sonne' ? 'Sonne (Stefanie)' : 'Mond (Manuel)');
+    if (!nameInput || nameInput === 'Die Sonne' || nameInput === 'Der Mond' || nameInput === 'Sonne (Stefanie)' || nameInput === 'Mond (Manuel)') {
+      setNameInput(r === 'sonne' ? 'Die Sonne' : 'Der Mond');
     }
   };
 
@@ -116,13 +116,13 @@ export const RolePickerModal: React.FC = () => {
         {/* Name input */}
         <div className="space-y-1.5">
           <label className="text-xs text-white/70 block">
-            Dein Anzeigename (z. B. Stefanie oder Manuel):
+            Dein Anzeigename:
           </label>
           <input
             type="text"
             value={nameInput}
             onChange={(e) => setNameInput(e.target.value)}
-            placeholder={selectedRole === 'sonne' ? 'Sonne (Stefanie)' : 'Mond (Manuel)'}
+            placeholder={selectedRole === 'sonne' ? 'Die Sonne' : 'Der Mond'}
             className="w-full px-4 py-2.5 rounded-xl bg-[#071920] border border-white/20 text-white placeholder-white/40 focus:outline-none focus:border-[#dfba61] text-sm"
           />
         </div>

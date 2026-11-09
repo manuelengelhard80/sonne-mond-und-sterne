@@ -29,7 +29,7 @@ export const UserRoleProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     const savedName = localStorage.getItem(STORAGE_NAME_KEY);
     if (savedName) return savedName;
     const savedRole = localStorage.getItem(STORAGE_ROLE_KEY);
-    return savedRole === 'mond' ? 'Mond (Manuel)' : 'Sonne (Stefanie)';
+    return savedRole === 'mond' ? 'Der Mond' : 'Die Sonne';
   });
 
   const [isConfigured, setIsConfigured] = useState<boolean>(() => {
@@ -69,7 +69,7 @@ export const UserRoleProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   }, []);
 
   const setRole = async (newRole: UserRoleType, customName?: string) => {
-    const nameToUse = customName || (newRole === 'sonne' ? 'Sonne (Stefanie)' : 'Mond (Manuel)');
+    const nameToUse = customName || (newRole === 'sonne' ? 'Die Sonne' : 'Der Mond');
     setRoleState(newRole);
     setDisplayName(nameToUse);
     setIsConfigured(true);

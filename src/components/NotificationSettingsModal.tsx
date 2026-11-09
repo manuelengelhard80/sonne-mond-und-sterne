@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Bell, BellRing, Sparkles, Sun, Moon, Clock, Check, X, Smartphone, AlertCircle } from 'lucide-react';
+import { Bell, BellRing, Sparkles, Sun, Moon, Clock, Check, X, Smartphone, AlertCircle, Compass, Heart, Feather } from 'lucide-react';
 import { useUserRole } from '../context/UserRoleContext';
 import {
   getNotificationPermission,
@@ -48,7 +48,7 @@ export const NotificationSettingsModal: React.FC<NotificationSettingsModalProps>
     }
   };
 
-  const partnerLabel = role === 'sonne' ? 'Mond (Manuel)' : 'Sonne (Stefanie)';
+  const partnerLabel = role === 'sonne' ? 'Der Mond' : 'Die Sonne';
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-fade-in">
@@ -76,7 +76,7 @@ export const NotificationSettingsModal: React.FC<NotificationSettingsModalProps>
           </p>
         </div>
 
-        {/* 3 Notifications Included */}
+        {/* Notifications Included */}
         <div className="space-y-3">
           
           {/* Feature 1: Shooting Star */}
@@ -105,7 +105,20 @@ export const NotificationSettingsModal: React.FC<NotificationSettingsModalProps>
             </div>
           </div>
 
-          {/* Feature 3: Interaktive Himmelsbegegnung */}
+          {/* Feature 3: Meditation & Traumreise Einladungen */}
+          <div className="p-3.5 rounded-2xl bg-[#071920] border border-[#dfba61]/30 flex items-start gap-3">
+            <div className="p-2 rounded-xl bg-[#dfba61]/15 text-[#dfba61] shrink-0 mt-0.5">
+              <Compass className="w-4 h-4 text-[#dfba61]" />
+            </div>
+            <div className="text-xs space-y-0.5">
+              <div className="font-bold text-[#f5d77f]">Einladungen zu Meditationen & Traumreisen</div>
+              <p className="text-white/70">
+                Lade {partnerLabel} mit einem Klick zu gemeinsamen Geführten Meditationen, Paar-Meditationen oder Traumreisen ein.
+              </p>
+            </div>
+          </div>
+
+          {/* Feature 4: Interaktive Himmelsbegegnung */}
           <div className="p-3.5 rounded-2xl bg-[#071920] border border-[#dfba61]/30 flex items-start gap-3">
             <div className="p-2 rounded-xl bg-[#dfba61]/15 text-[#dfba61] shrink-0 mt-0.5">
               <Sparkles className="w-4 h-4 text-[#f5d77f]" />
@@ -118,7 +131,7 @@ export const NotificationSettingsModal: React.FC<NotificationSettingsModalProps>
             </div>
           </div>
 
-          {/* Feature 4: Daily 5:00 AM Morning Message */}
+          {/* Feature 5: Daily 5:00 AM Morning Message */}
           <div className="p-3.5 rounded-2xl bg-[#071920] border border-[#dfba61]/30 flex items-start justify-between gap-3">
             <div className="flex items-start gap-3">
               <div className="p-2 rounded-xl bg-[#dfba61]/15 text-[#dfba61] shrink-0 mt-0.5">

@@ -165,7 +165,7 @@ export const CelestialTouch: React.FC = () => {
 
     soundSynth.playSoftBell();
 
-    const partnerLabel = role === 'sonne' ? 'Mond (Manuel)' : 'Sonne (Stefanie)';
+    const partnerLabel = role === 'sonne' ? 'Der Mond' : 'Die Sonne';
     const myRoleTitle = role === 'sonne' ? 'Sonne' : 'Mond';
 
     setTouchNotice(`✨ Sanfte Berührung gesendet! ${partnerLabel} erhält eine Benachrichtigung.`);

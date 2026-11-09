@@ -75,13 +75,15 @@ export const StorySanctuary: React.FC<StorySanctuaryProps> = ({ onGoToBreath, on
     if (isPlaying) {
       audio.pause();
       setIsPlaying(false);
+      setIsLoading(false);
     } else {
-      setIsLoading(true);
+      window.dispatchEvent(new CustomEvent('app-audio-play', { detail: { id: '/story.wav' } }));
+      setIsPlaying(true);
       audio.play().then(() => {
-        setIsPlaying(true);
         setIsLoading(false);
       }).catch((err) => {
         console.warn('Audio playback error:', err);
+        setIsPlaying(false);
         setIsLoading(false);
       });
     }

@@ -15,7 +15,10 @@ import {
   Clock,
   MessageSquare,
   Smartphone,
-  RefreshCw
+  RefreshCw,
+  Heart,
+  Compass,
+  Feather
 } from 'lucide-react';
 import { useUserRole } from '../context/UserRoleContext';
 import {
@@ -24,6 +27,9 @@ import {
   sendTestMorningAffirmation,
   sendTestShootingStar,
   sendTestSharedThought,
+  sendTestGuidedMeditationInvite,
+  sendTestCouplesMeditationInvite,
+  sendTestDreamJourneyInvite,
   isNotificationSupported,
   getNotificationLogs,
   clearNotificationLogs,
@@ -45,9 +51,9 @@ export const SettingsSpace: React.FC = () => {
   const [permission, setPermission] = useState<NotificationPermission>('default');
   const [testFeedback, setTestFeedback] = useState<string | null>(null);
 
-  // Log state & collapsible toggle
+  // Log state & collapsible toggle (default closed)
   const [logs, setLogs] = useState<NotificationLogEntry[]>([]);
-  const [isLogOpen, setIsLogOpen] = useState<boolean>(true);
+  const [isLogOpen, setIsLogOpen] = useState<boolean>(false);
 
   // Install / PWA prompt state
   const [deferredPrompt, setDeferredPrompt] = useState<BeforeInstallPromptEvent | null>(() => {
@@ -119,9 +125,9 @@ export const SettingsSpace: React.FC = () => {
   // Handle persona change
   const handleSelectRole = async (r: UserRoleType) => {
     setSelectedRole(r);
-    const defaultName = r === 'sonne' ? 'Sonne (Stefanie)' : 'Mond (Manuel)';
+    const defaultName = r === 'sonne' ? 'Die Sonne' : 'Der Mond';
     await setRole(r, defaultName);
-    setRoleFeedback(`Rolle gewechselt zu ${r === 'sonne' ? 'Sonne (Stefanie)' : 'Mond (Manuel)'}`);
+    setRoleFeedback(`Rolle gewechselt zu ${r === 'sonne' ? 'Die Sonne' : 'Der Mond'}`);
     setTimeout(() => setRoleFeedback(null), 3000);
   };
 
@@ -167,6 +173,24 @@ export const SettingsSpace: React.FC = () => {
   const handleTestThought = async () => {
     await ensurePermissionAndSend(() => sendTestSharedThought(selectedRole));
     setTestFeedback('Test: Gedanken Teilen Mitteilung gesendet & im Log vermerkt!');
+    setTimeout(() => setTestFeedback(null), 4000);
+  };
+
+  const handleTestGuidedMeditationInvite = async () => {
+    await ensurePermissionAndSend(() => sendTestGuidedMeditationInvite(selectedRole));
+    setTestFeedback('Test: Geführte Meditation Einladung gesendet & im Log vermerkt!');
+    setTimeout(() => setTestFeedback(null), 4000);
+  };
+
+  const handleTestCouplesMeditationInvite = async () => {
+    await ensurePermissionAndSend(() => sendTestCouplesMeditationInvite(selectedRole));
+    setTestFeedback('Test: Paar-Meditation Einladung gesendet & im Log vermerkt!');
+    setTimeout(() => setTestFeedback(null), 4000);
+  };
+
+  const handleTestDreamJourneyInvite = async () => {
+    await ensurePermissionAndSend(() => sendTestDreamJourneyInvite(selectedRole));
+    setTestFeedback('Test: Traumreise Einladung gesendet & im Log vermerkt!');
     setTimeout(() => setTestFeedback(null), 4000);
   };
 
@@ -252,7 +276,7 @@ export const SettingsSpace: React.FC = () => {
               </h3>
             </div>
             <span className="text-[11px] text-[#ebd8c8] font-semibold">
-              Aktuell: {selectedRole === 'sonne' ? 'Sonne (Stefanie)' : 'Mond (Manuel)'}
+              Aktuell: {selectedRole === 'sonne' ? 'Die Sonne' : 'Der Mond'}
             </span>
           </div>
 
@@ -271,7 +295,7 @@ export const SettingsSpace: React.FC = () => {
               }`}
             >
               <Sun className="w-4 h-4 text-[#ffe89c] shrink-0" />
-              <span className="text-xs font-semibold">Sonne (Stefanie)</span>
+              <span className="text-xs font-semibold">Die Sonne</span>
             </button>
 
             <button
@@ -284,7 +308,7 @@ export const SettingsSpace: React.FC = () => {
               }`}
             >
               <Moon className="w-4 h-4 text-[#c79b78] shrink-0" />
-              <span className="text-xs font-semibold">Mond (Manuel)</span>
+              <span className="text-xs font-semibold">Der Mond</span>
             </button>
           </div>
         </section>
@@ -427,13 +451,13 @@ export const SettingsSpace: React.FC = () => {
           </p>
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2.5">
           
           {/* Test 1: Morgen Affirmation */}
           <button
             type="button"
             onClick={handleTestAffirmation}
-            className="p-3 rounded-2xl bg-white/5 border border-[#c79b78]/40 hover:border-[#c79b78] hover:bg-white/10 text-left transition space-y-1.5 group"
+            className="p-3 rounded-2xl bg-white/5 border border-[#c79b78]/40 hover:border-[#c79b78] hover:bg-white/10 text-left transition space-y-1.5 group cursor-pointer"
           >
             <div className="flex items-center justify-between">
               <span className="text-base">🌅</span>
@@ -453,7 +477,7 @@ export const SettingsSpace: React.FC = () => {
           <button
             type="button"
             onClick={handleTestStar}
-            className="p-3 rounded-2xl bg-white/5 border border-[#c79b78]/40 hover:border-[#c79b78] hover:bg-white/10 text-left transition space-y-1.5 group"
+            className="p-3 rounded-2xl bg-white/5 border border-[#c79b78]/40 hover:border-[#c79b78] hover:bg-white/10 text-left transition space-y-1.5 group cursor-pointer"
           >
             <div className="flex items-center justify-between">
               <span className="text-base">✨</span>
@@ -473,7 +497,7 @@ export const SettingsSpace: React.FC = () => {
           <button
             type="button"
             onClick={handleTestThought}
-            className="p-3 rounded-2xl bg-white/5 border border-[#c79b78]/40 hover:border-[#c79b78] hover:bg-white/10 text-left transition space-y-1.5 group"
+            className="p-3 rounded-2xl bg-white/5 border border-[#c79b78]/40 hover:border-[#c79b78] hover:bg-white/10 text-left transition space-y-1.5 group cursor-pointer"
           >
             <div className="flex items-center justify-between">
               <span className="text-base">💬</span>
@@ -486,6 +510,66 @@ export const SettingsSpace: React.FC = () => {
             </div>
             <p className="text-[10px] text-white/60 leading-tight">
               Testet Benachrichtigung bei neuen Journal-Gedanken.
+            </p>
+          </button>
+
+          {/* Test 4: Geführte Meditation Einladung */}
+          <button
+            type="button"
+            onClick={handleTestGuidedMeditationInvite}
+            className="p-3 rounded-2xl bg-white/5 border border-[#c79b78]/40 hover:border-[#c79b78] hover:bg-white/10 text-left transition space-y-1.5 group cursor-pointer"
+          >
+            <div className="flex items-center justify-between">
+              <Compass className="w-4 h-4 text-[#c79b78]" />
+              <span className="px-2 py-0.5 rounded-full bg-[#c79b78]/20 text-[#ebd8c8] text-[9px] font-bold uppercase">
+                Test
+              </span>
+            </div>
+            <div className="font-bold text-xs text-[#ebd8c8] group-hover:underline">
+              Geführte Meditation
+            </div>
+            <p className="text-[10px] text-white/60 leading-tight">
+              Testet die Einladung zu einer Geführten Meditation.
+            </p>
+          </button>
+
+          {/* Test 5: Paar-Meditation Einladung */}
+          <button
+            type="button"
+            onClick={handleTestCouplesMeditationInvite}
+            className="p-3 rounded-2xl bg-white/5 border border-[#c79b78]/40 hover:border-[#c79b78] hover:bg-white/10 text-left transition space-y-1.5 group cursor-pointer"
+          >
+            <div className="flex items-center justify-between">
+              <Heart className="w-4 h-4 text-[#c79b78]" />
+              <span className="px-2 py-0.5 rounded-full bg-[#c79b78]/20 text-[#ebd8c8] text-[9px] font-bold uppercase">
+                Test
+              </span>
+            </div>
+            <div className="font-bold text-xs text-[#ebd8c8] group-hover:underline">
+              Paar-Meditation
+            </div>
+            <p className="text-[10px] text-white/60 leading-tight">
+              Testet die Einladung zu einer Tantra Paar-Meditation.
+            </p>
+          </button>
+
+          {/* Test 6: Traumreise Einladung */}
+          <button
+            type="button"
+            onClick={handleTestDreamJourneyInvite}
+            className="p-3 rounded-2xl bg-white/5 border border-[#c79b78]/40 hover:border-[#c79b78] hover:bg-white/10 text-left transition space-y-1.5 group cursor-pointer"
+          >
+            <div className="flex items-center justify-between">
+              <Feather className="w-4 h-4 text-[#c79b78]" />
+              <span className="px-2 py-0.5 rounded-full bg-[#c79b78]/20 text-[#ebd8c8] text-[9px] font-bold uppercase">
+                Test
+              </span>
+            </div>
+            <div className="font-bold text-xs text-[#ebd8c8] group-hover:underline">
+              Traumreise
+            </div>
+            <p className="text-[10px] text-white/60 leading-tight">
+              Testet die Einladung zu einer entspannenden Traumreise.
             </p>
           </button>
 

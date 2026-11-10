@@ -400,7 +400,8 @@ export const sendTestSommernachtAmSeeInvite = async (userRole: UserRoleType): Pr
     {
       body: `${senderName} lädt dich zu einer magischen Sommernacht am See ein. Lass den Alltag hinter dir und genieße die Stille und das sanfte Leuchten der Sterne über dem Wasser.`,
       tag: 'test-sommernacht-am-see',
-    },
+      icon: '/lake-moon-icon.png',
+    } as any,
     true,
     'lake'
   );
@@ -414,7 +415,8 @@ export const sendSommernachtAmSeeInvite = async (userRole: UserRoleType): Promis
     {
       body: `${senderName} lädt dich zu einer magischen Sommernacht am See ein. Lass den Alltag hinter dir und genieße die Stille und das sanfte Leuchten der Sterne über dem Wasser.`,
       tag: `sommernacht-am-see-${Date.now()}`,
-    },
+      icon: '/lake-moon-icon.png',
+    } as any,
     false,
     'lake'
   );

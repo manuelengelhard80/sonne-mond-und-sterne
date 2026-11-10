@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Sparkles, Sun, Moon, Play, Pause, Music, RefreshCw, Heart, Plus, Check } from 'lucide-react';
+import { Sparkles, Sun, Moon, Play, Pause, Music, RefreshCw, Heart, Plus, Check, Send } from 'lucide-react';
 import { useUserRole } from '../context/UserRoleContext';
 import { sendSommernachtAmSeeInvite } from '../services/notificationService';
 
@@ -243,32 +243,6 @@ export const SommernachtSee: React.FC = () => {
           </p>
         </div>
 
-        <div className="flex flex-wrap items-center justify-between gap-4 pt-4 border-t border-[#dfba61]/20 mt-4">
-          <button
-            onClick={() => setIsExpanded(!isExpanded)}
-            className="flex items-center gap-3 text-[#dfba61] hover:text-[#ebd8c8] transition-all text-sm font-bold uppercase tracking-[0.15em] group"
-          >
-            <div className={`flex items-center justify-center w-8 h-8 rounded-full bg-[#dfba61]/10 border border-[#dfba61]/30 group-hover:bg-[#dfba61]/20 group-hover:scale-110 transition-all ${isExpanded ? 'rotate-45' : ''}`}>
-              <Plus className="w-4 h-4" />
-            </div>
-            <span>{isExpanded ? 'Weniger lesen' : 'Mehr lesen'}</span>
-          </button>
-
-          <button
-            type="button"
-            onClick={handleSendInvite}
-            className="flex items-center gap-2.5 px-4 py-2 rounded-xl bg-white/5 hover:bg-white/10 border border-[#c79b78]/40 hover:border-[#dfba61] text-xs font-bold text-[#ebd8c8] transition shadow-md group cursor-pointer"
-            title="Sende deinem Partner eine Einladung zu einer Sommernacht am See"
-          >
-            <img
-              src="/lake-moon-icon.png"
-              className="w-5 h-5 rounded-full object-cover shadow-sm ring-1 ring-[#c79b78]/40 group-hover:scale-110 transition-transform"
-              alt="Sommernacht"
-            />
-            <span>{inviteSent ? 'Einladung versendet! ✨' : 'Einladung aufs Handy senden'}</span>
-          </button>
-        </div>
-
       </div>
 
       {/* Second Container: Sommernacht am See MP3 Player & Invite */}
@@ -386,6 +360,9 @@ const SommernachtAudioSection: React.FC = () => {
         <h2 className="font-serif-serif text-3xl sm:text-4xl font-bold gold-gradient-text">
           Sommernacht am See
         </h2>
+        <p className="text-sm text-white/80 max-w-md mx-auto">
+          Kehre zurück an den Ort an dem alles begann.
+        </p>
       </div>
 
       {/* MP3 Player Card */}
@@ -476,21 +453,17 @@ const SommernachtAudioSection: React.FC = () => {
         </div>
       </div>
 
-      <div className="flex flex-col items-center gap-2 pt-2">
+      <div className="flex flex-col items-center gap-2 pt-1">
         <button
           type="button"
           onClick={handleSendInvite}
-          className="px-5 py-3 rounded-xl bg-[#071920] border-2 border-[#c79b78] hover:border-[#dfba61] text-[#ebd8c8] hover:text-white font-bold text-xs sm:text-sm tracking-wide shadow-xl transition active:scale-95 flex items-center justify-center gap-2.5 cursor-pointer w-full sm:w-auto"
+          className="px-4 py-2.5 rounded-xl bg-[#071920] border-2 border-[#c79b78] hover:border-[#dfba61] text-[#ebd8c8] hover:text-white font-bold text-xs sm:text-sm tracking-wide shadow-lg transition active:scale-95 flex items-center justify-center gap-2 cursor-pointer"
         >
-          <img
-            src="/lake-moon-icon.png"
-            className="w-5 h-5 rounded-full object-cover shadow-sm ring-1 ring-[#c79b78]/40"
-            alt="Sommernacht"
-          />
+          <Send className="w-4 h-4 text-[#c79b78]" />
           <span>Zu einer Sommernacht am See einladen</span>
         </button>
         {inviteSent && (
-          <span className="text-xs text-emerald-400 font-semibold flex items-center gap-1 animate-fade-in pt-1">
+          <span className="text-xs text-emerald-400 font-semibold flex items-center gap-1 animate-fade-in">
             <Check className="w-3.5 h-3.5" /> Einladung wurde gesendet & im Log vermerkt!
           </span>
         )}

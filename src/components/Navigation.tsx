@@ -203,7 +203,7 @@ export const Navigation: React.FC<NavigationProps> = ({
                       <Icon className="w-3.5 h-3.5" />
                     </div>
                     {isMessages && unreadCount > 0 && (
-                      <span className="absolute -top-1.5 -left-1.5 min-w-[18px] h-[18px] px-1 flex items-center justify-center bg-[#f04423] text-white text-[10px] font-bold rounded-full shadow-md border border-white/50 animate-pulse z-20 pointer-events-none">
+                      <span className="absolute -top-1.5 -right-1.5 min-w-[18px] h-[18px] px-1 flex items-center justify-center bg-[#f04423] text-white text-[10px] font-bold rounded-full shadow-md border border-white/50 animate-pulse z-20 pointer-events-none">
                         {unreadCount > 99 ? '99+' : unreadCount}
                       </span>
                     )}

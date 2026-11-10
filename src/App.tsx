@@ -16,6 +16,8 @@ import { TraumreisenSpace } from './components/TraumreisenSpace';
 import { JournalSpace } from './components/JournalSpace';
 import { SommernachtSee } from './components/SommernachtSee';
 import { SettingsSpace } from './components/SettingsSpace';
+import { Messages } from './components/Messages';
+import { HappinessKey } from './components/HappinessKey';
 import { Heart, Play, Pause, Bell, X } from 'lucide-react';
 import { soundSynth } from './services/soundSynth';
 
@@ -71,23 +73,6 @@ function MainApp() {
       unsub();
     };
   }, [role, currentUserId]);
-
-  const [activeToast, setActiveToast] = useState<{ title: string; body: string; isTest: boolean } | null>(null);
-
-  useEffect(() => {
-    const handleToast = (e: any) => {
-      if (e.detail) {
-        setActiveToast(e.detail);
-        setTimeout(() => {
-          setActiveToast(null);
-        }, 6000);
-      }
-    };
-    window.addEventListener('show-in-app-toast', handleToast);
-    return () => {
-      window.removeEventListener('show-in-app-toast', handleToast);
-    };
-  }, []);
 
   const mindfulnessAudioRef = useRef<HTMLAudioElement | null>(null);
 
@@ -169,36 +154,6 @@ function MainApp() {
         preload="auto"
       />
       
-      {/* Floating Notification Toast Banner */}
-      {activeToast && (
-        <div className="fixed top-4 inset-x-4 z-50 max-w-md mx-auto bg-[#0a232c] border-2 border-[#c79b78] rounded-2xl p-4 shadow-[0_10px_40px_rgba(0,0,0,0.8)] text-white animate-fade-in flex items-start gap-3 backdrop-blur-xl">
-          <div className="p-2 rounded-xl bg-[#c79b78]/20 text-[#ebd8c8] shrink-0 mt-0.5">
-            <Bell className="w-5 h-5 text-[#c79b78]" />
-          </div>
-          <div className="flex-1 space-y-1">
-            <div className="flex items-center justify-between">
-              <span className="font-serif-serif font-bold text-sm text-[#ebd8c8]">
-                {activeToast.title}
-              </span>
-              {activeToast.isTest && (
-                <span className="px-2 py-0.5 rounded bg-[#c79b78] text-[#071920] font-bold text-[9px] uppercase">
-                  Test
-                </span>
-              )}
-            </div>
-            <p className="text-xs text-white/80 leading-relaxed">
-              {activeToast.body}
-            </p>
-          </div>
-          <button
-            onClick={() => setActiveToast(null)}
-            className="p-1 rounded-lg hover:bg-white/10 text-white/60 hover:text-white transition"
-          >
-            <X className="w-4 h-4" />
-          </button>
-        </div>
-      )}
-
       {/* 1. Full Bleed Hero Header Image */}
       <div className="relative w-full bg-[#0a232c] overflow-hidden flex items-center justify-center portrait:h-[50vh] portrait:min-h-[380px] portrait:max-h-[540px] landscape:h-[60vh] landscape:min-h-[440px] landscape:max-h-[720px] sm:h-[60vh] sm:min-h-[440px] sm:max-h-[700px]">
         <img
@@ -272,6 +227,8 @@ function MainApp() {
         {activeTab === 'meditation' && <MeditationSpace />}
         {activeTab === 'traumreisen' && <TraumreisenSpace />}
         {activeTab === 'journal' && <JournalSpace />}
+        {activeTab === 'messages' && <Messages />}
+        {activeTab === 'happiness' && <HappinessKey />}
         {activeTab === 'settings' && <SettingsSpace />}
       </main>
 

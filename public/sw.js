@@ -27,8 +27,8 @@ function triggerScheduledNotificationIfDue() {
     self.registration.showNotification(title, {
       body,
       tag: tag || 'daily-morning-affirmation',
-      icon: '/app-icon-selected.jpg',
-      badge: '/app-icon-selected.jpg',
+      icon: '/pwa-icon-192.png',
+      badge: '/badge-icon.png',
       vibrate: [200, 100, 200],
     });
   }

@@ -12,9 +12,13 @@ import {
   Waves,
   Settings,
   LayoutGrid,
-  X
+  X,
+  Mail,
+  Key
 } from 'lucide-react';
 import { useTheme } from '../context/ThemeContext';
+import { getNotificationLogs } from '../services/notificationService';
+import { NotificationLogEntry } from '../types';
 
 interface NavigationProps {
   activeTab: ActiveTab;
@@ -27,8 +31,24 @@ export const Navigation: React.FC<NavigationProps> = ({
 }) => {
   const { isCopper } = useTheme();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [hasUnread, setHasUnread] = useState(false);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const activeBtnRef = useRef<HTMLButtonElement | null>(null);
+
+  const checkUnread = () => {
+    const logs = getNotificationLogs();
+    const lastReadId = localStorage.getItem('last_read_log_id');
+    setHasUnread(logs.length > 0 && logs[0].id !== lastReadId);
+  };
+
+  useEffect(() => {
+    checkUnread();
+    window.addEventListener('notification-log-updated', checkUnread);
+    return () => {
+      window.removeEventListener('notification-log-updated', checkUnread);
+    };
+  }, []);
+
 
   // Alle 10 Bereiche inklusive der neuen Unterseite "Einstellungen"
   const navItems = [
@@ -40,7 +60,9 @@ export const Navigation: React.FC<NavigationProps> = ({
     { id: 'meditation', label: 'Meditation', icon: Compass },
     { id: 'traumreisen', label: 'Traumreisen', icon: Feather },
     { id: 'lake', label: 'Das Mädchen vom See', icon: Waves },
+    { id: 'happiness', label: 'Der Schlüssel zum Glück', icon: Key },
     { id: 'journal', label: 'Gedanken teilen', icon: Heart },
+    { id: 'messages', label: 'Nachrichten', icon: Mail },
     { id: 'settings', label: 'Einstellungen', icon: Settings },
   ] as const;
 
@@ -74,6 +96,7 @@ export const Navigation: React.FC<NavigationProps> = ({
           {navItems.map((item) => {
             const Icon = item.icon;
             const isActive = activeTab === item.id;
+            const isMessages = item.id === 'messages';
             return (
               <button
                 key={item.id}
@@ -85,6 +108,9 @@ export const Navigation: React.FC<NavigationProps> = ({
                     : 'text-[#c79b78]/75 hover:text-[#ebd8c8] hover:bg-white/5 font-medium'
                 }`}
               >
+                {isMessages && hasUnread && (
+                  <div className="absolute top-1 right-2 w-2 h-2 bg-red-500 rounded-full animate-pulse" />
+                )}
                 <Icon className={`w-3.5 h-3.5 shrink-0 transition-colors ${isActive ? 'text-[#ebd8c8]' : 'text-[#c79b78]/80'}`} />
                 <span className={isActive ? 'gold-gradient-text font-bold' : ''}>{item.label}</span>
               </button>
@@ -124,16 +150,20 @@ export const Navigation: React.FC<NavigationProps> = ({
             {navItems.map((item) => {
               const Icon = item.icon;
               const isActive = activeTab === item.id;
+              const isMessages = item.id === 'messages';
               return (
                 <button
                   key={item.id}
                   onClick={() => handleSelectTab(item.id as ActiveTab)}
-                  className={`flex items-center gap-2 p-2.5 rounded-xl text-left text-xs transition-all ${
+                  className={`relative flex items-center gap-2 p-2.5 rounded-xl text-left text-xs transition-all ${
                     isActive
                       ? 'bg-white/12 text-[#ebd8c8] font-bold shadow-sm'
                       : 'bg-white/5 hover:bg-white/10 text-[#c79b78]/75 hover:text-[#ebd8c8]'
                   }`}
                 >
+                  {isMessages && hasUnread && (
+                    <div className="absolute top-2 right-2 w-2 h-2 bg-red-500 rounded-full animate-pulse" />
+                  )}
                   <div className={`p-1.5 rounded-lg shrink-0 ${isActive ? 'bg-[#c79b78]/25 text-[#ebd8c8]' : 'bg-[#c79b78]/10 text-[#c79b78]/80'}`}>
                     <Icon className="w-3.5 h-3.5" />
                   </div>
@@ -151,6 +181,7 @@ export const Navigation: React.FC<NavigationProps> = ({
           {navItems.map((item) => {
             const Icon = item.icon;
             const isActive = activeTab === item.id;
+            const isMessages = item.id === 'messages';
             return (
               <button
                 key={item.id}
@@ -161,6 +192,9 @@ export const Navigation: React.FC<NavigationProps> = ({
                     : 'text-[#c79b78]/75 hover:text-[#ebd8c8] hover:bg-white/5 font-medium'
                 }`}
               >
+                {isMessages && hasUnread && (
+                  <div className="absolute top-1.5 right-2 w-2 h-2 bg-red-500 rounded-full animate-pulse" />
+                )}
                 <Icon className={`w-4 h-4 shrink-0 transition-colors ${isActive ? 'text-[#ebd8c8]' : 'text-[#c79b78]/80'}`} />
                 <span className={`text-center leading-tight ${isActive ? 'gold-gradient-text font-bold' : ''}`}>{item.label}</span>
               </button>

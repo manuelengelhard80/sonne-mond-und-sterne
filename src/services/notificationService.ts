@@ -59,6 +59,15 @@ export const clearNotificationLogs = (): void => {
   }
 };
 
+export const removeNotificationLogEntry = (id: string): void => {
+  if (typeof window !== 'undefined') {
+    const existing = getNotificationLogs();
+    const updated = existing.filter((entry) => entry.id !== id);
+    localStorage.setItem(LOG_STORAGE_KEY, JSON.stringify(updated));
+    window.dispatchEvent(new CustomEvent('notification-log-updated', { detail: updated }));
+  }
+};
+
 let swRegistration: ServiceWorkerRegistration | null = null;
 let morningTimerId: number | null = null;
 
@@ -116,21 +125,13 @@ export const sendAppNotification = async (
   // Always log the notification and trigger in-app visual toast
   addNotificationLog(title, bodyText, isTest, logType);
 
-  if (typeof window !== 'undefined') {
-    window.dispatchEvent(
-      new CustomEvent('show-in-app-toast', {
-        detail: { title, body: bodyText, isTest },
-      })
-    );
-  }
-
   if (!isNotificationSupported() || Notification.permission !== 'granted') {
     return false;
   }
 
   const notificationOptions: NotificationOptions = {
-    icon: '/app-icon-selected.jpg',
-    badge: '/app-icon-selected.jpg',
+    icon: '/pwa-icon-192.png',
+    badge: '/badge-icon.png',
     ...options,
   };
 

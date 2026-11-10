@@ -83,7 +83,7 @@ export const Messages: React.FC = () => {
                             className="w-5 h-5 rounded-full object-cover shrink-0 inline-block shadow-sm ring-1 ring-[#c79b78]/40"
                             alt="Sommernacht am See"
                           />
-                          <span>{log.title.replace('🌊', '').replace('🌙', '').trim()}</span>
+                          <span>{log.title.replace(/^[🌙🌊\s]+/, '').trim()}</span>
                         </>
                       ) : (
                         log.title

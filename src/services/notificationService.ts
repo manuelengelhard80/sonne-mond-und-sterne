@@ -396,13 +396,11 @@ export const sendTestHimmelsbegegnung = async (userRole: UserRoleType): Promise<
 export const sendTestSommernachtAmSeeInvite = async (userRole: UserRoleType): Promise<boolean> => {
   const senderName = userRole === 'sonne' ? 'Die Sonne' : 'Der Mond';
   return sendAppNotification(
-    '🌙 Einladung zu einer Sommernacht am See',
+    '🌙🌊 Einladung zu einer Sommernacht am See',
     {
       body: `${senderName} lädt dich zu einer magischen Sommernacht am See ein. Lass den Alltag hinter dir und genieße die Stille und das sanfte Leuchten der Sterne über dem Wasser.`,
       tag: 'test-sommernacht-am-see',
-      icon: '/lake-moon-icon.png',
-      image: '/lake-moon-icon.png',
-    } as any,
+    },
     true,
     'lake'
   );
@@ -412,13 +410,11 @@ export const sendTestSommernachtAmSeeInvite = async (userRole: UserRoleType): Pr
 export const sendSommernachtAmSeeInvite = async (userRole: UserRoleType): Promise<boolean> => {
   const senderName = userRole === 'sonne' ? 'Die Sonne' : 'Der Mond';
   return sendAppNotification(
-    '🌙 Einladung zu einer Sommernacht am See',
+    '🌙🌊 Einladung zu einer Sommernacht am See',
     {
       body: `${senderName} lädt dich zu einer magischen Sommernacht am See ein. Lass den Alltag hinter dir und genieße die Stille und das sanfte Leuchten der Sterne über dem Wasser.`,
       tag: `sommernacht-am-see-${Date.now()}`,
-      icon: '/lake-moon-icon.png',
-      image: '/lake-moon-icon.png',
-    } as any,
+    },
     false,
     'lake'
   );

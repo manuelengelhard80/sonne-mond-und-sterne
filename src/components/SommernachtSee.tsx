@@ -1,12 +1,22 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Sparkles, Sun, Moon, Play, Pause, Music, RefreshCw, Heart, Plus } from 'lucide-react';
+import { useUserRole } from '../context/UserRoleContext';
+import { sendSommernachtAmSeeInvite } from '../services/notificationService';
 
 export const SommernachtSee: React.FC = () => {
+  const { role } = useUserRole();
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const [isPlaying, setIsPlaying] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(180);
+  const [inviteSent, setInviteSent] = useState(false);
+
+  const handleSendInvite = async () => {
+    await sendSommernachtAmSeeInvite(role);
+    setInviteSent(true);
+    setTimeout(() => setInviteSent(false), 4000);
+  };
 
   // Set audio src directly to local static asset for 100% reliable online & mobile playback
   useEffect(() => {
@@ -233,15 +243,31 @@ export const SommernachtSee: React.FC = () => {
           </p>
         </div>
 
-        <button
-          onClick={() => setIsExpanded(!isExpanded)}
-          className="flex items-center gap-3 text-[#dfba61] hover:text-[#ebd8c8] transition-all text-sm font-bold uppercase tracking-[0.15em] mt-4 group"
-        >
-          <div className={`flex items-center justify-center w-8 h-8 rounded-full bg-[#dfba61]/10 border border-[#dfba61]/30 group-hover:bg-[#dfba61]/20 group-hover:scale-110 transition-all ${isExpanded ? 'rotate-45' : ''}`}>
-            <Plus className="w-4 h-4" />
-          </div>
-          <span>{isExpanded ? 'Weniger lesen' : 'Mehr lesen'}</span>
-        </button>
+        <div className="flex flex-wrap items-center justify-between gap-4 pt-4 border-t border-[#dfba61]/20 mt-4">
+          <button
+            onClick={() => setIsExpanded(!isExpanded)}
+            className="flex items-center gap-3 text-[#dfba61] hover:text-[#ebd8c8] transition-all text-sm font-bold uppercase tracking-[0.15em] group"
+          >
+            <div className={`flex items-center justify-center w-8 h-8 rounded-full bg-[#dfba61]/10 border border-[#dfba61]/30 group-hover:bg-[#dfba61]/20 group-hover:scale-110 transition-all ${isExpanded ? 'rotate-45' : ''}`}>
+              <Plus className="w-4 h-4" />
+            </div>
+            <span>{isExpanded ? 'Weniger lesen' : 'Mehr lesen'}</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={handleSendInvite}
+            className="flex items-center gap-2.5 px-4 py-2 rounded-xl bg-white/5 hover:bg-white/10 border border-[#c79b78]/40 hover:border-[#dfba61] text-xs font-bold text-[#ebd8c8] transition shadow-md group cursor-pointer"
+            title="Sende deinem Partner eine Einladung zu einer Sommernacht am See"
+          >
+            <img
+              src="/lake-moon-icon.png"
+              className="w-5 h-5 rounded-full object-cover shadow-sm ring-1 ring-[#c79b78]/40 group-hover:scale-110 transition-transform"
+              alt="Sommernacht"
+            />
+            <span>{inviteSent ? 'Einladung versendet! ✨' : 'Einladung aufs Handy senden'}</span>
+          </button>
+        </div>
 
       </div>
 

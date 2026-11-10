@@ -17,13 +17,36 @@ export const MORNING_AFFIRMATIONS: string[] = [
 
 const LOG_STORAGE_KEY = 'sonne_mond_notification_logs';
 
+export const INITIAL_NOTIFICATION_LOGS: NotificationLogEntry[] = [
+  {
+    id: 'log-welcome-morning',
+    timestamp: '05:00:00',
+    title: '🌅 Guten Morgen, mein lieber Mond! 🌕',
+    body: 'Dein positiver Gedanke für heute: "Wie Sonne, Mond und Sterne ihren festen Platz am Himmel haben, gehörst du unersetzbar hierher."',
+    isTest: false,
+    type: 'morgen_affirmation',
+  },
+  {
+    id: 'log-welcome-thought',
+    timestamp: '07:30:00',
+    title: '💌 Gedanken teilen...',
+    body: 'Der Mond 🌕 hat einen Gedanken mit dir geteilt, meine liebe Sonne. ☀️\nSchau ihn dir an!',
+    isTest: false,
+    type: 'gedanken',
+  }
+];
+
 export const getNotificationLogs = (): NotificationLogEntry[] => {
   if (typeof window === 'undefined') return [];
   try {
     const raw = localStorage.getItem(LOG_STORAGE_KEY);
-    return raw ? JSON.parse(raw) : [];
+    if (!raw) {
+      localStorage.setItem(LOG_STORAGE_KEY, JSON.stringify(INITIAL_NOTIFICATION_LOGS));
+      return INITIAL_NOTIFICATION_LOGS;
+    }
+    return JSON.parse(raw);
   } catch {
-    return [];
+    return INITIAL_NOTIFICATION_LOGS;
   }
 };
 
@@ -373,13 +396,31 @@ export const sendTestHimmelsbegegnung = async (userRole: UserRoleType): Promise<
 export const sendTestSommernachtAmSeeInvite = async (userRole: UserRoleType): Promise<boolean> => {
   const senderName = userRole === 'sonne' ? 'Die Sonne' : 'Der Mond';
   return sendAppNotification(
-    '🌊 Einladung zu einer Sommernacht am See',
+    '🌙 Einladung zu einer Sommernacht am See',
     {
       body: `${senderName} lädt dich zu einer magischen Sommernacht am See ein. Lass den Alltag hinter dir und genieße die Stille und das sanfte Leuchten der Sterne über dem Wasser.`,
       tag: 'test-sommernacht-am-see',
-    },
+      icon: '/lake-moon-icon.png',
+      image: '/lake-moon-icon.png',
+    } as any,
     true,
-    'test'
+    'lake'
+  );
+};
+
+// Real Sommernacht am See Invite
+export const sendSommernachtAmSeeInvite = async (userRole: UserRoleType): Promise<boolean> => {
+  const senderName = userRole === 'sonne' ? 'Die Sonne' : 'Der Mond';
+  return sendAppNotification(
+    '🌙 Einladung zu einer Sommernacht am See',
+    {
+      body: `${senderName} lädt dich zu einer magischen Sommernacht am See ein. Lass den Alltag hinter dir und genieße die Stille und das sanfte Leuchten der Sterne über dem Wasser.`,
+      tag: `sommernacht-am-see-${Date.now()}`,
+      icon: '/lake-moon-icon.png',
+      image: '/lake-moon-icon.png',
+    } as any,
+    false,
+    'lake'
   );
 };
 

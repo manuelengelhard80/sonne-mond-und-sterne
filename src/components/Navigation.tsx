@@ -131,7 +131,7 @@ export const Navigation: React.FC<NavigationProps> = ({
         {/* Horizontal scrollable tabs with edge fade */}
         <div
           ref={scrollContainerRef}
-          className="flex-1 flex items-center overflow-x-auto scrollbar-none gap-1.5 py-1 px-1 scroll-smooth"
+          className="flex-1 flex items-center overflow-x-auto scrollbar-none gap-1.5 py-1.5 px-1 scroll-smooth"
           style={{ WebkitOverflowScrolling: 'touch' }}
         >
           {navItems.map((item) => {
@@ -149,13 +149,20 @@ export const Navigation: React.FC<NavigationProps> = ({
                     : 'text-[#c79b78]/75 hover:text-[#ebd8c8] hover:bg-white/5 font-medium'
                 }`}
               >
+                <div className="relative flex items-center justify-center">
+                  <Icon className={`w-3.5 h-3.5 shrink-0 transition-colors ${isActive ? 'text-[#ebd8c8]' : 'text-[#c79b78]/80'}`} />
+                  {isMessages && unreadCount > 0 && (
+                    <span className="absolute -top-2 -right-2.5 min-w-[16px] h-[16px] px-0.5 flex items-center justify-center bg-[#f04423] text-white text-[9px] font-bold rounded-full shadow-md border border-white/50 animate-pulse z-20 pointer-events-none">
+                      {unreadCount > 99 ? '99+' : unreadCount}
+                    </span>
+                  )}
+                </div>
+                <span className={isActive ? 'gold-gradient-text font-bold' : ''}>{item.label}</span>
                 {isMessages && unreadCount > 0 && (
-                  <span className="absolute -top-1 -right-1 min-w-[18px] h-[18px] px-1 flex items-center justify-center bg-[#e53935] text-white text-[10px] font-bold rounded-full shadow-md border border-white/30 animate-pulse z-10 pointer-events-none">
-                    {unreadCount > 99 ? '99+' : unreadCount}
+                  <span className="ml-0.5 px-1.5 py-0.2 rounded-full bg-[#f04423] text-white text-[10px] font-bold shadow-sm">
+                    {unreadCount}
                   </span>
                 )}
-                <Icon className={`w-3.5 h-3.5 shrink-0 transition-colors ${isActive ? 'text-[#ebd8c8]' : 'text-[#c79b78]/80'}`} />
-                <span className={isActive ? 'gold-gradient-text font-bold' : ''}>{item.label}</span>
               </button>
             );
           })}
@@ -164,7 +171,7 @@ export const Navigation: React.FC<NavigationProps> = ({
         {/* Mobile All-Rooms Grid Toggle Button */}
         <button
           onClick={() => setMobileMenuOpen((prev) => !prev)}
-          className={`shrink-0 p-2 rounded-xl border transition-all ${
+          className={`shrink-0 p-2 rounded-xl border transition-all relative ${
             mobileMenuOpen
               ? 'bg-[#071920] text-[#ebd8c8] border-[#c79b78]'
               : 'bg-white/5 text-[#c79b78] border-[#c79b78]/30 hover:border-[#c79b78] hover:bg-white/10'
@@ -172,6 +179,11 @@ export const Navigation: React.FC<NavigationProps> = ({
           title={mobileMenuOpen ? 'Menü schließen' : 'Alle Bereiche anzeigen'}
           aria-label="Menü"
         >
+          {unreadCount > 0 && (
+            <span className="absolute -top-1.5 -right-1.5 min-w-[17px] h-[17px] px-1 flex items-center justify-center bg-[#f04423] text-white text-[9px] font-bold rounded-full shadow-md border border-white/50 animate-pulse z-20 pointer-events-none">
+              {unreadCount > 99 ? '99+' : unreadCount}
+            </span>
+          )}
           {mobileMenuOpen ? (
             <X className="w-4 h-4 text-[#ebd8c8]" />
           ) : (
@@ -204,15 +216,22 @@ export const Navigation: React.FC<NavigationProps> = ({
                       : 'bg-white/5 hover:bg-white/10 text-[#c79b78]/75 hover:text-[#ebd8c8]'
                   }`}
                 >
-                  {isMessages && unreadCount > 0 && (
-                    <span className="absolute top-1.5 right-2 min-w-[18px] h-[18px] px-1 flex items-center justify-center bg-[#e53935] text-white text-[10px] font-bold rounded-full shadow-md border border-white/30 animate-pulse z-10 pointer-events-none">
-                      {unreadCount > 99 ? '99+' : unreadCount}
-                    </span>
-                  )}
-                  <div className={`p-1.5 rounded-lg shrink-0 ${isActive ? 'bg-[#c79b78]/25 text-[#ebd8c8]' : 'bg-[#c79b78]/10 text-[#c79b78]/80'}`}>
-                    <Icon className="w-3.5 h-3.5" />
+                  <div className="relative flex items-center justify-center">
+                    <div className={`p-1.5 rounded-lg shrink-0 ${isActive ? 'bg-[#c79b78]/25 text-[#ebd8c8]' : 'bg-[#c79b78]/10 text-[#c79b78]/80'}`}>
+                      <Icon className="w-3.5 h-3.5" />
+                    </div>
+                    {isMessages && unreadCount > 0 && (
+                      <span className="absolute -top-1.5 -right-2 min-w-[17px] h-[17px] px-1 flex items-center justify-center bg-[#f04423] text-white text-[9px] font-bold rounded-full shadow-md border border-white/50 animate-pulse z-20 pointer-events-none">
+                        {unreadCount > 99 ? '99+' : unreadCount}
+                      </span>
+                    )}
                   </div>
                   <span className={`truncate ${isActive ? 'gold-gradient-text font-bold' : ''}`}>{item.label}</span>
+                  {isMessages && unreadCount > 0 && (
+                    <span className="ml-auto px-2 py-0.5 rounded-full bg-[#f04423] text-white text-[10px] font-bold shadow-sm">
+                      {unreadCount}
+                    </span>
+                  )}
                 </button>
               );
             })}
@@ -240,19 +259,26 @@ export const Navigation: React.FC<NavigationProps> = ({
                   }
                   setActiveTab(item.id as ActiveTab);
                 }}
-                className={`relative flex items-center justify-center gap-1.5 px-3.5 py-2 rounded-xl text-xs sm:text-sm transition-all ${
+                className={`relative flex items-center justify-center gap-2 px-3.5 py-2 rounded-xl text-xs sm:text-sm transition-all ${
                   isActive
                     ? 'bg-white/12 text-[#ebd8c8] font-bold shadow-sm scale-[1.02]'
                     : 'text-[#c79b78]/75 hover:text-[#ebd8c8] hover:bg-white/5 font-medium'
                 }`}
               >
+                <div className="relative flex items-center justify-center">
+                  <Icon className={`w-4 h-4 shrink-0 transition-colors ${isActive ? 'text-[#ebd8c8]' : 'text-[#c79b78]/80'}`} />
+                  {isMessages && unreadCount > 0 && (
+                    <span className="absolute -top-2 -right-2.5 min-w-[17px] h-[17px] px-1 flex items-center justify-center bg-[#f04423] text-white text-[9px] font-bold rounded-full shadow-md border border-white/50 animate-pulse z-20 pointer-events-none">
+                      {unreadCount > 99 ? '99+' : unreadCount}
+                    </span>
+                  )}
+                </div>
+                <span className={`text-center leading-tight ${isActive ? 'gold-gradient-text font-bold' : ''}`}>{item.label}</span>
                 {isMessages && unreadCount > 0 && (
-                  <span className="absolute -top-1 -right-1 min-w-[18px] h-[18px] px-1 flex items-center justify-center bg-[#e53935] text-white text-[10px] font-bold rounded-full shadow-md border border-white/30 animate-pulse z-10 pointer-events-none">
-                    {unreadCount > 99 ? '99+' : unreadCount}
+                  <span className="ml-1 px-1.5 py-0.5 rounded-full bg-[#f04423] text-white text-[10px] font-bold shadow-sm">
+                    {unreadCount}
                   </span>
                 )}
-                <Icon className={`w-4 h-4 shrink-0 transition-colors ${isActive ? 'text-[#ebd8c8]' : 'text-[#c79b78]/80'}`} />
-                <span className={`text-center leading-tight ${isActive ? 'gold-gradient-text font-bold' : ''}`}>{item.label}</span>
               </button>
             );
           })}

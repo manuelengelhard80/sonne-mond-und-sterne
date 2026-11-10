@@ -574,7 +574,11 @@ export const SettingsSpace: React.FC = () => {
             className="p-3 rounded-2xl bg-white/5 border border-[#c79b78]/40 hover:border-[#c79b78] hover:bg-white/10 text-left transition space-y-1.5 group cursor-pointer"
           >
             <div className="flex items-center justify-between">
-              <span className="text-base">🌊</span>
+              <img
+                src="/lake-moon-icon.png"
+                className="w-6 h-6 rounded-full object-cover shadow-sm ring-1 ring-[#c79b78]/40"
+                alt="Sommernacht am See"
+              />
               <span className="px-2 py-0.5 rounded-full bg-[#c79b78]/20 text-[#ebd8c8] text-[9px] font-bold uppercase">
                 Test
               </span>

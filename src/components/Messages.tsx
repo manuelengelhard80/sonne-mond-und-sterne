@@ -75,8 +75,19 @@ export const Messages: React.FC = () => {
                         [TEST]
                       </span>
                     )}
-                    <span className="font-bold text-[#ebd8c8]">
-                      {log.title}
+                    <span className="font-bold text-[#ebd8c8] flex items-center gap-1.5">
+                      {log.type === 'lake' || log.title.includes('Sommernacht am See') ? (
+                        <>
+                          <img
+                            src="/lake-moon-icon.png"
+                            className="w-5 h-5 rounded-full object-cover shrink-0 inline-block shadow-sm ring-1 ring-[#c79b78]/40"
+                            alt="Sommernacht am See"
+                          />
+                          <span>{log.title.replace('🌊', '').replace('🌙', '').trim()}</span>
+                        </>
+                      ) : (
+                        log.title
+                      )}
                     </span>
                   </div>
                   {/* Top Right: Date/Time */}

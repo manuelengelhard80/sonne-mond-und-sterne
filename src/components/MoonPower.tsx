@@ -16,7 +16,7 @@ const MOON_PHASES: MoonPhase[] = [
     name: 'Vollmond · Fülle & Strahlkraft',
     symbol: '🌕',
     quote: 'Der Mond wacht über die Stille der Nacht. Er zieht bedacht seine Bahnen, ganz ohne Eile. Spüre die tiefe Ruhe in dir.',
-    ritual: 'Blicke kurz ins Licht und sei stolz auf alles, was du heute geleistet hast.',
+    ritual: '🪔 Abend-Ritual: Blicke kurz ins Licht und sei stolz auf alles, was du heute geleistet hast.',
   },
   {
     id: 'waning',
@@ -109,9 +109,9 @@ export const MoonPower: React.FC = () => {
           "{selectedPhase.quote}"
         </p>
 
-        <div className="bg-black/30 p-4 rounded-xl border border-[#dfba61]/30 text-xs text-[#e6d3a3] flex items-center gap-2">
-          <Sparkles className="w-4 h-4 text-[#dfba61] shrink-0" />
-          <span><strong>Abend-Ritual:</strong> {selectedPhase.ritual}</span>
+        <div className="bg-black/30 p-4 rounded-xl border border-[#dfba61]/30 text-xs text-[#e6d3a3] flex items-start gap-2">
+          <span className="text-base leading-none shrink-0">🪔</span>
+          <span className="leading-relaxed"><strong className="font-bold">Abend-Ritual:</strong> {selectedPhase.ritual.replace('🪔 Abend-Ritual: ', '')}</span>
         </div>
 
       </div>
@@ -133,7 +133,7 @@ export const MoonPower: React.FC = () => {
           <div className="p-6 rounded-xl bg-emerald-950/40 border border-emerald-500/40 text-center space-y-2 animate-fade-in">
             <CheckCircle2 className="w-8 h-8 text-emerald-400 mx-auto" />
             <p className="font-serif-serif text-lg text-emerald-200">
-              Dem Mond übergeben & gelöst.
+              Dem Nachthimmel übergeben & gelöst.
             </p>
             <p className="text-xs text-emerald-300/80">
               Deine Last ist in der Stille der Nacht verflogen. Schlaf ruhig und geborgen.
@@ -156,19 +156,12 @@ export const MoonPower: React.FC = () => {
                 className="flex items-center gap-2 px-5 py-2.5 rounded-xl gold-gradient-btn disabled:opacity-50 text-[#0a232c] font-bold text-xs transition shadow-lg"
               >
                 <Send className="w-4 h-4" />
-                <span>Dem Mond übergeben</span>
+                <span>Dem Nachthimmel übergeben</span>
               </button>
             </div>
           </form>
         )}
       </div>
-
-      {/* Sound Hint */}
-      <div className="pt-2 border-t border-white/10 flex items-start sm:items-center justify-center gap-2 text-xs text-white/60">
-        <Volume2 className="w-3.5 h-3.5 text-[#dfba61] shrink-0 mt-0.5 sm:mt-0" />
-        <span className="text-left sm:text-center">Tipp: Schalte oben in der Leiste den Klang "Mondstille" ein für sanftes Wellenrauschen.</span>
-      </div>
-
     </div>
   );
 };

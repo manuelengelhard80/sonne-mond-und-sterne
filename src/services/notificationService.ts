@@ -301,7 +301,7 @@ export const getGuidedMeditationPushNotification = (
   senderRole: UserRoleType
 ): { title: string; body: string } => {
   const isSonne = senderRole === 'sonne';
-  const title = isSonne ? '🧘♀️🧘♂️ Geführten Meditation' : '🧘♂️🧘♀️ Geführten Meditation';
+  const title = isSonne ? '🧘 Geführte Meditation' : '🧘 Geführte Meditation';
   const body = isSonne
     ? 'Die Sonne ☀️ lädt dich heute zu einer geführten Meditation ein, mein lieber Mond. 🌕 Nehmt euch einen Moment, schließt die Augen und findet Ruhe und neue Kraft.'
     : 'Der Mond 🌕 lädt dich heute zu einer geführten Meditation ein, meine liebe Sonne. ☀️ Nehmt euch einen Moment, schließt die Augen und findet Ruhe und neue Kraft.';
@@ -328,7 +328,7 @@ export const getCouplesMeditationPushNotification = (
   senderRole: UserRoleType
 ): { title: string; body: string } => {
   const isSonne = senderRole === 'sonne';
-  const title = '🧘♀️💞🧘♂️ Paar-Meditation';
+  const title = '🧘💞 Paar-Meditation';
   const body = isSonne
     ? 'Die Sonne ☀️ lädt dich heute zu einer Paar-Meditation ein, mein lieber Mond. 🌕 Lass uns gemeinsam in Verbundenheit und tiefe Nähe eintauchen.'
     : 'Der Mond 🌕 lädt dich heute zu einer Paar-Meditation ein, meine liebe Sonne. ☀️ Lass uns gemeinsam in Verbundenheit und tiefe Nähe eintauchen.';

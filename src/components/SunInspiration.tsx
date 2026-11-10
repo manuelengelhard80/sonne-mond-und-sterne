@@ -74,29 +74,7 @@ export const SunInspiration: React.FC = () => {
         ))}
       </div>
 
-      {/* Optional Custom Wish Input */}
-      <div className="bg-[#071920] p-4 rounded-xl border border-[#dfba61]/30 space-y-2">
-        <label className="block text-xs font-semibold text-[#e6d3a3]">
-          Möchtest du ein bestimmtes Thema vertiefen? (Optional)
-        </label>
-        <div className="flex gap-2">
-          <input
-            type="text"
-            placeholder="z.B. Loslassen nach einem langen Tag, Trost bei Müdigkeit..."
-            value={customWish}
-            onChange={(e) => setCustomWish(e.target.value)}
-            className="flex-1 px-3 py-2 text-sm rounded-lg bg-black/40 border border-white/20 text-white placeholder-white/40 focus:outline-none focus:border-[#e6d3a3]"
-          />
-          <button
-            onClick={() => handleGenerate()}
-            disabled={loading}
-            className="px-4 py-2 rounded-lg gold-gradient-btn text-[#0a232c] font-bold text-xs flex items-center gap-1.5 transition shrink-0 shadow"
-          >
-            {loading ? <RefreshCw className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4" />}
-            <span>Sonne bitten</span>
-          </button>
-        </div>
-      </div>
+
 
       {/* Output Card */}
       <div className="relative p-8 rounded-2xl bg-gradient-to-br from-[#071920] via-[#0a232c] to-[#0f3844] text-white border-2 border-[#dfba61] shadow-xl overflow-hidden min-h-[160px] flex flex-col justify-between">
@@ -123,8 +101,8 @@ export const SunInspiration: React.FC = () => {
           </p>
         </div>
 
-        <div className="relative z-10 pt-4 flex justify-between items-center text-xs text-white/70 border-t border-white/10 mt-4">
-          <span>Gefühl: {mood}</span>
+        <div className="relative z-10 pt-4 flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4 text-xs text-white/70 border-t border-white/10 mt-4">
+          <span className="font-medium">Gefühl: {mood}</span>
           <button
             onClick={() => handleGenerate()}
             disabled={loading}

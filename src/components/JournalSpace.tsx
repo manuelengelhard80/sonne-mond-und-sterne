@@ -126,12 +126,6 @@ export const JournalSpace: React.FC = () => {
     setTimeout(() => setCopied(false), 2500);
   };
 
-  const handleUseAffirmationInJournal = () => {
-    setTitle('Gedanke zur Affirmation');
-    setContent(`Tägliche Affirmation:\n"${affirmation}"\n\nMeine Gedanken dazu für uns:\n`);
-    setIsWriting(true);
-  };
-
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!content.trim() || isSubmitting) return;
@@ -218,12 +212,9 @@ export const JournalSpace: React.FC = () => {
   return (
     <div className="w-full max-w-3xl mx-auto space-y-8 p-6 sm:p-10 rounded-2xl bg-[#0a232c] shadow-2xl border-2 border-[#dfba61] text-white">
       
-      {/* Header with Cloud Sync Indicator */}
+      {/* Header */}
       <div className="flex flex-col sm:flex-row items-center justify-between gap-4 border-b border-[#dfba61]/30 pb-6">
         <div>
-          <div className="flex items-center gap-2 text-[#e6d3a3] text-xs font-semibold uppercase tracking-wider mb-1">
-            <Users className="w-3.5 h-3.5" /> Euer geteilter Herzensraum (Live-Sync)
-          </div>
           <h2 className="font-serif-serif text-3xl sm:text-4xl font-bold gold-gradient-text">
             Gedanken teilen
           </h2>
@@ -247,12 +238,7 @@ export const JournalSpace: React.FC = () => {
         <div className="absolute top-0 right-0 w-36 h-36 bg-[#dfba61]/15 rounded-full blur-2xl pointer-events-none" />
         <Quote className="absolute top-4 right-4 w-12 h-12 text-white/5 pointer-events-none" />
 
-        <div className="flex items-center justify-between text-xs font-semibold tracking-wider">
-          <div className="flex items-center gap-2">
-            <Sparkles className="w-4 h-4 text-[#e6d3a3]" />
-            <span className="gold-gradient-text font-bold">Tägliche Affirmation</span>
-          </div>
-
+        <div className="flex justify-start text-xs font-semibold tracking-wider">
           <div className="flex items-center gap-2 text-white/80">
             <button
               onClick={handleRefreshAffirmation}
@@ -261,16 +247,7 @@ export const JournalSpace: React.FC = () => {
               title="Neue Affirmation generieren"
             >
               <RefreshCw className={`w-3.5 h-3.5 ${isRefreshing ? 'animate-spin' : ''}`} />
-              <span className="hidden sm:inline">Neuer Gedanke</span>
-            </button>
-
-            <button
-              onClick={handleCopyAffirmation}
-              className="flex items-center gap-1 hover:text-white transition text-xs bg-white/10 hover:bg-white/20 px-2.5 py-1 rounded-lg"
-              title="Affirmation kopieren"
-            >
-              {copied ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
-              <span className="hidden sm:inline">{copied ? 'Kopiert' : 'Kopieren'}</span>
+              <span>Neuer Gedanke</span>
             </button>
           </div>
         </div>
@@ -280,20 +257,8 @@ export const JournalSpace: React.FC = () => {
           "{affirmation}"
         </p>
 
-        {/* Bottom CTA to reflect on this affirmation */}
-        <div className="pt-2 flex justify-between items-center text-xs text-white/70 border-t border-white/10">
-          <span className="flex items-center gap-1">
-            <Heart className="w-3.5 h-3.5 text-[#dfba61] fill-[#dfba61]" />
-            <span>Für eure gemeinsame Achtsamkeit</span>
-          </span>
-
-          <button
-            onClick={handleUseAffirmationInJournal}
-            className="text-[#e6d3a3] hover:underline font-medium flex items-center gap-1"
-          >
-            <span>Dazu für euch schreiben</span>
-            <Plus className="w-3.5 h-3.5" />
-          </button>
+        {/* Bottom spacer */}
+        <div className="pt-2 flex justify-end items-center text-xs text-white/70 border-t border-white/10">
         </div>
 
       </div>
@@ -375,8 +340,6 @@ export const JournalSpace: React.FC = () => {
         ) : (
           entries.map((item) => {
             const hasLiked = item.likes?.includes(role) ?? false;
-            const partnerRole = role === 'sonne' ? 'mond' : 'sonne';
-            const partnerLiked = item.likes?.includes(partnerRole) ?? false;
 
             return (
               <div
@@ -406,9 +369,6 @@ export const JournalSpace: React.FC = () => {
                     <span className="flex items-center gap-1.5 font-medium text-white/60">
                       {moodIcons[item.mood]}
                       <span>{item.mood}</span>
-                      <span>·</span>
-                      <Calendar className="w-3.5 h-3.5 text-white/40" />
-                      <span>{item.timestamp}</span>
                     </span>
                   </div>
 
@@ -435,7 +395,7 @@ export const JournalSpace: React.FC = () => {
                     <button
                       type="button"
                       onClick={() => handleToggleLike(item.id, item.likes)}
-                      className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl transition text-xs font-semibold ${
+                      className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl transition text-xs font-semibold whitespace-nowrap ${
                         hasLiked
                           ? 'bg-rose-500/25 border border-rose-400/50 text-rose-300'
                           : 'bg-white/5 hover:bg-white/15 border border-white/10 text-white/70'
@@ -449,18 +409,11 @@ export const JournalSpace: React.FC = () => {
                       />
                       <span>{hasLiked ? 'Mit Liebe gelesen' : 'Herzchen senden'}</span>
                     </button>
-
-                    {/* Notice if partner reacted */}
-                    {partnerLiked && (
-                      <span className="text-[11px] text-[#f5d77f] flex items-center gap-1 bg-[#dfba61]/10 px-2.5 py-1 rounded-lg border border-[#dfba61]/30">
-                        <Sparkles className="w-3 h-3 text-[#dfba61]" />
-                        <span>Dein Partner hat diesen Gedanken mit Liebe gelesen ❤️</span>
-                      </span>
-                    )}
                   </div>
 
-                  <span className="text-[10px] text-white/50">
-                    Für beide synchronisiert
+                  <span className="text-[11px] text-white/50 flex items-center gap-1.5">
+                    <Calendar className="w-3 h-3" />
+                    {item.timestamp}
                   </span>
                 </div>
 

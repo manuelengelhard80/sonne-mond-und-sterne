@@ -128,10 +128,10 @@ export const SunInspiration: React.FC = () => {
           <button
             onClick={() => handleGenerate()}
             disabled={loading}
-            className="flex items-center gap-1 text-[#e6d3a3] hover:underline"
+            className="flex items-start gap-1 text-[#e6d3a3] hover:underline"
           >
-            <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin' : ''}`} />
-            <span>Neuen Gedankenspruch erzeugen</span>
+            <RefreshCw className={`w-3.5 h-3.5 shrink-0 mt-0.5 ${loading ? 'animate-spin' : ''}`} />
+            <span className="text-left">Neuen Gedankenspruch erzeugen</span>
           </button>
         </div>
 

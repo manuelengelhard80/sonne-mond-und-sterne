@@ -243,6 +243,16 @@ export const SommernachtSee: React.FC = () => {
           </p>
         </div>
 
+        <button
+          onClick={() => setIsExpanded(!isExpanded)}
+          className="flex items-center gap-3 text-[#dfba61] hover:text-[#ebd8c8] transition-all text-sm font-bold uppercase tracking-[0.15em] mt-4 group cursor-pointer"
+        >
+          <div className={`flex items-center justify-center w-8 h-8 rounded-full bg-[#dfba61]/10 border border-[#dfba61]/30 group-hover:bg-[#dfba61]/20 group-hover:scale-110 transition-all ${isExpanded ? 'rotate-45' : ''}`}>
+            <Plus className="w-4 h-4 text-[#dfba61]" />
+          </div>
+          <span>{isExpanded ? 'Weniger lesen' : 'Mehr lesen'}</span>
+        </button>
+
       </div>
 
       {/* Second Container: Sommernacht am See MP3 Player & Invite */}
@@ -360,7 +370,7 @@ const SommernachtAudioSection: React.FC = () => {
         <h2 className="font-serif-serif text-3xl sm:text-4xl font-bold gold-gradient-text">
           Sommernacht am See
         </h2>
-        <p className="text-sm text-white/80 max-w-md mx-auto">
+        <p className="text-sm text-white/80 max-w-md mx-auto font-sans">
           Kehre zurück an den Ort an dem alles begann.
         </p>
       </div>

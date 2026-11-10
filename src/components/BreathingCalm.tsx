@@ -227,9 +227,9 @@ export const BreathingCalm: React.FC = () => {
         )}
 
         {/* Ambient Audio Hint */}
-        <div className="text-center pt-2 border-t border-white/10 flex items-center justify-center gap-2 text-xs text-white/60">
-          <Volume2 className="w-3.5 h-3.5 text-[#dfba61]" />
-          <span>Tipp: Wähle in der Navigationsleiste oben deine liebste Klangwelt für Hintergrundmusik.</span>
+        <div className="pt-2 border-t border-white/10 flex items-start sm:items-center justify-center gap-2 text-xs text-white/60">
+          <Volume2 className="w-3.5 h-3.5 text-[#dfba61] shrink-0 mt-0.5 sm:mt-0" />
+          <span className="text-left sm:text-center">Tipp: Wähle in der Navigationsleiste oben deine liebste Klangwelt für Hintergrundmusik.</span>
         </div>
 
       </div>

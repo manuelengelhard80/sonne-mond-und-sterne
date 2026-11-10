@@ -436,29 +436,27 @@ export const MeditationSpace: React.FC = () => {
               </div>
               <span>{isGuidedExpanded ? 'Weniger hören' : 'Mehr hören'}</span>
             </button>
-
-            {isGuidedExpanded && (
-              <div className="flex flex-col items-center gap-2 pt-1 animate-fade-in">
-                <button
-                  onClick={handleGuidedInvite}
-                  className="px-4 py-2.5 rounded-xl bg-[#071920] border-2 border-[#c79b78] hover:border-[#dfba61] text-[#ebd8c8] hover:text-white font-bold text-xs sm:text-sm tracking-wide shadow-lg transition active:scale-95 flex items-center justify-center gap-2 cursor-pointer"
-                >
-                  <Send className="w-4 h-4 text-[#c79b78]" />
-                  <span>Zu einer Geführten Meditation einladen</span>
-                </button>
-                {guidedInviteSent && (
-                  <span className="text-xs text-emerald-400 font-semibold flex items-center gap-1 animate-fade-in">
-                    <Check className="w-3.5 h-3.5" /> Einladung wurde gesendet & im Log vermerkt!
-                  </span>
-                )}
-              </div>
-            )}
           </div>
         )}
 
-        <div className="text-center pt-4 border-t border-white/10 flex items-center justify-center gap-2 text-xs text-white/60">
-          <Compass className="w-3.5 h-3.5 text-[#dfba61] shrink-0" />
-          <span>Meditationen by Alexander Wahler</span>
+        <div className="flex flex-col items-center gap-2 pt-1">
+          <button
+            onClick={handleGuidedInvite}
+            className="px-4 py-2.5 rounded-xl bg-[#071920] border-2 border-[#c79b78] hover:border-[#dfba61] text-[#ebd8c8] hover:text-white font-bold text-xs sm:text-sm tracking-wide shadow-lg transition active:scale-95 flex items-center justify-center gap-2 cursor-pointer"
+          >
+            <Send className="w-4 h-4 text-[#c79b78]" />
+            <span>Zu einer Geführten Meditation einladen</span>
+          </button>
+          {guidedInviteSent && (
+            <span className="text-xs text-emerald-400 font-semibold flex items-center gap-1 animate-fade-in">
+              <Check className="w-3.5 h-3.5" /> Einladung wurde gesendet & im Log vermerkt!
+            </span>
+          )}
+        </div>
+
+        <div className="pt-4 border-t border-white/10 flex items-start sm:items-center justify-center gap-2 text-xs text-white/60">
+          <Compass className="w-3.5 h-3.5 text-[#dfba61] shrink-0 mt-0.5 sm:mt-0" />
+          <span className="text-left sm:text-center">Meditationen by Alexander Wahler</span>
         </div>
       </div>
 
@@ -517,9 +515,9 @@ export const MeditationSpace: React.FC = () => {
           </div>
         </div>
 
-        <div className="text-center pt-4 border-t border-white/10 flex items-center justify-center gap-2 text-xs text-white/60">
-          <Heart className="w-3.5 h-3.5 text-[#dfba61] fill-[#dfba61] shrink-0" />
-          <span>Ein geschützter Raum für Liebe,<br />Vertrauen und echte Nähe.</span>
+        <div className="pt-4 border-t border-white/10 flex items-start sm:items-center justify-center gap-2 text-xs text-white/60">
+          <Heart className="w-3.5 h-3.5 text-[#dfba61] fill-[#dfba61] shrink-0 mt-0.5 sm:mt-0" />
+          <span className="text-left sm:text-center">Ein geschützter Raum für Liebe,<br />Vertrauen und echte Nähe.</span>
         </div>
       </div>
     </div>

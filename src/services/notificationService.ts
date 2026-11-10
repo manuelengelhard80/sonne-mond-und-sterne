@@ -364,6 +364,8 @@ export const sendDreamJourneyInvite = async (userRole: UserRoleType): Promise<bo
   );
 };
 
+
+
 // Test 4: Geführte Meditation Test
 export const sendTestGuidedMeditationInvite = async (userRole: UserRoleType): Promise<boolean> => {
   const { title, body } = getGuidedMeditationPushNotification(userRole);

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { Mail, Trash2, Clock, Trash } from 'lucide-react';
-import { getNotificationLogs, clearNotificationLogs, removeNotificationLogEntry } from '../services/notificationService';
+import { Mail, Clock, Trash } from 'lucide-react';
+import { getNotificationLogs, removeNotificationLogEntry } from '../services/notificationService';
 import { NotificationLogEntry } from '../types';
 
 export const Messages: React.FC = () => {
@@ -19,10 +19,6 @@ export const Messages: React.FC = () => {
     };
   }, []);
 
-  const handleClearLogs = () => {
-    clearNotificationLogs();
-  };
-
   useEffect(() => {
     const logs = getNotificationLogs();
     if (logs.length > 0) {
@@ -36,20 +32,28 @@ export const Messages: React.FC = () => {
   };
 
   return (
-    <div className="w-full max-w-4xl mx-auto p-4 sm:p-6 pb-24 space-y-6">
-      <div className="flex items-center justify-between">
-        <h1 className="font-serif-serif text-3xl font-bold gold-gradient-text flex items-center gap-3">
-          <Mail className="w-8 h-8 text-[#dfba61]" />
-          Nachrichten
-        </h1>
+    <div className="w-full max-w-3xl mx-auto space-y-8 p-6 sm:p-10 rounded-2xl bg-[#0a232c] shadow-2xl border-2 border-[#dfba61] text-white">
+      {/* Header in the exact style of Gedanken teilen */}
+      <div className="flex flex-col sm:flex-row items-center justify-between gap-4 border-b border-[#dfba61]/30 pb-6">
+        <div>
+          <div className="flex items-center gap-2 text-[#e6d3a3] text-xs font-semibold uppercase tracking-wider mb-1">
+            <Mail className="w-3.5 h-3.5 text-[#dfba61]" /> Empfangene Mitteilungen
+          </div>
+          <h2 className="font-serif-serif text-3xl sm:text-4xl font-bold gold-gradient-text">
+            Nachrichten
+          </h2>
+          <p className="text-xs text-white/70 mt-1">
+            Alle Benachrichtigungen und liebevollen Botschaften, die dich erreicht haben.
+          </p>
+        </div>
       </div>
 
-      <div className="bg-[#0a232c] border border-[#c79b78]/30 rounded-3xl p-6 shadow-xl">
+      <div>
         {logs.length === 0 ? (
           <div className="py-12 text-center space-y-4">
             <Clock className="w-12 h-12 text-white/20 mx-auto" />
             <p className="text-sm text-white/60">
-              Noch keine Mitteilungen im Log vorhanden.
+              Noch keine Mitteilungen im Postfach vorhanden.
             </p>
           </div>
         ) : (
@@ -76,7 +80,7 @@ export const Messages: React.FC = () => {
                     </span>
                   </div>
                   {/* Top Right: Date/Time */}
-                  <span className="text-[11px] text-white/50 shrink-0">
+                  <span className="text-[11px] text-white/50 shrink-0 text-right">
                     {log.timestamp}
                   </span>
                 </div>
@@ -94,6 +98,7 @@ export const Messages: React.FC = () => {
                     onClick={() => handleRemoveLog(log.id)}
                     className="p-1.5 rounded-lg text-white/30 hover:text-rose-300 hover:bg-white/5 transition"
                     title="Nachricht löschen"
+                    aria-label="Nachricht löschen"
                   >
                     <Trash className="w-4 h-4" />
                   </button>

@@ -56,13 +56,17 @@
       });
       if ('serviceWorker' in navigator) {
         window.addEventListener('load', function() {
-          navigator.serviceWorker.register('/sw.js', { scope: '/' }).catch(function(err) {
+          navigator.serviceWorker.register('/sw.js', { scope: '/' }).then(function(reg) {
+            if (reg) reg.update().catch(function() {});
+          }).catch(function(err) {
             console.warn('SW registration warning:', err);
           });
         });
         // Also kick off registration immediately if document already loaded or interactive
         if (document.readyState === 'complete' || document.readyState === 'interactive') {
-          navigator.serviceWorker.register('/sw.js', { scope: '/' }).catch(function() {});
+          navigator.serviceWorker.register('/sw.js', { scope: '/' }).then(function(reg) {
+            if (reg) reg.update().catch(function() {});
+          }).catch(function() {});
         }
       }
     </script>

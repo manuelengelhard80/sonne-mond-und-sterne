@@ -1,9 +1,11 @@
 // Service Worker for Sonne, Mond und Sterne notifications & PWA
-const CACHE_NAME = 'sonne-mond-v8';
+const CACHE_NAME = 'sonne-mond-v12';
 const PRECACHE_ASSETS = [
   '/',
   '/index.html',
   '/manifest.json',
+  '/app-icon-full.png',
+  '/badge-icon.png',
   '/pwa-icon-192.png',
   '/pwa-icon-maskable-192.png',
   '/pwa-icon-512.png',
@@ -18,7 +20,7 @@ function triggerScheduledNotificationIfDue() {
   if (!scheduledMorningNotification) return;
   const now = Date.now();
   if (now >= scheduledMorningNotification.targetTimestamp) {
-    const { title, body, tag } = scheduledMorningNotification;
+    const { title, body, tag, icon, badge } = scheduledMorningNotification;
     scheduledMorningNotification = null;
     if (morningTimerId) {
       clearTimeout(morningTimerId);
@@ -27,8 +29,8 @@ function triggerScheduledNotificationIfDue() {
     self.registration.showNotification(title, {
       body,
       tag: tag || 'daily-morning-affirmation',
-      icon: '/pwa-icon-192.png',
-      badge: '/badge-icon.png',
+      icon: icon || '/app-icon-full.png?v=12',
+      badge: badge || '/badge-icon.png?v=12',
       vibrate: [200, 100, 200],
     });
   }
@@ -65,6 +67,8 @@ self.addEventListener('message', (event) => {
       title: event.data.title,
       body: event.data.body,
       tag: event.data.tag,
+      icon: event.data.icon,
+      badge: event.data.badge,
     };
     if (morningTimerId) clearTimeout(morningTimerId);
     const msUntil = scheduledMorningNotification.targetTimestamp - Date.now();

@@ -68,6 +68,9 @@ export const removeNotificationLogEntry = (id: string): void => {
   }
 };
 
+export const APP_NOTIFICATION_ICON = '/app-icon-full.png?v=12';
+export const APP_NOTIFICATION_BADGE = '/badge-icon.png?v=12';
+
 let swRegistration: ServiceWorkerRegistration | null = null;
 let morningTimerId: number | null = null;
 
@@ -78,6 +81,9 @@ export const initServiceWorker = async (): Promise<ServiceWorkerRegistration | n
   }
   try {
     const reg = await navigator.serviceWorker.register('/sw.js');
+    if (reg) {
+      reg.update().catch(() => {});
+    }
     swRegistration = reg;
     return reg;
   } catch (err) {
@@ -130,8 +136,8 @@ export const sendAppNotification = async (
   }
 
   const notificationOptions: NotificationOptions = {
-    icon: '/pwa-icon-192.png',
-    badge: '/badge-icon.png',
+    icon: APP_NOTIFICATION_ICON,
+    badge: APP_NOTIFICATION_BADGE,
     ...options,
   };
 
@@ -556,8 +562,8 @@ export const scheduleDailyMorningAffirmation = (
           try {
             reg.showNotification(title, {
               body: `Dein positiver Gedanke für heute: "${message}"`,
-              icon: '/app-icon-selected.jpg',
-              badge: '/app-icon-selected.jpg',
+              icon: APP_NOTIFICATION_ICON,
+              badge: APP_NOTIFICATION_BADGE,
               tag: `daily-morning-affirmation-${targetBerlinDateStr}`,
               showTrigger: new (window as any).TimestampTrigger(targetDate.getTime()),
             } as any);
@@ -575,6 +581,8 @@ export const scheduleDailyMorningAffirmation = (
             title,
             body: `Dein positiver Gedanke für heute: "${message}"`,
             tag: `daily-morning-affirmation-${targetBerlinDateStr}`,
+            icon: APP_NOTIFICATION_ICON,
+            badge: APP_NOTIFICATION_BADGE,
           });
         }
       }).catch((err) => {

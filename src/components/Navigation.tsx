@@ -31,23 +31,57 @@ export const Navigation: React.FC<NavigationProps> = ({
 }) => {
   const { isCopper } = useTheme();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const [hasUnread, setHasUnread] = useState(false);
+  const [unreadCount, setUnreadCount] = useState<number>(0);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const activeBtnRef = useRef<HTMLButtonElement | null>(null);
 
   const checkUnread = () => {
     const logs = getNotificationLogs();
+    if (logs.length === 0) {
+      setUnreadCount(0);
+      return;
+    }
     const lastReadId = localStorage.getItem('last_read_log_id');
-    setHasUnread(logs.length > 0 && logs[0].id !== lastReadId);
+    if (!lastReadId) {
+      setUnreadCount(logs.length);
+      return;
+    }
+    const index = logs.findIndex((l) => l.id === lastReadId);
+    if (index === -1) {
+      setUnreadCount(logs.length);
+    } else {
+      setUnreadCount(index);
+    }
   };
 
   useEffect(() => {
-    checkUnread();
-    window.addEventListener('notification-log-updated', checkUnread);
-    return () => {
-      window.removeEventListener('notification-log-updated', checkUnread);
+    const handleLogUpdate = () => {
+      if (activeTab === 'messages') {
+        const logs = getNotificationLogs();
+        if (logs.length > 0) {
+          localStorage.setItem('last_read_log_id', logs[0].id);
+        }
+        setUnreadCount(0);
+      } else {
+        checkUnread();
+      }
     };
-  }, []);
+
+    if (activeTab === 'messages') {
+      const logs = getNotificationLogs();
+      if (logs.length > 0) {
+        localStorage.setItem('last_read_log_id', logs[0].id);
+      }
+      setUnreadCount(0);
+    } else {
+      checkUnread();
+    }
+
+    window.addEventListener('notification-log-updated', handleLogUpdate);
+    return () => {
+      window.removeEventListener('notification-log-updated', handleLogUpdate);
+    };
+  }, [activeTab]);
 
 
   // Alle 10 Bereiche inklusive der neuen Unterseite "Einstellungen"
@@ -77,6 +111,13 @@ export const Navigation: React.FC<NavigationProps> = ({
   }, [activeTab]);
 
   const handleSelectTab = (tab: ActiveTab) => {
+    if (tab === 'messages') {
+      const logs = getNotificationLogs();
+      if (logs.length > 0) {
+        localStorage.setItem('last_read_log_id', logs[0].id);
+      }
+      setUnreadCount(0);
+    }
     setActiveTab(tab);
     setMobileMenuOpen(false);
   };
@@ -108,8 +149,10 @@ export const Navigation: React.FC<NavigationProps> = ({
                     : 'text-[#c79b78]/75 hover:text-[#ebd8c8] hover:bg-white/5 font-medium'
                 }`}
               >
-                {isMessages && hasUnread && (
-                  <div className="absolute top-1 right-2 w-2 h-2 bg-red-500 rounded-full animate-pulse" />
+                {isMessages && unreadCount > 0 && (
+                  <span className="absolute -top-1 -right-1 min-w-[18px] h-[18px] px-1 flex items-center justify-center bg-[#e53935] text-white text-[10px] font-bold rounded-full shadow-md border border-white/30 animate-pulse z-10 pointer-events-none">
+                    {unreadCount > 99 ? '99+' : unreadCount}
+                  </span>
                 )}
                 <Icon className={`w-3.5 h-3.5 shrink-0 transition-colors ${isActive ? 'text-[#ebd8c8]' : 'text-[#c79b78]/80'}`} />
                 <span className={isActive ? 'gold-gradient-text font-bold' : ''}>{item.label}</span>
@@ -142,7 +185,7 @@ export const Navigation: React.FC<NavigationProps> = ({
       {mobileMenuOpen && (
         <div className="md:hidden border-t border-[#c79b78]/30 bg-[#071920]/98 backdrop-blur-xl p-3 animate-fade-in shadow-2xl">
           <div className="flex items-center justify-between pb-2 mb-2 border-b border-[#c79b78]/20 text-xs text-[#c79b78]/70 font-medium">
-            <span>Alle 10 Bereiche</span>
+            <span>Alle Bereiche</span>
             <span className="text-[10px] text-[#c79b78]/50">Tippe zum Auswählen</span>
           </div>
 
@@ -161,8 +204,10 @@ export const Navigation: React.FC<NavigationProps> = ({
                       : 'bg-white/5 hover:bg-white/10 text-[#c79b78]/75 hover:text-[#ebd8c8]'
                   }`}
                 >
-                  {isMessages && hasUnread && (
-                    <div className="absolute top-2 right-2 w-2 h-2 bg-red-500 rounded-full animate-pulse" />
+                  {isMessages && unreadCount > 0 && (
+                    <span className="absolute top-1.5 right-2 min-w-[18px] h-[18px] px-1 flex items-center justify-center bg-[#e53935] text-white text-[10px] font-bold rounded-full shadow-md border border-white/30 animate-pulse z-10 pointer-events-none">
+                      {unreadCount > 99 ? '99+' : unreadCount}
+                    </span>
                   )}
                   <div className={`p-1.5 rounded-lg shrink-0 ${isActive ? 'bg-[#c79b78]/25 text-[#ebd8c8]' : 'bg-[#c79b78]/10 text-[#c79b78]/80'}`}>
                     <Icon className="w-3.5 h-3.5" />
@@ -185,15 +230,26 @@ export const Navigation: React.FC<NavigationProps> = ({
             return (
               <button
                 key={item.id}
-                onClick={() => setActiveTab(item.id as ActiveTab)}
+                onClick={() => {
+                  if (item.id === 'messages') {
+                    const logs = getNotificationLogs();
+                    if (logs.length > 0) {
+                      localStorage.setItem('last_read_log_id', logs[0].id);
+                    }
+                    setUnreadCount(0);
+                  }
+                  setActiveTab(item.id as ActiveTab);
+                }}
                 className={`relative flex items-center justify-center gap-1.5 px-3.5 py-2 rounded-xl text-xs sm:text-sm transition-all ${
                   isActive
                     ? 'bg-white/12 text-[#ebd8c8] font-bold shadow-sm scale-[1.02]'
                     : 'text-[#c79b78]/75 hover:text-[#ebd8c8] hover:bg-white/5 font-medium'
                 }`}
               >
-                {isMessages && hasUnread && (
-                  <div className="absolute top-1.5 right-2 w-2 h-2 bg-red-500 rounded-full animate-pulse" />
+                {isMessages && unreadCount > 0 && (
+                  <span className="absolute -top-1 -right-1 min-w-[18px] h-[18px] px-1 flex items-center justify-center bg-[#e53935] text-white text-[10px] font-bold rounded-full shadow-md border border-white/30 animate-pulse z-10 pointer-events-none">
+                    {unreadCount > 99 ? '99+' : unreadCount}
+                  </span>
                 )}
                 <Icon className={`w-4 h-4 shrink-0 transition-colors ${isActive ? 'text-[#ebd8c8]' : 'text-[#c79b78]/80'}`} />
                 <span className={`text-center leading-tight ${isActive ? 'gold-gradient-text font-bold' : ''}`}>{item.label}</span>

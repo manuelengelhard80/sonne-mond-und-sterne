@@ -233,7 +233,7 @@ export const getShootingStarPushNotification = (
   const defaultBody =
     userRole === 'sonne'
       ? 'Ein Wunsch vom Mond 🌕 an dich, meine liebe Sonne. ☀️\n\n➡️ Schau ihn dir an!'
-      : 'Ein Wunsch von der Sonne ☀️ an dich, meine lieber Mond 🌕\n\n➡️ Schau ihn dir an!';
+      : 'Ein Wunsch von der Sonne ☀️ an dich, mein lieber Mond 🌕\n\n➡️ Schau ihn dir an!';
 
   const body = starTitle && starTitle.trim().length > 0
     ? `${starTitle.trim()}\n\n${defaultBody}`
@@ -266,17 +266,17 @@ export const getSharedThoughtPushNotification = (
   const title = '💌 Gedanken teilen...';
 
   const baseBody = isSonne
-    ? 'Der Mond 🌕 hat einen Gedanken mit dir geteilt, meine liebe Sonne. ☀️\nSchau ihn dir an!'
-    : 'Die Sonne ☀️ hat einen Gedanken mit dir geteilt, mein lieber Mond. 🌕\nSchau ihn dir an!';
+    ? 'Der Mond 🌕 hat einen Gedanken mit dir geteilt, meine liebe Sonne. ☀️\n\n➡️ Schau ihn dir an!'
+    : 'Die Sonne ☀️ hat einen Gedanken mit dir geteilt, mein lieber Mond. 🌕\n\n➡️ Schau ihn dir an!';
 
   let body = baseBody;
   if (thoughtNote) {
     if (thoughtNote.title && thoughtNote.content) {
-      body = `„${thoughtNote.title.trim()}“\n${thoughtNote.content.trim().slice(0, 100)}\n${baseBody}`;
+      body = `„${thoughtNote.title.trim()}“\n${thoughtNote.content.trim().slice(0, 100)}\n\n${baseBody}`;
     } else if (thoughtNote.title) {
-      body = `„${thoughtNote.title.trim()}“\n${baseBody}`;
+      body = `„${thoughtNote.title.trim()}“\n\n${baseBody}`;
     } else if (thoughtNote.content) {
-      body = `„${thoughtNote.content.trim().slice(0, 100)}“\n${baseBody}`;
+      body = `„${thoughtNote.content.trim().slice(0, 100)}“\n\n${baseBody}`;
     }
   }
 
@@ -291,6 +291,7 @@ export const sendTestSharedThought = async (userRole: UserRoleType): Promise<boo
     {
       body,
       tag: 'test-shared-thought',
+      data: { tab: 'journal', url: '/?tab=journal' },
     },
     true,
     'gedanken'
@@ -725,6 +726,7 @@ export const listenForPartnerActivities = (
               {
                 body,
                 tag: `thought-${change.doc.id}`,
+                data: { tab: 'journal', url: '/?tab=journal' },
               },
               false,
               'gedanken'

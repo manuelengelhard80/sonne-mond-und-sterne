@@ -1,5 +1,5 @@
 // Service Worker for Sonne, Mond und Sterne notifications & PWA
-const CACHE_NAME = 'sonne-mond-v17';
+const CACHE_NAME = 'sonne-mond-v19';
 const PRECACHE_ASSETS = [
   '/',
   '/index.html',
@@ -122,20 +122,20 @@ self.addEventListener('fetch', (event) => {
 
 self.addEventListener('notificationclick', (event) => {
   event.notification.close();
-  const targetTab = (event.notification.data && event.notification.data.tab) ? event.notification.data.tab : 'stars';
-  const targetUrl = `/?tab=${targetTab}`;
+  const targetTab = (event.notification.data && event.notification.data.tab) ? event.notification.data.tab : null;
 
   event.waitUntil(
     clients.matchAll({ type: 'window', includeUncontrolled: true }).then((clientList) => {
       for (const client of clientList) {
         if (client.url && 'focus' in client) {
-          if ('postMessage' in client) {
+          if (targetTab && 'postMessage' in client) {
             client.postMessage({ type: 'NAVIGATE_TAB', tab: targetTab });
           }
           return client.focus();
         }
       }
       if (clients.openWindow) {
+        const targetUrl = targetTab ? `/?tab=${targetTab}` : '/';
         return clients.openWindow(targetUrl);
       }
     })

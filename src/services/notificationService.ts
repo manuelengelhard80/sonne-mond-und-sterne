@@ -379,16 +379,28 @@ export const sendTestHimmelsbegegnung = async (userRole: UserRoleType): Promise<
   );
 };
 
+// Helper to return the Sommernacht am See push notification based on sender role
+export const getSommernachtAmSeePushNotification = (
+  senderRole: UserRoleType
+): { title: string; body: string } => {
+  const isSonne = senderRole === 'sonne';
+  const title = '✨ Sommernacht am See';
+  const body = isSonne
+    ? 'Die Sonne ☀️ lädt dich heute zu einer Sommernacht am See ein, mein lieber Mond. 🌕 Kehrt zusammen zurück an den Ort, an dem alles begann.'
+    : 'Der Mond 🌕 lädt dich heute zu einer Sommernacht am See ein, meine liebe Sonne. ☀️ Kehrt zusammen zurück an den Ort, an dem alles begann.';
+
+  return { title, body };
+};
+
 // Test 7: Sommernacht am See Test
 export const sendTestSommernachtAmSeeInvite = async (userRole: UserRoleType): Promise<boolean> => {
-  const senderName = userRole === 'sonne' ? 'Die Sonne' : 'Der Mond';
+  const { title, body } = getSommernachtAmSeePushNotification(userRole);
   return sendAppNotification(
-    '🌙🌊 Einladung zu einer Sommernacht am See',
+    title,
     {
-      body: `${senderName} lädt dich zu einer magischen Sommernacht am See ein. Lass den Alltag hinter dir und genieße die Stille und das sanfte Leuchten der Sterne über dem Wasser.`,
+      body,
       tag: 'test-sommernacht-am-see',
-      icon: '/lake-moon-icon.png',
-    } as any,
+    },
     true,
     'lake'
   );
@@ -396,14 +408,13 @@ export const sendTestSommernachtAmSeeInvite = async (userRole: UserRoleType): Pr
 
 // Real Sommernacht am See Invite
 export const sendSommernachtAmSeeInvite = async (userRole: UserRoleType): Promise<boolean> => {
-  const senderName = userRole === 'sonne' ? 'Die Sonne' : 'Der Mond';
+  const { title, body } = getSommernachtAmSeePushNotification(userRole);
   return sendAppNotification(
-    '🌙🌊 Einladung zu einer Sommernacht am See',
+    title,
     {
-      body: `${senderName} lädt dich zu einer magischen Sommernacht am See ein. Lass den Alltag hinter dir und genieße die Stille und das sanfte Leuchten der Sterne über dem Wasser.`,
+      body,
       tag: `sommernacht-am-see-${Date.now()}`,
-      icon: '/lake-moon-icon.png',
-    } as any,
+    },
     false,
     'lake'
   );

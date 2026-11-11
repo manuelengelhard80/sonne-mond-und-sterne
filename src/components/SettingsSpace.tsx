@@ -575,9 +575,9 @@ export const SettingsSpace: React.FC = () => {
           >
             <div className="flex items-center justify-between">
               <img
-                src="/lake-moon-icon.png"
-                className="w-6 h-6 rounded-full object-cover shadow-sm ring-1 ring-[#c79b78]/40"
-                alt="Sommernacht am See"
+                src="/app-icon-full.png?v=12"
+                className="w-6 h-6 rounded-full object-cover shadow-sm ring-1 ring-[#dfba61]/40"
+                alt="App Symbol"
               />
               <span className="px-2 py-0.5 rounded-full bg-[#c79b78]/20 text-[#ebd8c8] text-[9px] font-bold uppercase">
                 Test

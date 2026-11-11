@@ -38,21 +38,6 @@ export const Messages: React.FC = () => {
     if (log.type === 'gedanken' || log.title.includes('Gedanken')) {
       return { tab: 'journal', label: '💌 Zu Gedanken teilen' };
     }
-    if (log.type === 'lake' || log.title.includes('Sommernacht')) {
-      return { tab: 'lake', label: '🌙🌊 Zu Sommernacht am See' };
-    }
-    if (log.type === 'himmelsbegegnung' || log.title.includes('Himmelsbegegnung')) {
-      return { tab: 'story', label: '📖 Zur Geschichte' };
-    }
-    if (log.title.includes('Meditation')) {
-      return { tab: 'meditation', label: '🧘 Zu den Meditationen' };
-    }
-    if (log.title.includes('Traumreise')) {
-      return { tab: 'traumreisen', label: '🪶 Zu den Traumreisen' };
-    }
-    if (log.type === 'morgen_affirmation') {
-      return { tab: 'reflection', label: '☀️ Zum Sonnenstrahl' };
-    }
     return null;
   };
 
@@ -106,9 +91,9 @@ export const Messages: React.FC = () => {
                         {log.type === 'lake' || log.title.includes('Sommernacht am See') ? (
                           <>
                             <img
-                              src="/lake-moon-icon.png"
-                              className="w-5 h-5 rounded-full object-cover shrink-0 inline-block shadow-sm ring-1 ring-[#c79b78]/40"
-                              alt="Sommernacht am See"
+                              src="/app-icon-full.png?v=12"
+                              className="w-5 h-5 rounded-full object-cover shrink-0 inline-block shadow-sm ring-1 ring-[#dfba61]/40"
+                              alt="App Symbol"
                             />
                             <span>{log.title.replace(/^[🌙🌊\s]+/, '').trim()}</span>
                           </>

@@ -226,18 +226,13 @@ export const sendTestMorningAffirmation = async (userRole: UserRoleType): Promis
 
 // Helper to return the shooting star push notification title and body based on recipient user role
 export const getShootingStarPushNotification = (
-  userRole: UserRoleType,
-  starTitle?: string
+  userRole: UserRoleType
 ): { title: string; body: string } => {
   const title = '🌠 Neue Sternschnuppe am Himmel!';
-  const defaultBody =
+  const body =
     userRole === 'sonne'
       ? 'Ein Wunsch vom Mond 🌕 an dich, meine liebe Sonne. ☀️\n\n➡️ Schau ihn dir an!'
       : 'Ein Wunsch von der Sonne ☀️ an dich, mein lieber Mond 🌕\n\n➡️ Schau ihn dir an!';
-
-  const body = starTitle && starTitle.trim().length > 0
-    ? `${starTitle.trim()}\n\n${defaultBody}`
-    : defaultBody;
 
   return { title, body };
 };
@@ -668,7 +663,7 @@ export const listenForPartnerActivities = (
           // Check if this star is from the partner
           const isFromPartner = data.authorRole ? data.authorRole !== userRole : (currentUserId ? data.authorUid !== currentUserId : true);
           if (isFromPartner) {
-            const { title, body } = getShootingStarPushNotification(userRole, data.title);
+            const { title, body } = getShootingStarPushNotification(userRole);
             sendAppNotification(
               title,
               {

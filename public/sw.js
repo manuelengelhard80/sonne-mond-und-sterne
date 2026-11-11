@@ -1,5 +1,5 @@
 // Service Worker for Sonne, Mond und Sterne notifications & PWA
-const CACHE_NAME = 'sonne-mond-v16';
+const CACHE_NAME = 'sonne-mond-v17';
 const PRECACHE_ASSETS = [
   '/',
   '/index.html',

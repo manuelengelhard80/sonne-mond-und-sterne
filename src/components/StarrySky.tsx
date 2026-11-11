@@ -5,7 +5,7 @@ import { CurvedShootingStar } from './CurvedShootingStar';
 import { useUserRole } from '../context/UserRoleContext';
 import { db, ensureAuthenticated } from '../services/firebase';
 import { collection, onSnapshot, doc, setDoc, deleteDoc } from 'firebase/firestore';
-import { sendAppNotification } from '../services/notificationService';
+import { sendAppNotification, getShootingStarPushNotification } from '../services/notificationService';
 
 const DEFAULT_STARS: StarNote[] = [
   {
@@ -302,10 +302,19 @@ export const StarrySky: React.FC = () => {
       setStars((prev) => [...prev, newStarNote]);
     }
 
-    sendAppNotification('🌟 Sternschnuppe am Himmel verewigt!', {
-      body: `"${newTitle.trim()}" leuchtet jetzt für euch beide am Himmel.`,
-      tag: `my-star-${starId}`,
-    });
+    const recipientRole = role === 'sonne' ? 'mond' : 'sonne';
+    const notif = getShootingStarPushNotification(recipientRole);
+
+    sendAppNotification(
+      notif.title,
+      {
+        body: notif.body,
+        tag: `star-${starId}`,
+        data: { tab: 'stars', url: '/?tab=stars' },
+      },
+      false,
+      'sternschnuppe'
+    );
 
     setNewTitle('');
     setNewContent('');

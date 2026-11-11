@@ -20,7 +20,7 @@ export const RolePickerModal: React.FC = () => {
 
   const handleSelect = (r: UserRoleType) => {
     setSelectedRole(r);
-    if (!nameInput || nameInput === 'Die Sonne' || nameInput === 'Der Mond' || nameInput === 'Sonne (Stefanie)' || nameInput === 'Mond (Manuel)') {
+    if (!nameInput || nameInput === 'Die Sonne' || nameInput === 'Der Mond' || nameInput.includes('Stefanie') || nameInput.includes('Manuel')) {
       setNameInput(r === 'sonne' ? 'Die Sonne' : 'Der Mond');
     }
   };

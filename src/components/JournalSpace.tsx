@@ -162,10 +162,7 @@ export const JournalSpace: React.FC = () => {
     }
 
     const recipientRole = role === 'sonne' ? 'mond' : 'sonne';
-    const notif = getSharedThoughtPushNotification(recipientRole, {
-      title: title.trim(),
-      content: content.trim(),
-    });
+    const notif = getSharedThoughtPushNotification(recipientRole);
 
     sendAppNotification(
       notif.title,

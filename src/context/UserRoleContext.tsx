@@ -27,7 +27,10 @@ export const UserRoleProvider: React.FC<{ children: React.ReactNode }> = ({ chil
 
   const [displayName, setDisplayName] = useState<string>(() => {
     const savedName = localStorage.getItem(STORAGE_NAME_KEY);
-    if (savedName) return savedName;
+    if (savedName) {
+      const sanitized = savedName.replace(/\s*\((Stefanie|Manuel)\)/gi, '').trim();
+      return sanitized || (localStorage.getItem(STORAGE_ROLE_KEY) === 'mond' ? 'Der Mond' : 'Die Sonne');
+    }
     const savedRole = localStorage.getItem(STORAGE_ROLE_KEY);
     return savedRole === 'mond' ? 'Der Mond' : 'Die Sonne';
   });
@@ -52,14 +55,12 @@ export const UserRoleProvider: React.FC<{ children: React.ReactNode }> = ({ chil
           const data = snap.data();
           if (data.role === 'sonne' || data.role === 'mond') {
             setRoleState(data.role);
-            if (data.displayName) {
-              setDisplayName(data.displayName);
-            }
+            const rawName = data.displayName || '';
+            const sanitized = rawName.replace(/\s*\((Stefanie|Manuel)\)/gi, '').trim() || (data.role === 'mond' ? 'Der Mond' : 'Die Sonne');
+            setDisplayName(sanitized);
             setIsConfigured(true);
             localStorage.setItem(STORAGE_ROLE_KEY, data.role);
-            if (data.displayName) {
-              localStorage.setItem(STORAGE_NAME_KEY, data.displayName);
-            }
+            localStorage.setItem(STORAGE_NAME_KEY, sanitized);
           }
         }
       }).catch((err) => {
@@ -69,7 +70,10 @@ export const UserRoleProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   }, []);
 
   const setRole = async (newRole: UserRoleType, customName?: string) => {
-    const nameToUse = customName || (newRole === 'sonne' ? 'Die Sonne' : 'Der Mond');
+    const rawInput = customName || '';
+    const sanitizedInput = rawInput.replace(/\s*\((Stefanie|Manuel)\)/gi, '').trim();
+    const nameToUse = sanitizedInput || (newRole === 'sonne' ? 'Die Sonne' : 'Der Mond');
+    
     setRoleState(newRole);
     setDisplayName(nameToUse);
     setIsConfigured(true);

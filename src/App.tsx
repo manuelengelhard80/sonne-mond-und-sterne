@@ -189,7 +189,7 @@ function MainApp() {
       <div className="relative w-full bg-[#0a232c] overflow-hidden flex items-center justify-center portrait:h-[50vh] portrait:min-h-[380px] portrait:max-h-[540px] landscape:h-[60vh] landscape:min-h-[440px] landscape:max-h-[720px] sm:h-[60vh] sm:min-h-[440px] sm:max-h-[700px]">
         <img
           src="/assets/aistudio/SMS-Banner.png"
-          alt="Sonne, Mond und Sterne - Manuel & Stefanie"
+          alt="Sonne, Mond und Sterne"
           className="w-full h-full object-cover object-center block select-none pointer-events-none transition-all duration-300"
           style={{ objectPosition: '50% 50%' }}
         />
@@ -273,7 +273,7 @@ function MainApp() {
           <Heart className="w-3.5 h-3.5 text-[#dfba61] fill-[#dfba61]" />
         </div>
         <div className="text-white/70 flex items-center justify-center gap-2 text-xs">
-          <span className="font-script text-lg text-[#dfba61]">Manuel & Stefanie</span>
+          <span className="font-script text-lg text-[#dfba61]">Sonne & Mond</span>
           <span>·</span>
           <span>Liebe, Freiheit, Achtsamkeit.</span>
         </div>

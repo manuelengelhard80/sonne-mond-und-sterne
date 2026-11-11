@@ -259,26 +259,14 @@ export const sendTestShootingStar = async (userRole: UserRoleType): Promise<bool
 
 // Helper to return the shared thought push notification title and body based on recipient user role
 export const getSharedThoughtPushNotification = (
-  userRole: UserRoleType,
-  thoughtNote?: { title?: string; content?: string }
+  userRole: UserRoleType
 ): { title: string; body: string } => {
   const isSonne = userRole === 'sonne';
   const title = '💌 Gedanken teilen...';
 
-  const baseBody = isSonne
+  const body = isSonne
     ? 'Der Mond 🌕 hat einen Gedanken mit dir geteilt, meine liebe Sonne. ☀️\n\n➡️ Schau ihn dir an!'
     : 'Die Sonne ☀️ hat einen Gedanken mit dir geteilt, mein lieber Mond. 🌕\n\n➡️ Schau ihn dir an!';
-
-  let body = baseBody;
-  if (thoughtNote) {
-    if (thoughtNote.title && thoughtNote.content) {
-      body = `„${thoughtNote.title.trim()}“\n${thoughtNote.content.trim().slice(0, 100)}\n\n${baseBody}`;
-    } else if (thoughtNote.title) {
-      body = `„${thoughtNote.title.trim()}“\n\n${baseBody}`;
-    } else if (thoughtNote.content) {
-      body = `„${thoughtNote.content.trim().slice(0, 100)}“\n\n${baseBody}`;
-    }
-  }
 
   return { title, body };
 };
@@ -717,10 +705,7 @@ export const listenForPartnerActivities = (
           // Check if this thought is from the partner
           const isFromPartner = data.authorRole ? data.authorRole !== userRole : (currentUserId ? data.authorUid !== currentUserId : true);
           if (isFromPartner) {
-            const { title, body } = getSharedThoughtPushNotification(userRole, {
-              title: data.title,
-              content: data.content,
-            });
+            const { title, body } = getSharedThoughtPushNotification(userRole);
             sendAppNotification(
               title,
               {

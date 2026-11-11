@@ -1,4 +1,4 @@
-import { collection, onSnapshot, doc, setDoc } from 'firebase/firestore';
+import { collection, onSnapshot, doc, setDoc, updateDoc } from 'firebase/firestore';
 import { db, ensureAuthenticated } from './firebase';
 import { NotificationLogEntry, UserRoleType } from '../types';
 
@@ -97,6 +97,29 @@ export const initServiceWorker = async (): Promise<ServiceWorkerRegistration | n
     const reg = await navigator.serviceWorker.register('/sw.js');
     if (reg) {
       reg.update().catch(() => {});
+      
+      // Register Periodic Sync if supported (only for installed PWAs)
+      if ('periodicSync' in reg) {
+        try {
+          const status = await (navigator as any).permissions.query({
+            name: 'periodic-background-sync',
+          });
+          if (status.state === 'granted') {
+            await (reg as any).periodicSync.register('morning-affirmation-check', {
+              minInterval: 24 * 60 * 60 * 1000, // once a day
+            });
+          }
+        } catch (e) {
+          console.warn('Periodic Sync registration failed:', e);
+        }
+      }
+
+      // Register one-shot Sync for liveness
+      if ('sync' in reg) {
+        try {
+          await (reg as any).sync.register('check-morning-affirmation');
+        } catch (e) {}
+      }
     }
     swRegistration = reg;
     return reg;
@@ -182,6 +205,75 @@ export const sendAppNotification = async (
   }
 };
 
+// Helper to convert VAPID public key
+function urlBase64ToUint8Array(base64String: string) {
+  const padding = '='.repeat((4 - base64String.length % 4) % 4);
+  const base64 = (base64String + padding).replace(/-/g, '+').replace(/_/g, '/');
+  const rawData = window.atob(base64);
+  const outputArray = new Uint8Array(rawData.length);
+  for (let i = 0; i < rawData.length; ++i) {
+    outputArray[i] = rawData.charCodeAt(i);
+  }
+  return outputArray;
+}
+
+// Subscribe user to Web Push
+export const subscribeToPushNotifications = async (userId: string): Promise<boolean> => {
+  if (!('serviceWorker' in navigator) || !('PushManager' in window)) {
+    return false;
+  }
+
+  try {
+    const registration = await navigator.serviceWorker.ready;
+    
+    // Get public key from server
+    const response = await fetch('/api/vapid-public-key');
+    const vapidPublicKey = await response.text();
+    const convertedVapidKey = urlBase64ToUint8Array(vapidPublicKey);
+
+    const subscription = await registration.pushManager.subscribe({
+      userVisibleOnly: true,
+      applicationServerKey: convertedVapidKey
+    });
+
+    // Save subscription to Firestore user profile
+    await ensureAuthenticated();
+    await updateDoc(doc(db, 'user_roles', userId), {
+      pushSubscription: JSON.parse(JSON.stringify(subscription))
+    });
+
+    return true;
+  } catch (err) {
+    console.warn('Web Push subscription failed:', err);
+    return false;
+  }
+};
+
+// Ping the partner via backend (for background delivery)
+export const pingPartner = async (
+  targetRole: UserRoleType,
+  title: string,
+  body: string,
+  navTab?: string,
+  tag?: string
+): Promise<void> => {
+  try {
+    await fetch('/api/push-ping', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        targetRole,
+        title,
+        body,
+        navTab,
+        tag
+      })
+    });
+  } catch (err) {
+    console.warn('Could not ping partner via backend:', err);
+  }
+};
+
 // Publish a partner notification to Firestore so it arrives instantly on partner's device
 export const publishPartnerNotification = async (
   senderRole: UserRoleType,
@@ -196,6 +288,8 @@ export const publishPartnerNotification = async (
     await ensureAuthenticated();
     const notifId = `notif-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`;
     const docRef = doc(db, 'partner_notifications', notifId);
+    const timestamp = new Date().toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+    
     await setDoc(docRef, {
       id: notifId,
       senderRole,
@@ -206,8 +300,13 @@ export const publishPartnerNotification = async (
       tag: tag || `partner-${Date.now()}`,
       navTab: navTab || null,
       createdAt: new Date().toISOString(),
-      timestamp: new Date().toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit', second: '2-digit' }),
+      timestamp,
     });
+
+    // CRITICAL: Also trigger a background push ping via the server
+    // This ensures the partner gets the notification even if their app is closed/killed
+    await pingPartner(targetRole, title, body, navTab, tag || notifId);
+
     return notifId;
   } catch (err) {
     console.warn('Could not publish partner notification to Firestore:', err);
@@ -241,7 +340,7 @@ export const sendTestMorningAffirmation = async (userRole: UserRoleType): Promis
   const randomIndex = Math.floor(Math.random() * MORNING_AFFIRMATIONS.length);
   const message = MORNING_AFFIRMATIONS[randomIndex];
   const title = getMorningAffirmationTitle(userRole);
-  return sendAppNotification(
+  const sentLocal = await sendAppNotification(
     title,
     {
       body: `Dein positiver Gedanke für heute: "${message}"`,
@@ -251,6 +350,9 @@ export const sendTestMorningAffirmation = async (userRole: UserRoleType): Promis
     'morgen_affirmation',
     userRole
   );
+  // Also trigger a real backend push ping to THIS device role (for testing background)
+  await pingPartner(userRole, title, `Dein positiver Gedanke für heute: "${message}"`, undefined, 'test-morgen-affirmation');
+  return sentLocal;
 };
 
 // Helper to return the shooting star push notification title and body based on recipient user role
@@ -269,7 +371,8 @@ export const getShootingStarPushNotification = (
 // Test 2: Sternschnuppen Test
 export const sendTestShootingStar = async (userRole: UserRoleType): Promise<boolean> => {
   const { title, body } = getShootingStarPushNotification(userRole);
-  return sendAppNotification(
+  // Send local log
+  const sentLocal = await sendAppNotification(
     title,
     {
       body,
@@ -280,6 +383,9 @@ export const sendTestShootingStar = async (userRole: UserRoleType): Promise<bool
     'sternschnuppe',
     userRole
   );
+  // Also trigger a real backend push ping to THIS device role (for testing background)
+  await pingPartner(userRole, title, body, 'stars', 'test-shooting-star');
+  return sentLocal;
 };
 
 // Helper to return the shared thought push notification title and body based on recipient user role
@@ -299,7 +405,7 @@ export const getSharedThoughtPushNotification = (
 // Test 3: Gedanken Teilen Test
 export const sendTestSharedThought = async (userRole: UserRoleType): Promise<boolean> => {
   const { title, body } = getSharedThoughtPushNotification(userRole);
-  return sendAppNotification(
+  const sentLocal = await sendAppNotification(
     title,
     {
       body,
@@ -310,6 +416,9 @@ export const sendTestSharedThought = async (userRole: UserRoleType): Promise<boo
     'gedanken',
     userRole
   );
+  // Also trigger a real backend push ping to THIS device role (for testing background)
+  await pingPartner(userRole, title, body, 'journal', 'test-shared-thought');
+  return sentLocal;
 };
 
 // Helper to return the guided meditation push notification based on sender role
@@ -402,7 +511,7 @@ export const sendDreamJourneyInvite = async (userRole: UserRoleType): Promise<bo
 export const sendTestGuidedMeditationInvite = async (userRole: UserRoleType): Promise<boolean> => {
   const simulatedSender: UserRoleType = userRole === 'sonne' ? 'mond' : 'sonne';
   const { title, body } = getGuidedMeditationPushNotification(simulatedSender);
-  return sendAppNotification(
+  const sentLocal = await sendAppNotification(
     title,
     {
       body,
@@ -412,6 +521,8 @@ export const sendTestGuidedMeditationInvite = async (userRole: UserRoleType): Pr
     'test',
     userRole
   );
+  await pingPartner(userRole, title, body, undefined, 'test-guided-meditation-invite');
+  return sentLocal;
 };
 
 // Helper to return the Himmelsbegegnung push notification based on sender role
@@ -431,7 +542,7 @@ export const getHimmelsbegegnungPushNotification = (
 export const sendTestHimmelsbegegnung = async (userRole: UserRoleType): Promise<boolean> => {
   const simulatedSender: UserRoleType = userRole === 'sonne' ? 'mond' : 'sonne';
   const { title, body } = getHimmelsbegegnungPushNotification(simulatedSender);
-  return sendAppNotification(
+  const sentLocal = await sendAppNotification(
     title,
     {
       body,
@@ -441,6 +552,8 @@ export const sendTestHimmelsbegegnung = async (userRole: UserRoleType): Promise<
     'himmelsbegegnung',
     userRole
   );
+  await pingPartner(userRole, title, body, undefined, 'test-himmelsbegegnung');
+  return sentLocal;
 };
 
 // Helper to return the Sommernacht am See push notification based on sender role
@@ -460,7 +573,7 @@ export const getSommernachtAmSeePushNotification = (
 export const sendTestSommernachtAmSeeInvite = async (userRole: UserRoleType): Promise<boolean> => {
   const simulatedSender: UserRoleType = userRole === 'sonne' ? 'mond' : 'sonne';
   const { title, body } = getSommernachtAmSeePushNotification(simulatedSender);
-  return sendAppNotification(
+  const sentLocal = await sendAppNotification(
     title,
     {
       body,
@@ -470,6 +583,8 @@ export const sendTestSommernachtAmSeeInvite = async (userRole: UserRoleType): Pr
     'lake',
     userRole
   );
+  await pingPartner(userRole, title, body, 'lake', 'test-sommernacht-am-see');
+  return sentLocal;
 };
 
 // Real Sommernacht am See Invite (cross-device to partner)
@@ -491,7 +606,7 @@ export const sendSommernachtAmSeeInvite = async (userRole: UserRoleType): Promis
 export const sendTestCouplesMeditationInvite = async (userRole: UserRoleType): Promise<boolean> => {
   const simulatedSender: UserRoleType = userRole === 'sonne' ? 'mond' : 'sonne';
   const { title, body } = getCouplesMeditationPushNotification(simulatedSender);
-  return sendAppNotification(
+  const sentLocal = await sendAppNotification(
     title,
     {
       body,
@@ -501,13 +616,15 @@ export const sendTestCouplesMeditationInvite = async (userRole: UserRoleType): P
     'test',
     userRole
   );
+  await pingPartner(userRole, title, body, undefined, 'test-couples-meditation-invite');
+  return sentLocal;
 };
 
 // Test 8: Traumreise Test
 export const sendTestDreamJourneyInvite = async (userRole: UserRoleType): Promise<boolean> => {
   const simulatedSender: UserRoleType = userRole === 'sonne' ? 'mond' : 'sonne';
   const { title, body } = getDreamJourneyPushNotification(simulatedSender);
-  return sendAppNotification(
+  const sentLocal = await sendAppNotification(
     title,
     {
       body,
@@ -517,6 +634,8 @@ export const sendTestDreamJourneyInvite = async (userRole: UserRoleType): Promis
     'test',
     userRole
   );
+  await pingPartner(userRole, title, body, undefined, 'test-dream-journey-invite');
+  return sentLocal;
 };
 
 

@@ -237,7 +237,7 @@ export const publishPartnerNotification = async (
   try {
     const user = await ensureAuthenticated();
     if (!user) {
-      console.error('Cannot publish notification: Not authenticated.');
+      console.error('DIAGNOSTIC: Cannot publish notification: Not authenticated.');
       return null;
     }
     const notifId = `notif-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`;
@@ -255,9 +255,10 @@ export const publishPartnerNotification = async (
       timestamp: new Date().toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit', second: '2-digit' }),
     };
     await setDoc(docRef, payload);
-    console.log('Notification published to Firestore:', notifId);
+    console.log('DIAGNOSTIC: Notification successfully written to Firestore:', notifId);
     return notifId;
   } catch (err) {
+    console.error('DIAGNOSTIC: Firestore write error:', err);
     handleFirestoreError(err, OperationType.WRITE, path);
     return null;
   }
@@ -508,39 +509,46 @@ export const listenForPartnerActivities = (
   const path = 'partner_notifications';
   let unsubPartnerNotifs = () => {};
   try {
-    console.log(`Attaching partner listener for role: ${userRole}`);
+    console.log(`DIAGNOSTIC: Attaching partner listener for role: ${userRole}`);
     
     // Simplest possible listener to avoid any index or query failures
     unsubPartnerNotifs = onSnapshot(collection(db, path), (snapshot) => {
+      console.log(`DIAGNOSTIC: Listener snapshot received. Docs: ${snapshot.size}`);
       snapshot.docChanges().forEach((change) => {
         if (change.type === 'added') {
           const data = change.doc.data();
           const notifId = change.doc.id;
+          console.log(`DIAGNOSTIC: New doc added: ${notifId}, targetRole: ${data.targetRole}`);
           
           // Only process notifications for the correct target role
-          if (data.targetRole === role) {
+          if (data.targetRole === userRole) {
             const seenIds = getSeenPartnerNotificationIds();
             const alreadySeen = seenIds.includes(notifId);
 
             if (!alreadySeen) {
-              console.log('New partner activity received:', data.title);
+              console.log('DIAGNOSTIC: New partner activity received:', data.title);
               markPartnerNotificationAsSeen(notifId);
               // CRITICAL: Ensure the message is added to the log so the Messages component can see it.
               // We pass 'false' for isTest to make it a 'real' system message.
-              addNotificationLog(data.title, data.body, false, data.type || 'system', role, notifId, data.timestamp);
+              addNotificationLog(data.title, data.body, false, data.type || 'system', userRole, notifId, data.timestamp);
+            } else {
+              console.log('DIAGNOSTIC: Notification already seen, skipping:', notifId);
             }
+          } else {
+            console.log('DIAGNOSTIC: Notification target role mismatch (Expected', userRole, ', Got', data.targetRole, ')');
           }
         }
       });
     }, (err) => {
+      console.error('DIAGNOSTIC: Messages sync error:', err);
       handleFirestoreError(err, OperationType.LIST, path);
     });
   } catch (err) {
-    console.warn('Could not attach partner notifications listener:', err);
+    console.warn('DIAGNOSTIC: Could not attach partner notifications listener:', err);
   }
 
   return () => {
-    console.log('Detaching partner listener.');
+    console.log('DIAGNOSTIC: Detaching partner listener.');
     unsubPartnerNotifs();
   };
 };

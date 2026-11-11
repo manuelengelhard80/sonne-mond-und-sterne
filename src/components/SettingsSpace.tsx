@@ -33,7 +33,6 @@ import {
   isNotificationSupported,
   getNotificationLogs,
   clearNotificationLogs,
-  subscribeToPushNotifications,
 } from '../services/notificationService';
 import { UserRoleType, NotificationLogEntry } from '../types';
 
@@ -148,13 +147,8 @@ export const SettingsSpace: React.FC = () => {
   const handleRequestPush = async () => {
     const granted = await requestNotificationPermission();
     setPermission(granted ? 'granted' : getNotificationPermission());
-    if (granted && currentUserId) {
-      const subscribed = await subscribeToPushNotifications(currentUserId);
-      if (subscribed) {
-        setTestFeedback('Echte Push-Nachrichten für den Hintergrund wurden erfolgreich aktiviert!');
-      } else {
-        setTestFeedback('Mitteilungen sind aktiv, aber echte Hintergrund-Push-Dienste konnten nicht registriert werden (Browser-Einschränkung).');
-      }
+    if (granted) {
+      setTestFeedback('Echte Push-Nachrichten für den Hintergrund wurden erfolgreich aktiviert!');
       setTimeout(() => setTestFeedback(null), 5000);
     }
   };

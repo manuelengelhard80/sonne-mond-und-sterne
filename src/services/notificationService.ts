@@ -5,7 +5,7 @@ import { NotificationLogEntry, UserRoleType } from '../types';
 
 // VAPID Public Key for Web Push (Required for FCM on Safari and Chrome)
 // Replace with your real VAPID key from Firebase Console -> Project Settings -> Cloud Messaging
-export const VAPID_PUBLIC_KEY = 'BCR8x7g-zFv1R1M2m3V4B5N6b7V8C9v0A1b2C3d4E5f6G7h8I9j0K1l2M3n4O5p6Q7r8S9t0U1v2W3x4Y5z6';
+export const VAPID_PUBLIC_KEY = 'BON2h1JLQaSMQJrAgeWz6niyAqBQAXzlLeda8rolYgI03yUj95H6qhTfaz7-pZXKbSob7lWSNYvgGZ5qfducaNM';
 
 // Request Notification Permission and setup FCM
 export const requestNotificationPermission = async (): Promise<boolean> => {

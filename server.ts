@@ -59,6 +59,7 @@ function setupPushService() {
           });
 
           const uniqueTokens = Array.from(new Set(allTokens));
+          console.log(`FCM tokens retrieved for ${targetRole}:`, uniqueTokens);
           if (uniqueTokens.length === 0) {
             console.log(`No push tokens found for role: ${targetRole}`);
             return;
@@ -97,11 +98,16 @@ function setupPushService() {
           };
 
           // 3. Send via FCM
+          console.log(`Sending FCM to ${uniqueTokens.length} tokens...`);
           const response = await messagingAdmin.sendEachForMulticast(message);
-          console.log(`Successfully sent ${response.successCount} push messages for ${targetRole}`);
+          console.log(`FCM Response: Success=${response.successCount}, Fail=${response.failureCount}`);
           
           if (response.failureCount > 0) {
-            console.warn(`${response.failureCount} push messages failed.`);
+            response.responses.forEach((resp, idx) => {
+              if (!resp.success) {
+                console.warn(`FCM Send Failure for token ${uniqueTokens[idx]}:`, resp.error);
+              }
+            });
           }
         } catch (error) {
           console.error('Error sending background push:', error);

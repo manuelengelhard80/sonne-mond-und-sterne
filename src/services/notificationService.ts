@@ -516,17 +516,18 @@ export const listenForPartnerActivities = (
         if (change.type === 'added') {
           const data = change.doc.data();
           const notifId = change.doc.id;
-
-          // Filter by targetRole client-side
-          if (data.targetRole === userRole) {
+          
+          // Only process notifications for the correct target role
+          if (data.targetRole === role) {
             const seenIds = getSeenPartnerNotificationIds();
             const alreadySeen = seenIds.includes(notifId);
 
             if (!alreadySeen) {
               console.log('New partner activity received:', data.title);
               markPartnerNotificationAsSeen(notifId);
-              // Always add to local log so Messages inbox and Mitteilungs-Log have it immediately.
-              addNotificationLog(data.title, data.body, false, data.type || 'system', userRole, notifId, data.timestamp);
+              // CRITICAL: Ensure the message is added to the log so the Messages component can see it.
+              // We pass 'false' for isTest to make it a 'real' system message.
+              addNotificationLog(data.title, data.body, false, data.type || 'system', role, notifId, data.timestamp);
             }
           }
         }

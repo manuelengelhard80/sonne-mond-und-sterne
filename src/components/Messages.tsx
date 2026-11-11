@@ -11,71 +11,18 @@ export const Messages: React.FC = () => {
   const [messages, setMessages] = useState<NotificationLogEntry[]>([]);
 
   useEffect(() => {
-    // 1. Real-time Firestore sync with partner_notifications
-    const path = 'partner_notifications';
-    let firestoreEntries: NotificationLogEntry[] = [];
-    
-    // Use simplest possible listener to avoid any index or query failures
-    const unsub = onSnapshot(collection(db, path), (snapshot) => {
-      const cloudList: NotificationLogEntry[] = [];
-      snapshot.docs.forEach((docSnap) => {
-        const data = docSnap.data();
-        // Client-side filter
-        if (data.targetRole === role) {
-          cloudList.push({
-            id: docSnap.id,
-            timestamp: data.timestamp || new Date(data.createdAt || Date.now()).toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit', second: '2-digit' }),
-            title: data.title,
-            body: data.body,
-            isTest: false,
-            type: data.type || 'system',
-            targetRole: data.targetRole,
-          });
-        }
-      });
-      firestoreEntries = cloudList;
-      mergeAndSetMessages();
-    }, (err) => {
-      console.error('Messages sync error:', err);
-    });
-
-    // 2. Local storage sync (for Morgen Affirmation and local events)
-    const mergeAndSetMessages = () => {
-      const localLogs = getNotificationLogs().filter((l) => {
-        if (l.isTest) return false; // Testnachrichten nur im Mitteilungs-Log!
-        if (l.targetRole && l.targetRole !== role) return false;
-        return true;
-      });
-
-      // Merge firestore and local logs, deduplicating by ID
-      const map = new Map<string, NotificationLogEntry>();
-      // First add cloud entries
-      firestoreEntries.forEach((m) => map.set(m.id, m));
-      // Then add local entries (unless already in map)
-      localLogs.forEach((l) => {
-        if (!map.has(l.id)) {
-          map.set(l.id, l);
-        }
-      });
-
-      const combined = Array.from(map.values());
-      // Sort newest first based on id or timestamp
-      combined.sort((a, b) => b.id.localeCompare(a.id));
-      setMessages(combined);
-
-      // Update last read ID so badge clears
-      if (combined.length > 0) {
-        localStorage.setItem('last_read_log_id', combined[0].id);
-        window.dispatchEvent(new CustomEvent('notification-log-updated'));
-      }
+    // Sync local logs initially and when updated
+    const updateLogs = () => {
+      const logs = getNotificationLogs();
+      // Filter by role client-side
+      setMessages(logs.filter(l => !l.targetRole || l.targetRole === role));
     };
 
-    mergeAndSetMessages();
-    window.addEventListener('notification-log-updated', mergeAndSetMessages);
+    updateLogs();
+    window.addEventListener('notification-log-updated', updateLogs);
 
     return () => {
-      unsub();
-      window.removeEventListener('notification-log-updated', mergeAndSetMessages);
+      window.removeEventListener('notification-log-updated', updateLogs);
     };
   }, [role]);
 

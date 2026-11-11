@@ -1,5 +1,5 @@
-import { collection, onSnapshot } from 'firebase/firestore';
-import { db } from './firebase';
+import { collection, onSnapshot, doc, setDoc } from 'firebase/firestore';
+import { db, ensureAuthenticated } from './firebase';
 import { NotificationLogEntry, UserRoleType } from '../types';
 
 export const MORNING_AFFIRMATIONS: string[] = [
@@ -191,6 +191,37 @@ export const sendAppNotification = async (
   }
 };
 
+// Publish a partner notification to Firestore so it arrives instantly on partner's device
+export const publishPartnerNotification = async (
+  senderRole: UserRoleType,
+  targetRole: UserRoleType,
+  title: string,
+  body: string,
+  type: NotificationLogEntry['type'] = 'system',
+  tag?: string,
+  navTab?: string
+): Promise<void> => {
+  try {
+    await ensureAuthenticated();
+    const notifId = `notif-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`;
+    const docRef = doc(db, 'partner_notifications', notifId);
+    await setDoc(docRef, {
+      id: notifId,
+      senderRole,
+      targetRole,
+      title,
+      body,
+      type,
+      tag: tag || `partner-${Date.now()}`,
+      navTab: navTab || null,
+      createdAt: new Date().toISOString(),
+      timestamp: new Date().toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit', second: '2-digit' }),
+    });
+  } catch (err) {
+    console.warn('Could not publish partner notification to Firestore:', err);
+  }
+};
+
 // Send immediate generic test notification
 export const sendTestNotification = async (userRole: UserRoleType): Promise<boolean> => {
   const partnerName = userRole === 'sonne' ? 'Der Mond' : 'Die Sonne';
@@ -224,7 +255,8 @@ export const sendTestMorningAffirmation = async (userRole: UserRoleType): Promis
       tag: 'test-morgen-affirmation',
     },
     true,
-    'morgen_affirmation'
+    'morgen_affirmation',
+    userRole
   );
 };
 
@@ -252,7 +284,8 @@ export const sendTestShootingStar = async (userRole: UserRoleType): Promise<bool
       data: { tab: 'stars', url: '/?tab=stars' },
     },
     true,
-    'sternschnuppe'
+    'sternschnuppe',
+    userRole
   );
 };
 
@@ -281,7 +314,8 @@ export const sendTestSharedThought = async (userRole: UserRoleType): Promise<boo
       data: { tab: 'journal', url: '/?tab=journal' },
     },
     true,
-    'gedanken'
+    'gedanken',
+    userRole
   );
 };
 
@@ -298,18 +332,19 @@ export const getGuidedMeditationPushNotification = (
   return { title, body };
 };
 
-// Invitation 1: Geführte Meditation Einladung
+// Invitation 1: Geführte Meditation Einladung (cross-device to partner)
 export const sendGuidedMeditationInvite = async (userRole: UserRoleType): Promise<boolean> => {
+  const targetRole: UserRoleType = userRole === 'sonne' ? 'mond' : 'sonne';
   const { title, body } = getGuidedMeditationPushNotification(userRole);
-  return sendAppNotification(
+  await publishPartnerNotification(
+    userRole,
+    targetRole,
     title,
-    {
-      body,
-      tag: 'guided-meditation-invite',
-    },
-    false,
-    'system'
+    body,
+    'system',
+    `guided-meditation-${Date.now()}`
   );
+  return true;
 };
 
 // Helper to return the couples meditation push notification based on sender role
@@ -325,18 +360,19 @@ export const getCouplesMeditationPushNotification = (
   return { title, body };
 };
 
-// Invitation 2: Paar-Meditation Einladung
+// Invitation 2: Paar-Meditation Einladung (cross-device to partner)
 export const sendCouplesMeditationInvite = async (userRole: UserRoleType): Promise<boolean> => {
+  const targetRole: UserRoleType = userRole === 'sonne' ? 'mond' : 'sonne';
   const { title, body } = getCouplesMeditationPushNotification(userRole);
-  return sendAppNotification(
+  await publishPartnerNotification(
+    userRole,
+    targetRole,
     title,
-    {
-      body,
-      tag: 'couples-meditation-invite',
-    },
-    false,
-    'system'
+    body,
+    'system',
+    `couples-meditation-${Date.now()}`
   );
+  return true;
 };
 
 // Helper to return the Traumreise push notification based on sender role
@@ -352,18 +388,19 @@ export const getDreamJourneyPushNotification = (
   return { title, body };
 };
 
-// Invitation 3: Traumreise Einladung
+// Invitation 3: Traumreise Einladung (cross-device to partner)
 export const sendDreamJourneyInvite = async (userRole: UserRoleType): Promise<boolean> => {
+  const targetRole: UserRoleType = userRole === 'sonne' ? 'mond' : 'sonne';
   const { title, body } = getDreamJourneyPushNotification(userRole);
-  return sendAppNotification(
+  await publishPartnerNotification(
+    userRole,
+    targetRole,
     title,
-    {
-      body,
-      tag: 'dream-journey-invite',
-    },
-    false,
-    'system'
+    body,
+    'system',
+    `dream-journey-${Date.now()}`
   );
+  return true;
 };
 
 
@@ -378,7 +415,8 @@ export const sendTestGuidedMeditationInvite = async (userRole: UserRoleType): Pr
       tag: 'test-guided-meditation-invite',
     },
     true,
-    'test'
+    'test',
+    userRole
   );
 };
 
@@ -405,7 +443,8 @@ export const sendTestHimmelsbegegnung = async (userRole: UserRoleType): Promise<
       tag: 'test-himmelsbegegnung',
     },
     true,
-    'himmelsbegegnung'
+    'himmelsbegegnung',
+    userRole
   );
 };
 
@@ -432,22 +471,24 @@ export const sendTestSommernachtAmSeeInvite = async (userRole: UserRoleType): Pr
       tag: 'test-sommernacht-am-see',
     },
     true,
-    'lake'
+    'lake',
+    userRole
   );
 };
 
-// Real Sommernacht am See Invite
+// Real Sommernacht am See Invite (cross-device to partner)
 export const sendSommernachtAmSeeInvite = async (userRole: UserRoleType): Promise<boolean> => {
+  const targetRole: UserRoleType = userRole === 'sonne' ? 'mond' : 'sonne';
   const { title, body } = getSommernachtAmSeePushNotification(userRole);
-  return sendAppNotification(
+  await publishPartnerNotification(
+    userRole,
+    targetRole,
     title,
-    {
-      body,
-      tag: `sommernacht-am-see-${Date.now()}`,
-    },
-    false,
-    'lake'
+    body,
+    'lake',
+    `sommernacht-am-see-${Date.now()}`
   );
+  return true;
 };
 
 // Test 5: Paar-Meditation Test
@@ -460,7 +501,8 @@ export const sendTestCouplesMeditationInvite = async (userRole: UserRoleType): P
       tag: 'test-couples-meditation-invite',
     },
     true,
-    'test'
+    'test',
+    userRole
   );
 };
 
@@ -474,7 +516,8 @@ export const sendTestDreamJourneyInvite = async (userRole: UserRoleType): Promis
       tag: 'test-dream-journey-invite',
     },
     true,
-    'test'
+    'test',
+    userRole
   );
 };
 
@@ -713,7 +756,8 @@ export const listenForPartnerActivities = (
                 data: { tab: 'stars', url: '/?tab=stars' },
               },
               false,
-              'sternschnuppe'
+              'sternschnuppe',
+              userRole
             );
           }
         }
@@ -750,7 +794,8 @@ export const listenForPartnerActivities = (
                 data: { tab: 'journal', url: '/?tab=journal' },
               },
               false,
-              'gedanken'
+              'gedanken',
+              userRole
             );
           }
         }
@@ -789,7 +834,8 @@ export const listenForPartnerActivities = (
                 tag: `encounter-${change.doc.id}`,
               },
               false,
-              'himmelsbegegnung'
+              'himmelsbegegnung',
+              userRole
             );
           }
         }
@@ -799,9 +845,49 @@ export const listenForPartnerActivities = (
     console.warn('Could not attach encounters notification listener:', err);
   }
 
+  // 4. Listen for direct Partner Notifications (Sommernacht am See, Traumreise, Geführte & Paar Meditationen)
+  let unsubPartnerNotifs = () => {};
+  let isInitialPartnerNotifsSnapshot = true;
+  const knownPartnerNotifIds = new Set<string>();
+
+  try {
+    unsubPartnerNotifs = onSnapshot(collection(db, 'partner_notifications'), (snapshot) => {
+      if (isInitialPartnerNotifsSnapshot) {
+        snapshot.docs.forEach((d) => knownPartnerNotifIds.add(d.id));
+        isInitialPartnerNotifsSnapshot = false;
+        return;
+      }
+
+      snapshot.docChanges().forEach((change) => {
+        if (change.type === 'added' && !knownPartnerNotifIds.has(change.doc.id)) {
+          knownPartnerNotifIds.add(change.doc.id);
+          const data = change.doc.data();
+
+          // Only trigger if this notification was specifically sent for this device's userRole
+          if (data.targetRole === userRole) {
+            sendAppNotification(
+              data.title,
+              {
+                body: data.body,
+                tag: data.tag || `partner-${change.doc.id}`,
+                data: data.navTab ? { tab: data.navTab, url: `/?tab=${data.navTab}` } : undefined,
+              },
+              false,
+              data.type || 'system',
+              userRole
+            );
+          }
+        }
+      });
+    }, (err) => console.warn('Partner notifications listener notice:', err));
+  } catch (err) {
+    console.warn('Could not attach partner notifications listener:', err);
+  }
+
   return () => {
     unsubStars();
     unsubThoughts();
     unsubEncounters();
+    unsubPartnerNotifs();
   };
 };

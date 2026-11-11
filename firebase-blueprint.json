@@ -57,6 +57,22 @@
         "touchVal": { "type": "number" }
       },
       "required": ["id", "authorRole", "createdAt"]
+    },
+    "PartnerNotification": {
+      "title": "PartnerNotification",
+      "description": "Cloud message delivered to partner inbox and push notification across devices",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "targetRole": { "type": "string", "enum": ["sonne", "mond"] },
+        "senderRole": { "type": "string", "enum": ["sonne", "mond"] },
+        "title": { "type": "string" },
+        "body": { "type": "string" },
+        "type": { "type": "string" },
+        "createdAt": { "type": "string" },
+        "timestamp": { "type": "string" }
+      },
+      "required": ["id", "targetRole", "senderRole", "title", "body", "type", "createdAt"]
     }
   },
   "firestore": {
@@ -75,6 +91,10 @@
     "/celestial_touches/{touchId}": {
       "schema": "CelestialTouch",
       "description": "Stores interactive touch encounters between Sun and Moon"
+    },
+    "/partner_notifications/{notificationId}": {
+      "schema": "PartnerNotification",
+      "description": "Stores partner notifications for immediate multi-device push delivery and inbox syncing"
     }
   }
 }

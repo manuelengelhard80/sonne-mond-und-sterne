@@ -30,5 +30,11 @@ service cloud.firestore {
       allow read: if true;
       allow create, update, delete: if true;
     }
+
+    // Direct Partner Notifications (Immediate Cross-Device Push & Inbox Sync)
+    match /partner_notifications/{notificationId} {
+      allow read: if true;
+      allow create, update, delete: if true;
+    }
   }
 }

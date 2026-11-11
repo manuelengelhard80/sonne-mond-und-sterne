@@ -40,33 +40,38 @@ export const ensureAuthenticated = (): Promise<User | null> => {
   }
   if (!authInitPromise) {
     authInitPromise = new Promise<User | null>((resolve) => {
-      // Safety timeout: resolve to null after 5 seconds if auth hangs
+      console.log('Starting Auth initialization...');
+      // Safety timeout: resolve to null after 10 seconds if auth hangs
       const timeout = setTimeout(() => {
-        console.warn('Auth initialization timed out.');
+        console.error('Auth initialization TIMED OUT.');
         resolve(null);
-      }, 5000);
+      }, 10000);
 
       try {
         const unsubscribe = onAuthStateChanged(auth, (user) => {
           clearTimeout(timeout);
           if (user) {
+            console.log('Auth state: User detected:', user.uid);
             unsubscribe();
             resolve(user);
           } else {
+            console.log('Auth state: No user, attempting signInAnonymously...');
             signInAnonymously(auth)
               .then((credential) => {
+                console.log('signInAnonymously SUCCESS:', credential.user.uid);
                 unsubscribe();
                 resolve(credential.user);
               })
               .catch((err) => {
-                console.warn('Anonymous auth unavailable, running in local fallback mode:', err);
+                console.error('signInAnonymously FAILED:', err.code, err.message);
+                unsubscribe();
                 resolve(null);
               });
           }
         });
       } catch (err) {
         clearTimeout(timeout);
-        console.warn('Auth initialization skipped:', err);
+        console.error('Auth initialization CRITICAL ERROR:', err);
         resolve(null);
       }
     });

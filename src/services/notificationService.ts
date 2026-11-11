@@ -335,13 +335,26 @@ export const sendCouplesMeditationInvite = async (userRole: UserRoleType): Promi
   );
 };
 
+// Helper to return the Traumreise push notification based on sender role
+export const getDreamJourneyPushNotification = (
+  senderRole: UserRoleType
+): { title: string; body: string } => {
+  const isSonne = senderRole === 'sonne';
+  const title = '🛋️ Traumreise';
+  const body = isSonne
+    ? 'Die Sonne ☀️ lädt dich heute zu einer Traumreise ein, mein lieber Mond. 🌕 Gönnt euch eine Auszeit voller Fantasie und tiefer Entspannung.'
+    : 'Der Mond 🌕 lädt dich heute zu einer Traumreise ein, meine liebe Sonne. ☀️ Gönnt euch eine Auszeit voller Fantasie und tiefer Entspannung.';
+
+  return { title, body };
+};
+
 // Invitation 3: Traumreise Einladung
 export const sendDreamJourneyInvite = async (userRole: UserRoleType): Promise<boolean> => {
-  const senderName = userRole === 'sonne' ? 'Die Sonne' : 'Der Mond';
+  const { title, body } = getDreamJourneyPushNotification(userRole);
   return sendAppNotification(
-    '✨ Einladung zu einer entspannenden Traumreise!',
+    title,
     {
-      body: `${senderName} lädt dich zu einer zauberhaften Traumreise ein. Lass deine Gedanken auf sanften Schwingen davontragen und genieße tiefe Entspannung.`,
+      body,
       tag: 'dream-journey-invite',
     },
     false,
@@ -436,11 +449,11 @@ export const sendTestCouplesMeditationInvite = async (userRole: UserRoleType): P
 
 // Test 6: Traumreise Test
 export const sendTestDreamJourneyInvite = async (userRole: UserRoleType): Promise<boolean> => {
-  const senderName = userRole === 'sonne' ? 'Die Sonne' : 'Der Mond';
+  const { title, body } = getDreamJourneyPushNotification(userRole);
   return sendAppNotification(
-    '✨ Einladung zu einer entspannenden Traumreise!',
+    title,
     {
-      body: `${senderName} lädt dich zu einer zauberhaften Traumreise ein. Lass deine Gedanken auf sanften Schwingen davontragen und genieße tiefe Entspannung.`,
+      body,
       tag: 'test-dream-journey-invite',
     },
     true,

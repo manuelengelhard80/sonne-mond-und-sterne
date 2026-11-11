@@ -4,7 +4,7 @@ import { getNotificationLogs, removeNotificationLogEntry } from '../services/not
 import { NotificationLogEntry, ActiveTab } from '../types';
 import { useUserRole } from '../context/UserRoleContext';
 import { db } from '../services/firebase';
-import { collection, onSnapshot, doc, deleteDoc } from 'firebase/firestore';
+import { collection, onSnapshot, doc, deleteDoc, query, where, orderBy, limit } from 'firebase/firestore';
 
 export const Messages: React.FC = () => {
   const { role } = useUserRole();
@@ -12,12 +12,19 @@ export const Messages: React.FC = () => {
 
   useEffect(() => {
     // 1. Real-time Firestore sync with partner_notifications
+    const path = 'partner_notifications';
     let firestoreEntries: NotificationLogEntry[] = [];
-    const unsub = onSnapshot(collection(db, 'partner_notifications'), (snapshot) => {
+    const q = query(
+      collection(db, path),
+      orderBy('createdAt', 'desc'),
+      limit(100)
+    );
+
+    const unsub = onSnapshot(q, (snapshot) => {
       const cloudList: NotificationLogEntry[] = [];
       snapshot.docs.forEach((docSnap) => {
         const data = docSnap.data();
-        // Strictly filter to messages addressed to this device's role
+        // Client-side filter to avoid composite index requirements in AI Studio
         if (data.targetRole === role) {
           cloudList.push({
             id: docSnap.id,
@@ -33,7 +40,7 @@ export const Messages: React.FC = () => {
       firestoreEntries = cloudList;
       mergeAndSetMessages();
     }, (err) => {
-      console.warn('Messages partner_notifications listener notice:', err);
+      console.error('Messages sync error:', err);
     });
 
     // 2. Local storage sync (for Morgen Affirmation and local events)

@@ -1,5 +1,5 @@
-import { collection, onSnapshot, doc, setDoc, getDoc, arrayUnion } from 'firebase/firestore';
-import { db, ensureAuthenticated, messaging } from './firebase';
+import { collection, onSnapshot, doc, setDoc, getDoc, arrayUnion, query, where, orderBy, limit } from 'firebase/firestore';
+import { db, ensureAuthenticated, messaging, auth } from './firebase';
 import { getToken, onMessage } from 'firebase/messaging';
 import { NotificationLogEntry, UserRoleType } from '../types';
 
@@ -40,12 +40,55 @@ export const registerPushToken = async (token: string, userId: string) => {
   }
 };
 
+enum OperationType {
+  CREATE = 'create',
+  UPDATE = 'update',
+  DELETE = 'delete',
+  LIST = 'list',
+  GET = 'get',
+  WRITE = 'write',
+}
+
+interface FirestoreErrorInfo {
+  error: string;
+  operationType: OperationType;
+  path: string | null;
+  authInfo: {
+    userId?: string | null;
+    email?: string | null;
+    emailVerified?: boolean | null;
+    isAnonymous?: boolean | null;
+  }
+}
+
+function handleFirestoreError(error: unknown, operationType: OperationType, path: string | null) {
+  const errInfo: FirestoreErrorInfo = {
+    error: error instanceof Error ? error.message : String(error),
+    authInfo: {
+      userId: auth.currentUser?.uid,
+      email: auth.currentUser?.email,
+      emailVerified: auth.currentUser?.emailVerified,
+      isAnonymous: auth.currentUser?.isAnonymous,
+    },
+    operationType,
+    path
+  };
+  console.error('Firestore Error:', JSON.stringify(errInfo));
+  // In dev/applet mode, we also alert if it's a critical sync failure for better visibility
+  if (operationType === OperationType.LIST) {
+    console.warn(`Critical Sync Failure on ${path}: ${errInfo.error}`);
+  }
+}
+
 // Initialize FCM and obtain a token
 export const setupFCM = async (registration: ServiceWorkerRegistration) => {
   if (!messaging) return;
   try {
     const user = await ensureAuthenticated();
-    if (!user) return;
+    if (!user) {
+      console.warn('FCM setup skipped: No authenticated user.');
+      return;
+    }
 
     const token = await getToken(messaging, {
       vapidKey: VAPID_PUBLIC_KEY,
@@ -53,6 +96,7 @@ export const setupFCM = async (registration: ServiceWorkerRegistration) => {
     });
 
     if (token) {
+      console.log('FCM Token generated.');
       await registerPushToken(token, user.uid);
     } else {
       console.warn('No FCM registration token received.');
@@ -189,11 +233,16 @@ export const publishPartnerNotification = async (
   tag?: string,
   navTab?: string
 ): Promise<string | null> => {
+  const path = 'partner_notifications';
   try {
-    await ensureAuthenticated();
+    const user = await ensureAuthenticated();
+    if (!user) {
+      console.error('Cannot publish notification: Not authenticated.');
+      return null;
+    }
     const notifId = `notif-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`;
-    const docRef = doc(db, 'partner_notifications', notifId);
-    await setDoc(docRef, {
+    const docRef = doc(db, path, notifId);
+    const payload = {
       id: notifId,
       senderRole,
       targetRole,
@@ -204,10 +253,12 @@ export const publishPartnerNotification = async (
       navTab: navTab || null,
       createdAt: new Date().toISOString(),
       timestamp: new Date().toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit', second: '2-digit' }),
-    });
+    };
+    await setDoc(docRef, payload);
+    console.log('Notification published to Firestore:', notifId);
     return notifId;
   } catch (err) {
-    console.warn('Could not publish partner notification to Firestore:', err);
+    handleFirestoreError(err, OperationType.WRITE, path);
     return null;
   }
 };
@@ -442,19 +493,31 @@ export const listenForPartnerActivities = (
 ): (() => void) => {
   if (typeof window === 'undefined') return () => {};
 
+  const path = 'partner_notifications';
   let unsubPartnerNotifs = () => {};
   try {
-    unsubPartnerNotifs = onSnapshot(collection(db, 'partner_notifications'), (snapshot) => {
+    console.log(`Attaching partner listener for role: ${userRole}`);
+    // Use simple query to avoid composite index requirements in AI Studio
+    const q = query(
+      collection(db, path),
+      orderBy('createdAt', 'desc'),
+      limit(100)
+    );
+
+    unsubPartnerNotifs = onSnapshot(q, (snapshot) => {
+      console.log(`Listener sync: ${snapshot.docChanges().length} changes detected.`);
       snapshot.docChanges().forEach((change) => {
         if (change.type === 'added') {
           const data = change.doc.data();
           const notifId = change.doc.id;
 
+          // Filter by targetRole client-side to avoid index requirement
           if (data.targetRole === userRole) {
             const seenIds = getSeenPartnerNotificationIds();
             const alreadySeen = seenIds.includes(notifId);
 
             if (!alreadySeen) {
+              console.log('New partner activity received:', data.title);
               markPartnerNotificationAsSeen(notifId);
               // Always add to local log so Messages inbox and Mitteilungs-Log have it immediately.
               addNotificationLog(data.title, data.body, false, data.type || 'system', userRole, notifId, data.timestamp);
@@ -462,12 +525,15 @@ export const listenForPartnerActivities = (
           }
         }
       });
-    }, (err) => console.warn('Partner notifications listener notice:', err));
+    }, (err) => {
+      handleFirestoreError(err, OperationType.LIST, path);
+    });
   } catch (err) {
     console.warn('Could not attach partner notifications listener:', err);
   }
 
   return () => {
+    console.log('Detaching partner listener.');
     unsubPartnerNotifs();
   };
 };

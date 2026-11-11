@@ -54,8 +54,10 @@ export const addNotificationLog = (
   title: string,
   body: string,
   isTest: boolean = false,
-  type: NotificationLogEntry['type'] = 'system'
+  type: NotificationLogEntry['type'] = 'system',
+  targetRole?: UserRoleType
 ): NotificationLogEntry => {
+  const currentRole = typeof window !== 'undefined' ? (localStorage.getItem('sonne_mond_user_role') as UserRoleType || 'sonne') : 'sonne';
   const newEntry: NotificationLogEntry = {
     id: 'log-' + Date.now() + '-' + Math.random().toString(36).substring(2, 7),
     timestamp: new Date().toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit', second: '2-digit' }),
@@ -63,6 +65,7 @@ export const addNotificationLog = (
     body,
     isTest,
     type,
+    targetRole: targetRole || currentRole,
   };
 
   if (typeof window !== 'undefined') {
@@ -147,12 +150,13 @@ export const sendAppNotification = async (
   title: string,
   options?: NotificationOptions,
   isTest: boolean = false,
-  logType: NotificationLogEntry['type'] = 'system'
+  logType: NotificationLogEntry['type'] = 'system',
+  targetRole?: UserRoleType
 ): Promise<boolean> => {
   const bodyText = options?.body || '';
 
   // Always log the notification and trigger in-app visual toast
-  addNotificationLog(title, bodyText, isTest, logType);
+  addNotificationLog(title, bodyText, isTest, logType, targetRole);
 
   if (!isNotificationSupported() || Notification.permission !== 'granted') {
     return false;
@@ -378,13 +382,26 @@ export const sendTestGuidedMeditationInvite = async (userRole: UserRoleType): Pr
   );
 };
 
+// Helper to return the Himmelsbegegnung push notification based on sender role
+export const getHimmelsbegegnungPushNotification = (
+  senderRole: UserRoleType
+): { title: string; body: string } => {
+  const isSonne = senderRole === 'sonne';
+  const title = '☀️🌕  Himmelsbegegnung';
+  const body = isSonne
+    ? 'Die Sonne ☀️ zieht auf ihrer Bahn und möchte dir, lieber Mond, 🌕 gerne begegnen.  Verbindet eure Umlaufbahn für eine sanfte Berührung.'
+    : 'Der Mond 🌕 zieht auf seiner Bahn und möchte dir, liebe Sonne. ☀️ gerne begegnen.   Verbindet eure Umlaufbahn für eine sanfte Berührung.';
+
+  return { title, body };
+};
+
 // Test 6: Himmelsbegegnung Test
 export const sendTestHimmelsbegegnung = async (userRole: UserRoleType): Promise<boolean> => {
-  const isSonne = userRole === 'sonne';
+  const { title, body } = getHimmelsbegegnungPushNotification(userRole);
   return sendAppNotification(
-    isSonne ? '☀️ Sanfte Himmelsbegegnung von deiner Sonne!' : '🌙 Sanfte Himmelsbegegnung von deinem Mond!',
+    title,
     {
-      body: 'Sonne & Mond berühren sich... "In den Momenten, in denen Tag und Nacht sich sanft berühren, begegnen sie sich in wahrhaftiger Liebe."',
+      body,
       tag: 'test-himmelsbegegnung',
     },
     true,
@@ -763,22 +780,17 @@ export const listenForPartnerActivities = (
 
           const isFromPartner = data.authorRole ? data.authorRole !== userRole : (currentUserId ? data.authorUid !== currentUserId : true);
           if (isFromPartner) {
-            if (data.authorRole === 'sonne') {
-              sendAppNotification('☀️ Sanfte Himmelsbegegnung von deiner Sonne!', {
-                body: 'Sonne & Mond berühren sich... "In den Momenten, in denen Tag und Nacht sich sanft berühren, begegnen sie sich in wahrhaftiger Liebe."',
+            const senderRole = data.authorRole || (userRole === 'sonne' ? 'mond' : 'sonne');
+            const { title, body } = getHimmelsbegegnungPushNotification(senderRole);
+            sendAppNotification(
+              title,
+              {
+                body,
                 tag: `encounter-${change.doc.id}`,
-              });
-            } else if (data.authorRole === 'mond') {
-              sendAppNotification('🌙 Sanfte Himmelsbegegnung von deinem Mond!', {
-                body: 'Mond & Sonne berühren sich... "In den Momenten, in denen Tag und Nacht sich sanft berühren, begegnen sie sich in wahrhaftiger Liebe."',
-                tag: `encounter-${change.doc.id}`,
-              });
-            } else {
-              sendAppNotification('✨ Sanfte Himmelsbegegnung!', {
-                body: 'Sonne & Mond berühren sich in wahrhaftiger Liebe.',
-                tag: `encounter-${change.doc.id}`,
-              });
-            }
+              },
+              false,
+              'himmelsbegegnung'
+            );
           }
         }
       });

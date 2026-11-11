@@ -185,11 +185,6 @@ export const CelestialTouch: React.FC = () => {
       console.warn('Could not save celestial touch to Firestore:', err);
     }
 
-    sendAppNotification(`✨ Himmelsbegegnung mit ${partnerLabel}!`, {
-      body: `Du hast als ${myRoleTitle} die Berührung ausgelöst. ${partnerLabel} wird auf dem Smartphone benachrichtigt!`,
-      tag: `my-touch-${Date.now()}`,
-    });
-
     setTimeout(() => {
       setTouchNotice(null);
     }, 6000);

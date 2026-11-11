@@ -302,20 +302,6 @@ export const StarrySky: React.FC = () => {
       setStars((prev) => [...prev, newStarNote]);
     }
 
-    const recipientRole = role === 'sonne' ? 'mond' : 'sonne';
-    const notif = getShootingStarPushNotification(recipientRole);
-
-    sendAppNotification(
-      notif.title,
-      {
-        body: notif.body,
-        tag: `star-${starId}`,
-        data: { tab: 'stars', url: '/?tab=stars' },
-      },
-      false,
-      'sternschnuppe'
-    );
-
     setNewTitle('');
     setNewContent('');
     setHasExpiry(false);

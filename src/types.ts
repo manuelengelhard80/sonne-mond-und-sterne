@@ -45,5 +45,6 @@ export interface NotificationLogEntry {
   body: string;
   isTest: boolean;
   type: 'morgen_affirmation' | 'sternschnuppe' | 'gedanken' | 'himmelsbegegnung' | 'lake' | 'test' | 'system';
+  targetRole?: UserRoleType;
 }
 

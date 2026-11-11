@@ -2,22 +2,29 @@ import React, { useState, useEffect } from 'react';
 import { Mail, Clock, Trash, ExternalLink } from 'lucide-react';
 import { getNotificationLogs, removeNotificationLogEntry } from '../services/notificationService';
 import { NotificationLogEntry, ActiveTab } from '../types';
+import { useUserRole } from '../context/UserRoleContext';
 
 export const Messages: React.FC = () => {
+  const { role } = useUserRole();
   const [logs, setLogs] = useState<NotificationLogEntry[]>([]);
 
   useEffect(() => {
-    setLogs(getNotificationLogs());
+    const updateLogs = () => {
+      const all = getNotificationLogs();
+      const filtered = all.filter((log) => {
+        if (log.isTest) return false; // Testnachrichten nur im Mitteilungs-Log!
+        if (log.targetRole && log.targetRole !== role) return false;
+        return true;
+      });
+      setLogs(filtered);
+    };
 
-    const handleLogUpdated = () => {
-      setLogs(getNotificationLogs());
-    };
-    
-    window.addEventListener('notification-log-updated', handleLogUpdated);
+    updateLogs();
+    window.addEventListener('notification-log-updated', updateLogs);
     return () => {
-      window.removeEventListener('notification-log-updated', handleLogUpdated);
+      window.removeEventListener('notification-log-updated', updateLogs);
     };
-  }, []);
+  }, [role]);
 
   useEffect(() => {
     const logs = getNotificationLogs();
@@ -87,19 +94,8 @@ export const Messages: React.FC = () => {
                           [TEST]
                         </span>
                       )}
-                      <span className="font-bold text-[#ebd8c8] flex items-center gap-1.5">
-                        {log.type === 'lake' || log.title.includes('Sommernacht am See') ? (
-                          <>
-                            <img
-                              src="/app-icon-full.png?v=12"
-                              className="w-5 h-5 rounded-full object-cover shrink-0 inline-block shadow-sm ring-1 ring-[#dfba61]/40"
-                              alt="App Symbol"
-                            />
-                            <span>{log.title.replace(/^[🌙🌊\s]+/, '').trim()}</span>
-                          </>
-                        ) : (
-                          log.title
-                        )}
+                      <span className="font-bold text-[#ebd8c8]">
+                        {log.title}
                       </span>
                     </div>
                     {/* Top Right: Date/Time */}

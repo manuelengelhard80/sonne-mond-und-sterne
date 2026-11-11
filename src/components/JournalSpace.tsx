@@ -161,20 +161,6 @@ export const JournalSpace: React.FC = () => {
       setEntries([newEntry, ...entries]);
     }
 
-    const recipientRole = role === 'sonne' ? 'mond' : 'sonne';
-    const notif = getSharedThoughtPushNotification(recipientRole);
-
-    sendAppNotification(
-      notif.title,
-      {
-        body: notif.body,
-        tag: `thought-${thoughtId}`,
-        data: { tab: 'journal', url: '/?tab=journal' },
-      },
-      false,
-      'gedanken'
-    );
-
     setIsSubmitting(false);
     setTitle('');
     setContent('');

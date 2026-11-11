@@ -8,6 +8,7 @@
         "userId": { "type": "string" },
         "role": { "type": "string", "enum": ["sonne", "mond"] },
         "displayName": { "type": "string" },
+        "pushTokens": { "type": "array" },
         "updatedAt": { "type": "string" }
       },
       "required": ["userId", "role", "displayName", "updatedAt"]

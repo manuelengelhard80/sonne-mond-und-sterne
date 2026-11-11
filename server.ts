@@ -2,8 +2,115 @@ import express from 'express';
 import { createServer as createViteServer } from 'vite';
 import fs from 'fs';
 import path from 'path';
+import admin from 'firebase-admin';
+import { getFirestore } from 'firebase-admin/firestore';
+import { getMessaging } from 'firebase-admin/messaging';
+
+// Initialize Firebase Admin for background push triggers
+const firebaseConfig = JSON.parse(fs.readFileSync(path.join(process.cwd(), 'firebase-applet-config.json'), 'utf-8'));
+
+try {
+  (admin as any).initializeApp({
+    credential: (admin as any).credential.applicationDefault(),
+    projectId: firebaseConfig.projectId,
+  });
+  console.log('Firebase Admin initialized with applicationDefault');
+} catch (err) {
+  console.warn('Firebase Admin applicationDefault failed, trying manual init:', err);
+  // Fallback if running in environment without default credentials
+  (admin as any).initializeApp({
+    projectId: firebaseConfig.projectId,
+  });
+}
+
+const dbAdmin = getFirestore();
+const messagingAdmin = getMessaging();
+
+/**
+ * Authority Background Listener:
+ * Watches partner_notifications collection and sends FCM push to target role tokens.
+ */
+function setupPushService() {
+  console.log('Starting Background Push Authority Service...');
+  
+  dbAdmin.collection('partner_notifications').onSnapshot((snapshot: any) => {
+    snapshot.docChanges().forEach(async (change: any) => {
+      if (change.type === 'added') {
+        const data = change.doc.data();
+        const { targetRole, title, body, type, navTab, tag } = data;
+
+        if (!targetRole) return;
+
+        try {
+          // 1. Fetch tokens for the target role
+          const userRolesSnap = await dbAdmin.collection('user_roles')
+            .where('role', '==', targetRole)
+            .get();
+
+          const allTokens: string[] = [];
+          userRolesSnap.forEach((doc: any) => {
+            const roleData = doc.data();
+            if (roleData.pushTokens && Array.isArray(roleData.pushTokens)) {
+              allTokens.push(...roleData.pushTokens);
+            }
+          });
+
+          const uniqueTokens = Array.from(new Set(allTokens));
+          if (uniqueTokens.length === 0) {
+            console.log(`No push tokens found for role: ${targetRole}`);
+            return;
+          }
+
+          // 2. Prepare FCM message
+          const message: any = {
+            tokens: uniqueTokens,
+            notification: {
+              title: title,
+              body: body,
+            },
+            data: {
+              type: type || 'system',
+              tab: navTab || '',
+              tag: tag || change.doc.id,
+              click_action: navTab ? `/?tab=${navTab}` : '/',
+            },
+            webpush: {
+              headers: {
+                Urgency: 'high'
+              },
+              notification: {
+                title: title,
+                body: body,
+                icon: '/app-icon-full.png?v=12',
+                badge: '/badge-icon.png?v=12',
+                tag: tag || change.doc.id,
+                renotify: true,
+                requireInteraction: true,
+              },
+              fcmOptions: {
+                link: navTab ? `/?tab=${navTab}` : '/',
+              }
+            }
+          };
+
+          // 3. Send via FCM
+          const response = await messagingAdmin.sendEachForMulticast(message);
+          console.log(`Successfully sent ${response.successCount} push messages for ${targetRole}`);
+          
+          if (response.failureCount > 0) {
+            console.warn(`${response.failureCount} push messages failed.`);
+          }
+        } catch (error) {
+          console.error('Error sending background push:', error);
+        }
+      }
+    });
+  }, (err: any) => console.error('Push Service Listener Error:', err));
+}
 
 async function startServer() {
+  setupPushService();
+
   const app = express();
   const PORT = 3000;
 

@@ -141,3 +141,29 @@ self.addEventListener('notificationclick', (event) => {
     })
   );
 });
+
+// Background Push Notification Listener
+self.addEventListener('push', (event) => {
+  if (!event.data) return;
+
+  try {
+    const data = event.data.json();
+    const title = data.title || 'Sonne, Mond und Sterne';
+    const options = {
+      body: data.body || '',
+      icon: data.icon || '/app-icon-full.png?v=12',
+      badge: data.badge || '/badge-icon.png?v=12',
+      tag: data.tag || 'partner-notification',
+      data: data.data || {},
+      vibrate: [200, 100, 200],
+      renotify: true,
+      actions: data.actions || [],
+    };
+
+    event.waitUntil(
+      self.registration.showNotification(title, options)
+    );
+  } catch (err) {
+    console.error('Push event error:', err);
+  }
+});

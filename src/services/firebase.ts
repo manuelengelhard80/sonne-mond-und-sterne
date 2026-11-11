@@ -27,6 +27,10 @@ export const db = (() => {
 // Initialize Auth
 export const auth = getAuth(app);
 
+// Initialize Messaging
+import { getMessaging } from 'firebase/messaging';
+export const messaging = typeof window !== 'undefined' ? getMessaging(app) : null;
+
 // Authenticate anonymously so both users have valid security tokens without login friction
 let authInitPromise: Promise<User | null> | null = null;
 

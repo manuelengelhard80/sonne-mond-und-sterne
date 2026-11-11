@@ -70,6 +70,11 @@ function MainApp() {
     scheduleDailyMorningAffirmation(role);
     const unsub = listenForPartnerActivities(role, currentUserId);
 
+    // Request permissions and setup FCM if onboarding is done
+    if (isOnboardingCompleted) {
+      requestNotificationPermission();
+    }
+
     const handleNavigateTab = (e: any) => {
       if (e.detail && e.detail.tab) {
         setActiveTab(e.detail.tab as ActiveTab);

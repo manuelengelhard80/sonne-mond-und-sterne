@@ -1,6 +1,71 @@
-import { collection, onSnapshot, doc, setDoc } from 'firebase/firestore';
-import { db, ensureAuthenticated } from './firebase';
+import { collection, onSnapshot, doc, setDoc, getDoc, arrayUnion } from 'firebase/firestore';
+import { db, ensureAuthenticated, messaging } from './firebase';
+import { getToken, onMessage } from 'firebase/messaging';
 import { NotificationLogEntry, UserRoleType } from '../types';
+
+// VAPID Public Key for Web Push (Required for FCM on Safari and Chrome)
+// Replace with your real VAPID key from Firebase Console -> Project Settings -> Cloud Messaging
+export const VAPID_PUBLIC_KEY = 'BCR8x7g-zFv1R1M2m3V4B5N6b7V8C9v0A1b2C3d4E5f6G7h8I9j0K1l2M3n4O5p6Q7r8S9t0U1v2W3x4Y5z6';
+
+// Request Notification Permission and setup FCM
+export const requestNotificationPermission = async (): Promise<boolean> => {
+  if (!isNotificationSupported()) return false;
+  try {
+    const perm = await Notification.requestPermission();
+    if (perm === 'granted') {
+      const reg = await initServiceWorker();
+      if (reg) {
+        await setupFCM(reg);
+      }
+      return true;
+    }
+    return false;
+  } catch (err) {
+    console.warn('Notification permission request error:', err);
+    return false;
+  }
+};
+
+// Register a push token for the current user in Firestore
+export const registerPushToken = async (token: string, userId: string) => {
+  try {
+    const userRoleDoc = doc(db, 'user_roles', userId);
+    await setDoc(userRoleDoc, {
+      pushTokens: arrayUnion(token),
+      updatedAt: new Date().toISOString()
+    }, { merge: true });
+    console.log('Push token registered successfully.');
+  } catch (err) {
+    console.warn('Could not register push token:', err);
+  }
+};
+
+// Initialize FCM and obtain a token
+export const setupFCM = async (registration: ServiceWorkerRegistration) => {
+  if (!messaging) return;
+  try {
+    const user = await ensureAuthenticated();
+    if (!user) return;
+
+    const token = await getToken(messaging, {
+      vapidKey: VAPID_PUBLIC_KEY,
+      serviceWorkerRegistration: registration,
+    });
+
+    if (token) {
+      await registerPushToken(token, user.uid);
+    } else {
+      console.warn('No FCM registration token received.');
+    }
+
+    // Handle foreground messages (optional, since we have onSnapshot for UI)
+    onMessage(messaging, (payload) => {
+      console.log('Foreground message received:', payload);
+    });
+  } catch (err) {
+    console.warn('FCM setup error:', err);
+  }
+};
 
 export const MORNING_AFFIRMATIONS: string[] = [
   "So wie die Sonne jeden Morgen verlässlich aufgeht, darfst auch du deinem ganz eigenen Rhythmus vertrauen.",
@@ -54,7 +119,6 @@ export const addNotificationLog = (
 
   if (typeof window !== 'undefined') {
     const existing = getNotificationLogs();
-    // Avoid exact duplicate entries by ID
     const exists = existing.some((e) => e.id === entryId);
     if (!exists) {
       const updated = [newEntry, ...existing].slice(0, 100);
@@ -106,83 +170,16 @@ export const initServiceWorker = async (): Promise<ServiceWorkerRegistration | n
   }
 };
 
-// Check if browser supports notifications
 export const isNotificationSupported = (): boolean => {
   return typeof window !== 'undefined' && 'Notification' in window;
 };
 
-// Get current permission state
 export const getNotificationPermission = (): NotificationPermission => {
   if (!isNotificationSupported()) return 'denied';
   return Notification.permission;
 };
 
-// Request Notification Permission
-export const requestNotificationPermission = async (): Promise<boolean> => {
-  if (!isNotificationSupported()) return false;
-  try {
-    const perm = await Notification.requestPermission();
-    if (perm === 'granted') {
-      await initServiceWorker();
-      return true;
-    }
-    return false;
-  } catch (err) {
-    console.warn('Notification permission request error:', err);
-    return false;
-  }
-};
-
-// Send an App Notification (Engineered for Google Chrome Mobile & Desktop)
-export const sendAppNotification = async (
-  title: string,
-  options?: NotificationOptions,
-  isTest: boolean = false,
-  logType: NotificationLogEntry['type'] = 'system',
-  targetRole?: UserRoleType,
-  customId?: string,
-  timestamp?: string
-): Promise<boolean> => {
-  const bodyText = options?.body || '';
-
-  // Always log the notification locally
-  addNotificationLog(title, bodyText, isTest, logType, targetRole, customId, timestamp);
-
-  if (!isNotificationSupported() || Notification.permission !== 'granted') {
-    return false;
-  }
-
-  const notificationOptions: any = {
-    icon: APP_NOTIFICATION_ICON,
-    badge: APP_NOTIFICATION_BADGE,
-    vibrate: [200, 100, 200],
-    ...options,
-  };
-
-  // 1. In Google Chrome for Android and modern PWAs, ServiceWorkerRegistration.showNotification is mandatory
-  try {
-    if ('serviceWorker' in navigator) {
-      const reg = await navigator.serviceWorker.ready;
-      if (reg && 'showNotification' in reg) {
-        await reg.showNotification(title, notificationOptions);
-        return true;
-      }
-    }
-  } catch (swErr) {
-    console.warn('ServiceWorker showNotification skipped, trying fallback:', swErr);
-  }
-
-  // 2. Fallback for Desktop browsers that support the Notification constructor directly
-  try {
-    new Notification(title, notificationOptions);
-    return true;
-  } catch (err) {
-    console.warn('Could not display notification:', err);
-    return false;
-  }
-};
-
-// Publish a partner notification to Firestore so it arrives instantly on partner's device
+// Publish a partner notification to Firestore
 export const publishPartnerNotification = async (
   senderRole: UserRoleType,
   targetRole: UserRoleType,
@@ -215,20 +212,6 @@ export const publishPartnerNotification = async (
   }
 };
 
-// Send immediate generic test notification
-export const sendTestNotification = async (userRole: UserRoleType): Promise<boolean> => {
-  const partnerName = userRole === 'sonne' ? 'Der Mond' : 'Die Sonne';
-  return sendAppNotification(
-    '✨ Benachrichtigungstest aktiv',
-    {
-      body: `Mitteilungen sind erfolgreich auf deinem Gerät aktiviert! Du wirst informiert, wenn ${partnerName} eine Sternschnuppe oder einen Gedanken teilt.`,
-      tag: 'test-notification',
-    },
-    true,
-    'test'
-  );
-};
-
 // Helper to return the morning affirmation title based on user role
 export const getMorningAffirmationTitle = (userRole: UserRoleType): string => {
   return userRole === 'sonne'
@@ -241,16 +224,8 @@ export const sendTestMorningAffirmation = async (userRole: UserRoleType): Promis
   const randomIndex = Math.floor(Math.random() * MORNING_AFFIRMATIONS.length);
   const message = MORNING_AFFIRMATIONS[randomIndex];
   const title = getMorningAffirmationTitle(userRole);
-  return sendAppNotification(
-    title,
-    {
-      body: `Dein positiver Gedanke für heute: "${message}"`,
-      tag: 'test-morgen-affirmation',
-    },
-    true,
-    'morgen_affirmation',
-    userRole
-  );
+  addNotificationLog(title, `Dein positiver Gedanke für heute: "${message}"`, true, 'morgen_affirmation', userRole);
+  return true;
 };
 
 // Helper to return the shooting star push notification title and body based on recipient user role
@@ -269,17 +244,8 @@ export const getShootingStarPushNotification = (
 // Test 2: Sternschnuppen Test
 export const sendTestShootingStar = async (userRole: UserRoleType): Promise<boolean> => {
   const { title, body } = getShootingStarPushNotification(userRole);
-  return sendAppNotification(
-    title,
-    {
-      body,
-      tag: 'test-shooting-star',
-      data: { tab: 'stars', url: '/?tab=stars' },
-    },
-    true,
-    'sternschnuppe',
-    userRole
-  );
+  addNotificationLog(title, body, true, 'sternschnuppe', userRole);
+  return true;
 };
 
 // Helper to return the shared thought push notification title and body based on recipient user role
@@ -299,17 +265,8 @@ export const getSharedThoughtPushNotification = (
 // Test 3: Gedanken Teilen Test
 export const sendTestSharedThought = async (userRole: UserRoleType): Promise<boolean> => {
   const { title, body } = getSharedThoughtPushNotification(userRole);
-  return sendAppNotification(
-    title,
-    {
-      body,
-      tag: 'test-shared-thought',
-      data: { tab: 'journal', url: '/?tab=journal' },
-    },
-    true,
-    'gedanken',
-    userRole
-  );
+  addNotificationLog(title, body, true, 'gedanken', userRole);
+  return true;
 };
 
 // Helper to return the guided meditation push notification based on sender role
@@ -317,7 +274,7 @@ export const getGuidedMeditationPushNotification = (
   senderRole: UserRoleType
 ): { title: string; body: string } => {
   const isSonne = senderRole === 'sonne';
-  const title = isSonne ? '🧘 Geführte Meditation' : '🧘 Geführte Meditation';
+  const title = '🧘 Geführte Meditation';
   const body = isSonne
     ? 'Die Sonne ☀️ lädt dich heute zu einer geführten Meditation ein, mein lieber Mond. 🌕 Nehmt euch einen Moment, schließt die Augen und findet Ruhe und neue Kraft.'
     : 'Der Mond 🌕 lädt dich heute zu einer geführten Meditation ein, meine liebe Sonne. ☀️ Nehmt euch einen Moment, schließt die Augen und findet Ruhe und neue Kraft.';
@@ -325,22 +282,23 @@ export const getGuidedMeditationPushNotification = (
   return { title, body };
 };
 
-// Invitation 1: Geführte Meditation Einladung (cross-device to partner)
+// Invitation 1: Geführte Meditation Einladung
 export const sendGuidedMeditationInvite = async (userRole: UserRoleType): Promise<boolean> => {
   const targetRole: UserRoleType = userRole === 'sonne' ? 'mond' : 'sonne';
   const { title, body } = getGuidedMeditationPushNotification(userRole);
-  await publishPartnerNotification(
-    userRole,
-    targetRole,
-    title,
-    body,
-    'system',
-    `guided-meditation-${Date.now()}`
-  );
+  await publishPartnerNotification(userRole, targetRole, title, body, 'system', `guided-meditation-${Date.now()}`);
   return true;
 };
 
-// Helper to return the couples meditation push notification based on sender role
+// Test 4: Geführte Meditation Test
+export const sendTestGuidedMeditationInvite = async (userRole: UserRoleType): Promise<boolean> => {
+  const simulatedSender: UserRoleType = userRole === 'sonne' ? 'mond' : 'sonne';
+  const { title, body } = getGuidedMeditationPushNotification(simulatedSender);
+  addNotificationLog(title, body, true, 'test', userRole);
+  return true;
+};
+
+// Helper to return the couples meditation push notification
 export const getCouplesMeditationPushNotification = (
   senderRole: UserRoleType
 ): { title: string; body: string } => {
@@ -353,22 +311,23 @@ export const getCouplesMeditationPushNotification = (
   return { title, body };
 };
 
-// Invitation 2: Paar-Meditation Einladung (cross-device to partner)
+// Invitation 2: Paar-Meditation Einladung
 export const sendCouplesMeditationInvite = async (userRole: UserRoleType): Promise<boolean> => {
   const targetRole: UserRoleType = userRole === 'sonne' ? 'mond' : 'sonne';
   const { title, body } = getCouplesMeditationPushNotification(userRole);
-  await publishPartnerNotification(
-    userRole,
-    targetRole,
-    title,
-    body,
-    'system',
-    `couples-meditation-${Date.now()}`
-  );
+  await publishPartnerNotification(userRole, targetRole, title, body, 'system', `couples-meditation-${Date.now()}`);
   return true;
 };
 
-// Helper to return the Traumreise push notification based on sender role
+// Test 7: Paar-Meditation Test
+export const sendTestCouplesMeditationInvite = async (userRole: UserRoleType): Promise<boolean> => {
+  const simulatedSender: UserRoleType = userRole === 'sonne' ? 'mond' : 'sonne';
+  const { title, body } = getCouplesMeditationPushNotification(simulatedSender);
+  addNotificationLog(title, body, true, 'test', userRole);
+  return true;
+};
+
+// Helper to return the Traumreise push notification
 export const getDreamJourneyPushNotification = (
   senderRole: UserRoleType
 ): { title: string; body: string } => {
@@ -381,48 +340,31 @@ export const getDreamJourneyPushNotification = (
   return { title, body };
 };
 
-// Invitation 3: Traumreise Einladung (cross-device to partner)
+// Invitation 3: Traumreise Einladung
 export const sendDreamJourneyInvite = async (userRole: UserRoleType): Promise<boolean> => {
   const targetRole: UserRoleType = userRole === 'sonne' ? 'mond' : 'sonne';
   const { title, body } = getDreamJourneyPushNotification(userRole);
-  await publishPartnerNotification(
-    userRole,
-    targetRole,
-    title,
-    body,
-    'system',
-    `dream-journey-${Date.now()}`
-  );
+  await publishPartnerNotification(userRole, targetRole, title, body, 'system', `dream-journey-${Date.now()}`);
   return true;
 };
 
-
-
-// Test 4: Geführte Meditation Test
-export const sendTestGuidedMeditationInvite = async (userRole: UserRoleType): Promise<boolean> => {
+// Test 8: Traumreise Test
+export const sendTestDreamJourneyInvite = async (userRole: UserRoleType): Promise<boolean> => {
   const simulatedSender: UserRoleType = userRole === 'sonne' ? 'mond' : 'sonne';
-  const { title, body } = getGuidedMeditationPushNotification(simulatedSender);
-  return sendAppNotification(
-    title,
-    {
-      body,
-      tag: 'test-guided-meditation-invite',
-    },
-    true,
-    'test',
-    userRole
-  );
+  const { title, body } = getDreamJourneyPushNotification(simulatedSender);
+  addNotificationLog(title, body, true, 'test', userRole);
+  return true;
 };
 
-// Helper to return the Himmelsbegegnung push notification based on sender role
+// Helper for Himmelsbegegnung
 export const getHimmelsbegegnungPushNotification = (
   senderRole: UserRoleType
 ): { title: string; body: string } => {
   const isSonne = senderRole === 'sonne';
-  const title = '☀️🌕  Himmelsbegegnung';
+  const title = '☀️🌕 Himmelsbegegnung';
   const body = isSonne
-    ? 'Die Sonne ☀️ zieht auf ihrer Bahn und möchte dir, lieber Mond, 🌕 gerne begegnen.  Verbindet eure Umlaufbahn für eine sanfte Berührung.'
-    : 'Der Mond 🌕 zieht auf seiner Bahn und möchte dir, liebe Sonne. ☀️ gerne begegnen.   Verbindet eure Umlaufbahn für eine sanfte Berührung.';
+    ? 'Die Sonne ☀️ zieht auf ihrer Bahn und möchte dir, lieber Mond, 🌕 gerne begegnen. Verbindet eure Umlaufbahn für eine sanfte Berührung.'
+    : 'Der Mond 🌕 zieht auf seiner Bahn und möchte dir, liebe Sonne. ☀️ gerne begegnen. Verbindet eure Umlaufbahn für eine sanfte Berührung.';
 
   return { title, body };
 };
@@ -431,19 +373,11 @@ export const getHimmelsbegegnungPushNotification = (
 export const sendTestHimmelsbegegnung = async (userRole: UserRoleType): Promise<boolean> => {
   const simulatedSender: UserRoleType = userRole === 'sonne' ? 'mond' : 'sonne';
   const { title, body } = getHimmelsbegegnungPushNotification(simulatedSender);
-  return sendAppNotification(
-    title,
-    {
-      body,
-      tag: 'test-himmelsbegegnung',
-    },
-    true,
-    'himmelsbegegnung',
-    userRole
-  );
+  addNotificationLog(title, body, true, 'himmelsbegegnung', userRole);
+  return true;
 };
 
-// Helper to return the Sommernacht am See push notification based on sender role
+// Helper for Sommernacht am See
 export const getSommernachtAmSeePushNotification = (
   senderRole: UserRoleType
 ): { title: string; body: string } => {
@@ -451,7 +385,7 @@ export const getSommernachtAmSeePushNotification = (
   const title = '✨ Sommernacht am See';
   const body = isSonne
     ? 'Die Sonne ☀️ lädt dich heute zu einer Sommernacht am See ein, mein lieber Mond. 🌕 Kehrt zusammen zurück an den Ort, an dem alles begann.'
-    : 'Der Mond 🌕 lädt dich heute zu einer  Sommernacht am See ein, meine liebe Sonne. ☀️ Kehrt zusammen zurück an den Ort, an dem alles begann.';
+    : 'Der Mond 🌕 lädt dich heute zu einer Sommernacht am See ein, meine liebe Sonne. ☀️ Kehrt zusammen zurück an den Ort, an dem alles begann.';
 
   return { title, body };
 };
@@ -460,258 +394,23 @@ export const getSommernachtAmSeePushNotification = (
 export const sendTestSommernachtAmSeeInvite = async (userRole: UserRoleType): Promise<boolean> => {
   const simulatedSender: UserRoleType = userRole === 'sonne' ? 'mond' : 'sonne';
   const { title, body } = getSommernachtAmSeePushNotification(simulatedSender);
-  return sendAppNotification(
-    title,
-    {
-      body,
-      tag: 'test-sommernacht-am-see',
-    },
-    true,
-    'lake',
-    userRole
-  );
-};
-
-// Real Sommernacht am See Invite (cross-device to partner)
-export const sendSommernachtAmSeeInvite = async (userRole: UserRoleType): Promise<boolean> => {
-  const targetRole: UserRoleType = userRole === 'sonne' ? 'mond' : 'sonne';
-  const { title, body } = getSommernachtAmSeePushNotification(userRole);
-  await publishPartnerNotification(
-    userRole,
-    targetRole,
-    title,
-    body,
-    'lake',
-    `sommernacht-am-see-${Date.now()}`
-  );
+  addNotificationLog(title, body, true, 'lake', userRole);
   return true;
 };
 
-// Test 7: Paar-Meditation Test
-export const sendTestCouplesMeditationInvite = async (userRole: UserRoleType): Promise<boolean> => {
-  const simulatedSender: UserRoleType = userRole === 'sonne' ? 'mond' : 'sonne';
-  const { title, body } = getCouplesMeditationPushNotification(simulatedSender);
-  return sendAppNotification(
-    title,
-    {
-      body,
-      tag: 'test-couples-meditation-invite',
-    },
-    true,
-    'test',
-    userRole
-  );
+// Real Sommernacht am See Invite
+export const sendSommernachtAmSeeInvite = async (userRole: UserRoleType): Promise<boolean> => {
+  const targetRole: UserRoleType = userRole === 'sonne' ? 'mond' : 'sonne';
+  const { title, body } = getSommernachtAmSeePushNotification(userRole);
+  await publishPartnerNotification(userRole, targetRole, title, body, 'lake', `sommernacht-am-see-${Date.now()}`);
+  return true;
 };
 
-// Test 8: Traumreise Test
-export const sendTestDreamJourneyInvite = async (userRole: UserRoleType): Promise<boolean> => {
-  const simulatedSender: UserRoleType = userRole === 'sonne' ? 'mond' : 'sonne';
-  const { title, body } = getDreamJourneyPushNotification(simulatedSender);
-  return sendAppNotification(
-    title,
-    {
-      body,
-      tag: 'test-dream-journey-invite',
-    },
-    true,
-    'test',
-    userRole
-  );
-};
-
-
-// Calculate current date/time components in Europe/Berlin timezone
-export const getBerlinDateTimeParts = (date: Date = new Date()) => {
-  const formatter = new Intl.DateTimeFormat('en-US', {
-    timeZone: 'Europe/Berlin',
-    year: 'numeric',
-    month: 'numeric',
-    day: 'numeric',
-    hour: 'numeric',
-    minute: 'numeric',
-    second: 'numeric',
-    hour12: false,
-  });
-
-  const parts = formatter.formatToParts(date);
-  let year = 0;
-  let month = 0;
-  let day = 0;
-  let hour = 0;
-  let minute = 0;
-  let second = 0;
-
-  for (const part of parts) {
-    if (part.type === 'year') year = parseInt(part.value, 10);
-    else if (part.type === 'month') month = parseInt(part.value, 10);
-    else if (part.type === 'day') day = parseInt(part.value, 10);
-    else if (part.type === 'hour') {
-      const h = parseInt(part.value, 10);
-      hour = h === 24 ? 0 : h;
-    } else if (part.type === 'minute') minute = parseInt(part.value, 10);
-    else if (part.type === 'second') second = parseInt(part.value, 10);
-  }
-
-  return { year, month, day, hour, minute, second };
-};
-
-// Returns date string in Berlin timezone: 'YYYY-MM-DD'
-export const getBerlinDateString = (date: Date = new Date()): string => {
-  const { year, month, day } = getBerlinDateTimeParts(date);
-  const m = month < 10 ? `0${month}` : `${month}`;
-  const d = day < 10 ? `0${day}` : `${day}`;
-  return `${year}-${m}-${d}`;
-};
-
-// Returns exact UTC Date object for the next 05:00:00.000 in Europe/Berlin timezone
-export const getNextBerlinFiveAmDate = (): Date => {
-  const now = new Date();
-  const currentBerlin = getBerlinDateTimeParts(now);
-
-  // If currently before 5:00:00 Berlin time, target is today at 5:00:00.
-  // If currently at or after 5:00:00 Berlin time, target is tomorrow at 5:00:00.
-  const isBeforeFive =
-    currentBerlin.hour < 5 ||
-    (currentBerlin.hour === 5 && currentBerlin.minute === 0 && currentBerlin.second === 0);
-
-  let targetYear = currentBerlin.year;
-  let targetMonth = currentBerlin.month; // 1-indexed
-  let targetDay = currentBerlin.day;
-
-  if (!isBeforeFive) {
-    // Tomorrow in Berlin
-    const tomorrowRef = new Date(now.getTime() + 24 * 3600 * 1000);
-    const tomorrowBerlin = getBerlinDateTimeParts(tomorrowRef);
-    targetYear = tomorrowBerlin.year;
-    targetMonth = tomorrowBerlin.month;
-    targetDay = tomorrowBerlin.day;
-  }
-
-  // Start with UTC estimate: 5 AM Berlin is 3 AM (summer) or 4 AM (winter) UTC.
-  let candidate = new Date(Date.UTC(targetYear, targetMonth - 1, targetDay, 3, 0, 0));
-
-  // Iteratively converge to exact 05:00:00 in Europe/Berlin
-  for (let i = 0; i < 5; i++) {
-    const candidateBerlin = getBerlinDateTimeParts(candidate);
-    const diffSeconds =
-      (5 - candidateBerlin.hour) * 3600 +
-      (0 - candidateBerlin.minute) * 60 +
-      (0 - candidateBerlin.second);
-
-    if (diffSeconds === 0) break;
-    candidate = new Date(candidate.getTime() + diffSeconds * 1000);
-  }
-
-  return candidate;
-};
-
-// 5:00 AM Berlin Time Morning Positive Message Scheduler
-export const scheduleDailyMorningAffirmation = (
-  userRole: UserRoleType,
-  onAffirmationTriggered?: (msg: string) => void
-) => {
-  if (typeof window === 'undefined') return;
-
-  if (morningTimerId) {
-    window.clearTimeout(morningTimerId);
-    morningTimerId = null;
-  }
-
-  const triggerMorningMessage = (targetBerlinDateStr?: string) => {
-    const todayBerlinStr = targetBerlinDateStr || getBerlinDateString(new Date());
-    const lastSent = localStorage.getItem('last_morning_affirmation_sent');
-    if (lastSent === todayBerlinStr) return;
-
-    // Pick random affirmation
-    const randomIndex = Math.floor(Math.random() * MORNING_AFFIRMATIONS.length);
-    const message = MORNING_AFFIRMATIONS[randomIndex];
-    const title = getMorningAffirmationTitle(userRole);
-
-    sendAppNotification(
-      title,
-      {
-        body: `Dein positiver Gedanke für heute: "${message}"`,
-        tag: `daily-morning-affirmation-${todayBerlinStr}`,
-      },
-      false,
-      'morgen_affirmation'
-    );
-
-    localStorage.setItem('last_morning_affirmation_sent', todayBerlinStr);
-    if (onAffirmationTriggered) {
-      onAffirmationTriggered(message);
-    }
-
-    scheduleNextFiveAm();
-  };
-
-  const scheduleNextFiveAm = () => {
-    const targetDate = getNextBerlinFiveAmDate();
-    const targetBerlinDateStr = getBerlinDateString(targetDate);
-    const msUntilFive = Math.max(1000, targetDate.getTime() - Date.now());
-
-    // 1. In-page timer
-    if (morningTimerId) {
-      window.clearTimeout(morningTimerId);
-    }
-    morningTimerId = window.setTimeout(() => {
-      triggerMorningMessage(targetBerlinDateStr);
-    }, msUntilFive);
-
-    // 2. Service Worker Native Scheduling & TimestampTrigger for exact arrival even in background
-    if ('serviceWorker' in navigator) {
-      navigator.serviceWorker.ready.then((reg) => {
-        const randomIndex = Math.floor(Math.random() * MORNING_AFFIRMATIONS.length);
-        const message = MORNING_AFFIRMATIONS[randomIndex];
-        const title = getMorningAffirmationTitle(userRole);
-
-        // A. Chromium Notification Triggers API (schedules directly in Android AlarmManager)
-        if ('showTrigger' in Notification.prototype && typeof (window as any).TimestampTrigger !== 'undefined') {
-          try {
-            reg.showNotification(title, {
-              body: `Dein positiver Gedanke für heute: "${message}"`,
-              icon: APP_NOTIFICATION_ICON,
-              badge: APP_NOTIFICATION_BADGE,
-              tag: `daily-morning-affirmation-${targetBerlinDateStr}`,
-              showTrigger: new (window as any).TimestampTrigger(targetDate.getTime()),
-            } as any);
-          } catch (e) {
-            console.warn('TimestampTrigger notice:', e);
-          }
-        }
-
-        // B. Send message to Service Worker for background timer check
-        const sw = reg.active || navigator.serviceWorker.controller;
-        if (sw) {
-          sw.postMessage({
-            type: 'SCHEDULE_MORNING_NOTIFICATION',
-            targetTimestamp: targetDate.getTime(),
-            title,
-            body: `Dein positiver Gedanke für heute: "${message}"`,
-            tag: `daily-morning-affirmation-${targetBerlinDateStr}`,
-            icon: APP_NOTIFICATION_ICON,
-            badge: APP_NOTIFICATION_BADGE,
-          });
-        }
-      }).catch((err) => {
-        console.warn('Service worker morning schedule notice:', err);
-      });
-    }
-  };
-
-  // Check if we are currently right at 5:00 AM (within 5:00 - 5:15 AM window)
-  const now = new Date();
-  const berlinNow = getBerlinDateTimeParts(now);
-  const todayBerlinStr = getBerlinDateString(now);
-  const lastSent = localStorage.getItem('last_morning_affirmation_sent');
-
-  // ONLY catch up if currently between 05:00 and 05:15 Berlin time today.
-  // Never fire hours late (e.g. at 8:00 AM or 11:00 AM) when user opens the app!
-  if (berlinNow.hour === 5 && berlinNow.minute <= 15 && lastSent !== todayBerlinStr) {
-    triggerMorningMessage(todayBerlinStr);
-  } else {
-    scheduleNextFiveAm();
-  }
+// Test Notification general
+export const sendTestNotification = async (userRole: UserRoleType): Promise<boolean> => {
+  const partnerName = userRole === 'sonne' ? 'Der Mond' : 'Die Sonne';
+  addNotificationLog('✨ Benachrichtigungstest aktiv', `Mitteilungen sind erfolgreich auf deinem Gerät aktiviert! Du wirst informiert, wenn ${partnerName} eine Sternschnuppe oder einen Gedanken teilt.`, true, 'test', userRole);
+  return true;
 };
 
 // Helper to track which partner notification IDs have been processed locally
@@ -736,14 +435,13 @@ const markPartnerNotificationAsSeen = (id: string) => {
   } catch {}
 };
 
-// Real-Time Partner Listener for all cross-device activities
+// Real-Time Partner Listener for all cross-device activities (Foreground sync only)
 export const listenForPartnerActivities = (
   userRole: UserRoleType,
   _currentUserId: string | null
 ): (() => void) => {
   if (typeof window === 'undefined') return () => {};
 
-  // Listen directly to partner_notifications for all cross-device events
   let unsubPartnerNotifs = () => {};
   try {
     unsubPartnerNotifs = onSnapshot(collection(db, 'partner_notifications'), (snapshot) => {
@@ -752,54 +450,14 @@ export const listenForPartnerActivities = (
           const data = change.doc.data();
           const notifId = change.doc.id;
 
-          // Only process notifications targeted specifically for THIS device role
           if (data.targetRole === userRole) {
             const seenIds = getSeenPartnerNotificationIds();
             const alreadySeen = seenIds.includes(notifId);
 
             if (!alreadySeen) {
               markPartnerNotificationAsSeen(notifId);
-
-              // Always add to local log so Messages inbox and Mitteilungs-Log have it immediately
-              addNotificationLog(
-                data.title,
-                data.body,
-                false,
-                data.type || 'system',
-                userRole,
-                notifId,
-                data.timestamp
-              );
-
-              // Trigger OS/Browser push notification banner if created recently (within last 30 minutes)
-              const createdAtMs = data.createdAt ? new Date(data.createdAt).getTime() : Date.now();
-              const isRecent = (Date.now() - createdAtMs) < 30 * 60 * 1000;
-
-              if (isRecent) {
-                // Display native system push notification
-                if (isNotificationSupported() && Notification.permission === 'granted') {
-                  const notificationOptions: any = {
-                    body: data.body,
-                    icon: APP_NOTIFICATION_ICON,
-                    badge: APP_NOTIFICATION_BADGE,
-                    tag: data.tag || `partner-${notifId}`,
-                    data: data.navTab ? { tab: data.navTab, url: `/?tab=${data.navTab}` } : undefined,
-                    vibrate: [200, 100, 200],
-                  };
-
-                  if ('serviceWorker' in navigator) {
-                    navigator.serviceWorker.ready.then((reg) => {
-                      if (reg && 'showNotification' in reg) {
-                        reg.showNotification(data.title, notificationOptions).catch(() => {});
-                      }
-                    }).catch(() => {});
-                  } else {
-                    try {
-                      new Notification(data.title, notificationOptions);
-                    } catch (_) {}
-                  }
-                }
-              }
+              // Always add to local log so Messages inbox and Mitteilungs-Log have it immediately.
+              addNotificationLog(data.title, data.body, false, data.type || 'system', userRole, notifId, data.timestamp);
             }
           }
         }
@@ -812,4 +470,113 @@ export const listenForPartnerActivities = (
   return () => {
     unsubPartnerNotifs();
   };
+};
+
+// Affirmation Scheduler (local only)
+export const scheduleDailyMorningAffirmation = (
+  userRole: UserRoleType,
+  onAffirmationTriggered?: (msg: string) => void
+) => {
+  if (typeof window === 'undefined') return;
+
+  if (morningTimerId) {
+    window.clearTimeout(morningTimerId);
+    morningTimerId = null;
+  }
+
+  const triggerMorningMessage = (targetBerlinDateStr?: string) => {
+    const todayBerlinStr = targetBerlinDateStr || getBerlinDateString(new Date());
+    const lastSent = localStorage.getItem('last_morning_affirmation_sent');
+    if (lastSent === todayBerlinStr) return;
+
+    const randomIndex = Math.floor(Math.random() * MORNING_AFFIRMATIONS.length);
+    const message = MORNING_AFFIRMATIONS[randomIndex];
+    const title = getMorningAffirmationTitle(userRole);
+
+    addNotificationLog(title, `Dein positiver Gedanke für heute: "${message}"`, false, 'morgen_affirmation', userRole);
+
+    localStorage.setItem('last_morning_affirmation_sent', todayBerlinStr);
+    if (onAffirmationTriggered) {
+      onAffirmationTriggered(message);
+    }
+    scheduleNextFiveAm();
+  };
+
+  const scheduleNextFiveAm = () => {
+    const targetDate = getNextBerlinFiveAmDate();
+    const targetBerlinDateStr = getBerlinDateString(targetDate);
+    const msUntilFive = Math.max(1000, targetDate.getTime() - Date.now());
+
+    if (morningTimerId) {
+      window.clearTimeout(morningTimerId);
+    }
+    morningTimerId = window.setTimeout(() => {
+      triggerMorningMessage(targetBerlinDateStr);
+    }, msUntilFive);
+  };
+
+  const now = new Date();
+  const berlinNow = getBerlinDateTimeParts(now);
+  const todayBerlinStr = getBerlinDateString(now);
+  const lastSent = localStorage.getItem('last_morning_affirmation_sent');
+
+  if (berlinNow.hour === 5 && berlinNow.minute <= 15 && lastSent !== todayBerlinStr) {
+    triggerMorningMessage(todayBerlinStr);
+  } else {
+    scheduleNextFiveAm();
+  }
+};
+
+// Date helpers
+export const getBerlinDateTimeParts = (date: Date = new Date()) => {
+  const formatter = new Intl.DateTimeFormat('en-US', {
+    timeZone: 'Europe/Berlin',
+    year: 'numeric',
+    month: 'numeric',
+    day: 'numeric',
+    hour: 'numeric',
+    minute: 'numeric',
+    second: 'numeric',
+    hour12: false,
+  });
+  const parts = formatter.formatToParts(date);
+  let year = 0, month = 0, day = 0, hour = 0, minute = 0, second = 0;
+  for (const part of parts) {
+    if (part.type === 'year') year = parseInt(part.value, 10);
+    else if (part.type === 'month') month = parseInt(part.value, 10);
+    else if (part.type === 'day') day = parseInt(part.value, 10);
+    else if (part.type === 'hour') {
+      const h = parseInt(part.value, 10);
+      hour = h === 24 ? 0 : h;
+    } else if (part.type === 'minute') minute = parseInt(part.value, 10);
+    else if (part.type === 'second') second = parseInt(part.value, 10);
+  }
+  return { year, month, day, hour, minute, second };
+};
+
+export const getBerlinDateString = (date: Date = new Date()): string => {
+  const { year, month, day } = getBerlinDateTimeParts(date);
+  const m = month < 10 ? `0${month}` : `${month}`;
+  const d = day < 10 ? `0${day}` : `${day}`;
+  return `${year}-${m}-${d}`;
+};
+
+export const getNextBerlinFiveAmDate = (): Date => {
+  const now = new Date();
+  const currentBerlin = getBerlinDateTimeParts(now);
+  const isBeforeFive = currentBerlin.hour < 5 || (currentBerlin.hour === 5 && currentBerlin.minute === 0 && currentBerlin.second === 0);
+  let targetYear = currentBerlin.year, targetMonth = currentBerlin.month, targetDay = currentBerlin.day;
+  if (!isBeforeFive) {
+    const tomorrowRef = new Date(now.getTime() + 24 * 3600 * 1000);
+    const tomorrowBerlin = getBerlinDateTimeParts(tomorrowRef);
+    targetYear = tomorrowBerlin.year; targetMonth = tomorrowBerlin.month; targetDay = tomorrowBerlin.day;
+  }
+  let candidate = new Date(Date.UTC(targetYear, targetMonth - 1, targetDay, 3, 0, 0));
+  for (let i = 0; i < 5; i++) {
+    const candidateBerlin = getBerlinDateTimeParts(candidate);
+    const diffSeconds = (5 - candidateBerlin.hour) * 3600 + (0 - candidateBerlin.minute) * 60 + (0 - candidateBerlin.second);
+    if (diffSeconds === 0) break;
+    candidate = new Date(candidate.getTime() + diffSeconds * 1000);
+  }
+  return candidate;
 };

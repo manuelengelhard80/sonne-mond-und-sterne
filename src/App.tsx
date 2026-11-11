@@ -174,14 +174,6 @@ function MainApp() {
     return `${m}:${s < 10 ? '0' : ''}${s}`;
   };
 
-  if (!isOnboardingCompleted) {
-    return (
-      <div className="fixed inset-0 z-50 bg-[#071920] flex items-center justify-center p-4 overflow-hidden select-none">
-        <AndroidBottomHelperBar />
-      </div>
-    );
-  }
-
   return (
     <div className="min-h-screen bg-[#071920] text-white flex flex-col justify-between transition-colors duration-700 w-full overflow-x-hidden relative">
       <audio
@@ -189,6 +181,13 @@ function MainApp() {
         src="/five_min.mp3"
         preload="auto"
       />
+
+      {/* Onboarding Overlay */}
+      {!isOnboardingCompleted && (
+        <div className="fixed inset-0 z-[100] bg-[#071920]/80 backdrop-blur-md flex items-center justify-center p-4 overflow-hidden select-none">
+          <AndroidBottomHelperBar />
+        </div>
+      )}
       
       {/* 1. Full Bleed Hero Header Image */}
       <div className="relative w-full bg-[#0a232c] overflow-hidden flex items-center justify-center portrait:h-[50vh] portrait:min-h-[380px] portrait:max-h-[540px] landscape:h-[60vh] landscape:min-h-[440px] landscape:max-h-[720px] sm:h-[60vh] sm:min-h-[440px] sm:max-h-[700px]">

@@ -147,17 +147,22 @@ self.addEventListener('push', (event) => {
   if (!event.data) return;
 
   try {
-    const data = event.data.json();
-    const title = data.title || 'Sonne, Mond und Sterne';
+    const payload = event.data.json();
+    console.log('Push received:', payload);
+    
+    // FCM payloads can be nested under .notification or at top level
+    const title = (payload.notification ? payload.notification.title : payload.title) || 'Sonne, Mond und Sterne';
+    const body = (payload.notification ? payload.notification.body : payload.body) || '';
+    
     const options = {
-      body: data.body || '',
-      icon: data.icon || '/app-icon-full.png?v=12',
-      badge: data.badge || '/badge-icon.png?v=12',
-      tag: data.tag || 'partner-notification',
-      data: data.data || {},
+      body: body,
+      icon: (payload.notification ? payload.notification.icon : payload.icon) || '/app-icon-full.png?v=12',
+      badge: (payload.notification ? payload.notification.badge : payload.badge) || '/badge-icon.png?v=12',
+      tag: payload.data?.tag || payload.tag || 'partner-notification',
+      data: payload.data || payload,
       vibrate: [200, 100, 200],
       renotify: true,
-      actions: data.actions || [],
+      actions: payload.actions || [],
     };
 
     event.waitUntil(

@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Download, X, Check, Sun, Moon, Bell, Sparkles, ChevronRight } from 'lucide-react';
 import { useUserRole } from '../context/UserRoleContext';
 import { UserRoleType } from '../types';
+import { requestNotificationPermission } from '../services/notificationService';
 
 interface BeforeInstallPromptEvent extends Event {
   prompt: () => Promise<void>;
@@ -14,6 +15,8 @@ export const AndroidBottomHelperBar: React.FC = () => {
   // Current step in the guide (1: Persona, 2: Push, 3: Desktop Icon)
   const [step, setStep] = useState<number>(() => {
     if (!isConfigured) return 1;
+    const perm = typeof window !== 'undefined' && 'Notification' in window ? Notification.permission : 'default';
+    if (perm !== 'granted') return 2;
     return 3;
   });
 
@@ -99,20 +102,16 @@ export const AndroidBottomHelperBar: React.FC = () => {
     setStep(2);
   };
 
-  // Step 2: Handle Notification permission (without explanation)
+  // Step 2: Handle Notification permission
   const handleRequestPush = async () => {
-    if (typeof window !== 'undefined' && 'Notification' in window) {
-      try {
-        const permission = await Notification.requestPermission();
-        if (permission === 'granted') {
-          setNotifGranted(true);
-        }
-      } catch (err) {
-        console.warn('Could not request notification permission:', err);
-      }
+    const granted = await requestNotificationPermission();
+    if (granted) {
+      setNotifGranted(true);
+      setStep(3); // Advance to Step 3 only if granted or after attempt
+    } else {
+      // Even if denied or blocked, let them move to step 3 or show a message
+      setStep(3);
     }
-    // Advance to Step 3
-    setStep(3);
   };
 
   // Step 3: Handle 1-Click Install

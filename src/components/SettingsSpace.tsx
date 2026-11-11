@@ -33,7 +33,6 @@ import {
   isNotificationSupported,
   getNotificationLogs,
   clearNotificationLogs,
-  subscribeToPushNotifications,
 } from '../services/notificationService';
 import { UserRoleType, NotificationLogEntry } from '../types';
 
@@ -55,7 +54,7 @@ const getEmojiForLog = (log: NotificationLogEntry): string => {
 };
 
 export const SettingsSpace: React.FC = () => {
-  const { role, setRole, isConfigured, currentUserId } = useUserRole();
+  const { role, setRole, isConfigured } = useUserRole();
 
   const [selectedRole, setSelectedRole] = useState<UserRoleType>(role || 'sonne');
   const [roleFeedback, setRoleFeedback] = useState<string | null>(null);
@@ -148,14 +147,9 @@ export const SettingsSpace: React.FC = () => {
   const handleRequestPush = async () => {
     const granted = await requestNotificationPermission();
     setPermission(granted ? 'granted' : getNotificationPermission());
-    if (granted && currentUserId) {
-      const subscribed = await subscribeToPushNotifications(currentUserId);
-      if (subscribed) {
-        setTestFeedback('Echte Push-Nachrichten für den Hintergrund wurden erfolgreich aktiviert!');
-      } else {
-        setTestFeedback('Mitteilungen sind aktiv, aber echte Hintergrund-Push-Dienste konnten nicht registriert werden (Browser-Einschränkung).');
-      }
-      setTimeout(() => setTestFeedback(null), 5000);
+    if (granted) {
+      setTestFeedback('Push-Nachrichten erfolgreich auf diesem Gerät aktiviert!');
+      setTimeout(() => setTestFeedback(null), 4000);
     }
   };
 

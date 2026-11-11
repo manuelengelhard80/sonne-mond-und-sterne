@@ -5,7 +5,8 @@ import { CurvedShootingStar } from './CurvedShootingStar';
 import { useUserRole } from '../context/UserRoleContext';
 import { db, ensureAuthenticated } from '../services/firebase';
 import { collection, onSnapshot, doc, setDoc, deleteDoc } from 'firebase/firestore';
-import { sendAppNotification, getShootingStarPushNotification } from '../services/notificationService';
+import { publishPartnerNotification, getShootingStarPushNotification } from '../services/notificationService';
+import { UserRoleType } from '../types';
 
 const DEFAULT_STARS: StarNote[] = [
   {
@@ -297,6 +298,18 @@ export const StarrySky: React.FC = () => {
 
     try {
       await setDoc(doc(db, 'shooting_stars', starId), newStarNote);
+      // Publish real-time cross-device notification to partner
+      const targetRole: UserRoleType = role === 'sonne' ? 'mond' : 'sonne';
+      const { title, body } = getShootingStarPushNotification(targetRole);
+      await publishPartnerNotification(
+        role,
+        targetRole,
+        title,
+        body,
+        'sternschnuppe',
+        `star-${starId}`,
+        'stars'
+      );
     } catch (err) {
       console.warn('Firestore error, using local fallback:', err);
       setStars((prev) => [...prev, newStarNote]);

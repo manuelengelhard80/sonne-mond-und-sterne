@@ -17,6 +17,7 @@ import {
   Key
 } from 'lucide-react';
 import { useTheme } from '../context/ThemeContext';
+import { useUserRole } from '../context/UserRoleContext';
 import { getNotificationLogs } from '../services/notificationService';
 import { NotificationLogEntry } from '../types';
 
@@ -30,13 +31,19 @@ export const Navigation: React.FC<NavigationProps> = ({
   setActiveTab,
 }) => {
   const { isCopper } = useTheme();
+  const { role } = useUserRole();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [unreadCount, setUnreadCount] = useState<number>(0);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const activeBtnRef = useRef<HTMLButtonElement | null>(null);
 
+  const getRelevantLogs = () => {
+    const all = getNotificationLogs();
+    return all.filter((l) => !l.isTest && (!l.targetRole || l.targetRole === role));
+  };
+
   const checkUnread = () => {
-    const logs = getNotificationLogs();
+    const logs = getRelevantLogs();
     if (logs.length === 0) {
       setUnreadCount(0);
       return;
@@ -56,8 +63,8 @@ export const Navigation: React.FC<NavigationProps> = ({
 
   useEffect(() => {
     const handleLogUpdate = () => {
+      const logs = getRelevantLogs();
       if (activeTab === 'messages') {
-        const logs = getNotificationLogs();
         if (logs.length > 0) {
           localStorage.setItem('last_read_log_id', logs[0].id);
         }
@@ -68,7 +75,7 @@ export const Navigation: React.FC<NavigationProps> = ({
     };
 
     if (activeTab === 'messages') {
-      const logs = getNotificationLogs();
+      const logs = getRelevantLogs();
       if (logs.length > 0) {
         localStorage.setItem('last_read_log_id', logs[0].id);
       }
@@ -81,7 +88,7 @@ export const Navigation: React.FC<NavigationProps> = ({
     return () => {
       window.removeEventListener('notification-log-updated', handleLogUpdate);
     };
-  }, [activeTab]);
+  }, [activeTab, role]);
 
 
   // Alle 10 Bereiche inklusive der neuen Unterseite "Einstellungen"

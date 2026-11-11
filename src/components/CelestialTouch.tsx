@@ -3,8 +3,9 @@ import { Sparkles } from 'lucide-react';
 import { useUserRole } from '../context/UserRoleContext';
 import { db, ensureAuthenticated } from '../services/firebase';
 import { doc, setDoc } from 'firebase/firestore';
-import { sendAppNotification } from '../services/notificationService';
+import { publishPartnerNotification, getHimmelsbegegnungPushNotification } from '../services/notificationService';
 import { soundSynth } from '../services/soundSynth';
+import { UserRoleType } from '../types';
 
 // SVG-rendered Moon in bright Gold 1 with filigree, clearly defined watercolor-inspired crater patterns
 const MoonSphere: React.FC = () => (
@@ -181,6 +182,18 @@ export const CelestialTouch: React.FC = () => {
         createdAt: new Date().toISOString(),
         touchVal: currentVal,
       });
+
+      // Publish real-time cross-device notification to partner (no linking)
+      const targetRole: UserRoleType = role === 'sonne' ? 'mond' : 'sonne';
+      const { title, body } = getHimmelsbegegnungPushNotification(role);
+      await publishPartnerNotification(
+        role,
+        targetRole,
+        title,
+        body,
+        'himmelsbegegnung',
+        `touch-${touchId}`
+      );
     } catch (err) {
       console.warn('Could not save celestial touch to Firestore:', err);
     }

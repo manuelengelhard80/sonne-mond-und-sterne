@@ -5,7 +5,8 @@ import { soundSynth } from '../services/soundSynth';
 import { useUserRole } from '../context/UserRoleContext';
 import { db, ensureAuthenticated } from '../services/firebase';
 import { collection, onSnapshot, doc, setDoc, deleteDoc, updateDoc } from 'firebase/firestore';
-import { sendAppNotification, getSharedThoughtPushNotification } from '../services/notificationService';
+import { publishPartnerNotification, getSharedThoughtPushNotification } from '../services/notificationService';
+import { UserRoleType } from '../types';
 
 const DAILY_AFFIRMATIONS: string[] = [
   "Du musst heute niemandem etwas beweisen. Dein Dasein allein ist wertvoll und vollkommen genug.",
@@ -155,6 +156,18 @@ export const JournalSpace: React.FC = () => {
 
     try {
       await setDoc(doc(db, 'shared_thoughts', thoughtId), newEntry);
+      // Publish real-time cross-device notification to partner
+      const targetRole: UserRoleType = role === 'sonne' ? 'mond' : 'sonne';
+      const { title, body } = getSharedThoughtPushNotification(targetRole);
+      await publishPartnerNotification(
+        role,
+        targetRole,
+        title,
+        body,
+        'gedanken',
+        `thought-${thoughtId}`,
+        'journal'
+      );
       soundSynth.playSoftBell();
     } catch (err) {
       console.warn('Could not save thought to Firestore, keeping locally:', err);

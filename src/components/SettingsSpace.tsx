@@ -41,6 +41,18 @@ interface BeforeInstallPromptEvent extends Event {
   userChoice: Promise<{ outcome: 'accepted' | 'dismissed' }>;
 }
 
+const getEmojiForLog = (log: NotificationLogEntry): string => {
+  if (log.title.includes('🌅') || log.type === 'morgen_affirmation') return '🌅';
+  if (log.title.includes('🌠') || log.type === 'sternschnuppe') return '🌠';
+  if (log.title.includes('💌') || log.type === 'gedanken') return '💌';
+  if (log.title.includes('☀️🌕') || log.type === 'himmelsbegegnung') return '☀️🌕';
+  if (log.title.includes('✨') || log.type === 'lake') return '✨';
+  if (log.title.includes('🧘💞')) return '🧘💞';
+  if (log.title.includes('🧘')) return '🧘';
+  if (log.title.includes('🛋️')) return '🛋️';
+  return '✨';
+};
+
 export const SettingsSpace: React.FC = () => {
   const { role, setRole, isConfigured } = useUserRole();
 
@@ -693,30 +705,33 @@ export const SettingsSpace: React.FC = () => {
               </div>
             ) : (
               <div className="space-y-2">
-                {logs.map((log) => (
-                  <div
-                    key={log.id}
-                    className={`p-3 rounded-2xl border text-xs space-y-1 transition ${
-                      log.isTest
-                        ? 'bg-[#c79b78]/10 border-[#c79b78]/40 text-white'
-                        : 'bg-white/5 border-white/10 text-white'
-                    }`}
-                  >
-                    <div className="flex items-center justify-between gap-2">
-                      <div className="flex items-center gap-1.5">
-                        {log.isTest ? (
-                          <span className="px-2 py-0.5 rounded-md bg-[#c79b78] text-[#071920] font-bold text-[9px] uppercase tracking-wider">
-                            [TEST]
+                {logs.map((log) => {
+                  const emoji = getEmojiForLog(log);
+                  return (
+                    <div
+                      key={log.id}
+                      className={`p-3 rounded-2xl border text-xs space-y-1 transition ${
+                        log.isTest
+                          ? 'bg-[#c79b78]/10 border-[#c79b78]/40 text-white'
+                          : 'bg-white/5 border-white/10 text-white'
+                      }`}
+                    >
+                      <div className="flex items-center justify-between gap-2">
+                        <div className="flex items-center gap-1.5 min-w-0">
+                          {log.isTest ? (
+                            <span className="px-2 py-0.5 rounded-md bg-[#c79b78] text-[#071920] font-bold text-[9px] uppercase tracking-wider shrink-0">
+                              [TEST]
+                            </span>
+                          ) : (
+                            <span className="px-2 py-0.5 rounded-md bg-emerald-500/30 text-emerald-300 font-bold text-[9px] uppercase tracking-wider shrink-0">
+                              [SYSTEM]
+                            </span>
+                          )}
+                          <span className="text-sm leading-none shrink-0">{emoji}</span>
+                          <span className="font-bold text-[#ebd8c8] truncate">
+                            {log.title}
                           </span>
-                        ) : (
-                          <span className="px-2 py-0.5 rounded-md bg-emerald-500/30 text-emerald-300 font-bold text-[9px] uppercase tracking-wider">
-                            [SYSTEM]
-                          </span>
-                        )}
-                        <span className="font-bold text-[#ebd8c8] truncate">
-                          {log.title}
-                        </span>
-                      </div>
+                        </div>
                       <span className="text-[10px] text-white/50 shrink-0">
                         {log.timestamp}
                       </span>
@@ -728,7 +743,8 @@ export const SettingsSpace: React.FC = () => {
                       </p>
                     )}
                   </div>
-                ))}
+                );
+                })}
               </div>
             )}
           </div>

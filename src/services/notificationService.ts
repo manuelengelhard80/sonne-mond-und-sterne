@@ -16,37 +16,16 @@ export const MORNING_AFFIRMATIONS: string[] = [
 ];
 
 const LOG_STORAGE_KEY = 'sonne_mond_notification_logs';
-
-export const INITIAL_NOTIFICATION_LOGS: NotificationLogEntry[] = [
-  {
-    id: 'log-welcome-morning',
-    timestamp: '05:00:00',
-    title: '🌅 Guten Morgen, mein lieber Mond! 🌕',
-    body: 'Dein positiver Gedanke für heute: "Wie Sonne, Mond und Sterne ihren festen Platz am Himmel haben, gehörst du unersetzbar hierher."',
-    isTest: false,
-    type: 'morgen_affirmation',
-  },
-  {
-    id: 'log-welcome-thought',
-    timestamp: '07:30:00',
-    title: '💌 Gedanken teilen...',
-    body: 'Der Mond 🌕 hat einen Gedanken mit dir geteilt, meine liebe Sonne. ☀️\nSchau ihn dir an!',
-    isTest: false,
-    type: 'gedanken',
-  }
-];
+const SEEN_NOTIFS_KEY = 'sonne_mond_seen_partner_notifs';
 
 export const getNotificationLogs = (): NotificationLogEntry[] => {
   if (typeof window === 'undefined') return [];
   try {
     const raw = localStorage.getItem(LOG_STORAGE_KEY);
-    if (!raw) {
-      localStorage.setItem(LOG_STORAGE_KEY, JSON.stringify(INITIAL_NOTIFICATION_LOGS));
-      return INITIAL_NOTIFICATION_LOGS;
-    }
+    if (!raw) return [];
     return JSON.parse(raw);
   } catch {
-    return INITIAL_NOTIFICATION_LOGS;
+    return [];
   }
 };
 
@@ -55,12 +34,17 @@ export const addNotificationLog = (
   body: string,
   isTest: boolean = false,
   type: NotificationLogEntry['type'] = 'system',
-  targetRole?: UserRoleType
+  targetRole?: UserRoleType,
+  customId?: string,
+  timestamp?: string
 ): NotificationLogEntry => {
   const currentRole = typeof window !== 'undefined' ? (localStorage.getItem('sonne_mond_user_role') as UserRoleType || 'sonne') : 'sonne';
+  const entryId = customId || ('log-' + Date.now() + '-' + Math.random().toString(36).substring(2, 7));
+  const entryTime = timestamp || new Date().toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+
   const newEntry: NotificationLogEntry = {
-    id: 'log-' + Date.now() + '-' + Math.random().toString(36).substring(2, 7),
-    timestamp: new Date().toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit', second: '2-digit' }),
+    id: entryId,
+    timestamp: entryTime,
     title,
     body,
     isTest,
@@ -70,9 +54,13 @@ export const addNotificationLog = (
 
   if (typeof window !== 'undefined') {
     const existing = getNotificationLogs();
-    const updated = [newEntry, ...existing].slice(0, 100);
-    localStorage.setItem(LOG_STORAGE_KEY, JSON.stringify(updated));
-    window.dispatchEvent(new CustomEvent('notification-log-updated', { detail: updated }));
+    // Avoid exact duplicate entries by ID
+    const exists = existing.some((e) => e.id === entryId);
+    if (!exists) {
+      const updated = [newEntry, ...existing].slice(0, 100);
+      localStorage.setItem(LOG_STORAGE_KEY, JSON.stringify(updated));
+      window.dispatchEvent(new CustomEvent('notification-log-updated', { detail: updated }));
+    }
   }
 
   return newEntry;
@@ -151,20 +139,23 @@ export const sendAppNotification = async (
   options?: NotificationOptions,
   isTest: boolean = false,
   logType: NotificationLogEntry['type'] = 'system',
-  targetRole?: UserRoleType
+  targetRole?: UserRoleType,
+  customId?: string,
+  timestamp?: string
 ): Promise<boolean> => {
   const bodyText = options?.body || '';
 
-  // Always log the notification and trigger in-app visual toast
-  addNotificationLog(title, bodyText, isTest, logType, targetRole);
+  // Always log the notification locally
+  addNotificationLog(title, bodyText, isTest, logType, targetRole, customId, timestamp);
 
   if (!isNotificationSupported() || Notification.permission !== 'granted') {
     return false;
   }
 
-  const notificationOptions: NotificationOptions = {
+  const notificationOptions: any = {
     icon: APP_NOTIFICATION_ICON,
     badge: APP_NOTIFICATION_BADGE,
+    vibrate: [200, 100, 200],
     ...options,
   };
 
@@ -200,7 +191,7 @@ export const publishPartnerNotification = async (
   type: NotificationLogEntry['type'] = 'system',
   tag?: string,
   navTab?: string
-): Promise<void> => {
+): Promise<string | null> => {
   try {
     await ensureAuthenticated();
     const notifId = `notif-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`;
@@ -217,8 +208,10 @@ export const publishPartnerNotification = async (
       createdAt: new Date().toISOString(),
       timestamp: new Date().toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit', second: '2-digit' }),
     });
+    return notifId;
   } catch (err) {
     console.warn('Could not publish partner notification to Firestore:', err);
+    return null;
   }
 };
 
@@ -407,7 +400,8 @@ export const sendDreamJourneyInvite = async (userRole: UserRoleType): Promise<bo
 
 // Test 4: Geführte Meditation Test
 export const sendTestGuidedMeditationInvite = async (userRole: UserRoleType): Promise<boolean> => {
-  const { title, body } = getGuidedMeditationPushNotification(userRole);
+  const simulatedSender: UserRoleType = userRole === 'sonne' ? 'mond' : 'sonne';
+  const { title, body } = getGuidedMeditationPushNotification(simulatedSender);
   return sendAppNotification(
     title,
     {
@@ -433,9 +427,10 @@ export const getHimmelsbegegnungPushNotification = (
   return { title, body };
 };
 
-// Test 6: Himmelsbegegnung Test
+// Test 5: Himmelsbegegnung Test
 export const sendTestHimmelsbegegnung = async (userRole: UserRoleType): Promise<boolean> => {
-  const { title, body } = getHimmelsbegegnungPushNotification(userRole);
+  const simulatedSender: UserRoleType = userRole === 'sonne' ? 'mond' : 'sonne';
+  const { title, body } = getHimmelsbegegnungPushNotification(simulatedSender);
   return sendAppNotification(
     title,
     {
@@ -456,14 +451,15 @@ export const getSommernachtAmSeePushNotification = (
   const title = '✨ Sommernacht am See';
   const body = isSonne
     ? 'Die Sonne ☀️ lädt dich heute zu einer Sommernacht am See ein, mein lieber Mond. 🌕 Kehrt zusammen zurück an den Ort, an dem alles begann.'
-    : 'Der Mond 🌕 lädt dich heute zu einer Sommernacht am See ein, meine liebe Sonne. ☀️ Kehrt zusammen zurück an den Ort, an dem alles begann.';
+    : 'Der Mond 🌕 lädt dich heute zu einer  Sommernacht am See ein, meine liebe Sonne. ☀️ Kehrt zusammen zurück an den Ort, an dem alles begann.';
 
   return { title, body };
 };
 
-// Test 7: Sommernacht am See Test
+// Test 6: Sommernacht am See Test
 export const sendTestSommernachtAmSeeInvite = async (userRole: UserRoleType): Promise<boolean> => {
-  const { title, body } = getSommernachtAmSeePushNotification(userRole);
+  const simulatedSender: UserRoleType = userRole === 'sonne' ? 'mond' : 'sonne';
+  const { title, body } = getSommernachtAmSeePushNotification(simulatedSender);
   return sendAppNotification(
     title,
     {
@@ -491,9 +487,10 @@ export const sendSommernachtAmSeeInvite = async (userRole: UserRoleType): Promis
   return true;
 };
 
-// Test 5: Paar-Meditation Test
+// Test 7: Paar-Meditation Test
 export const sendTestCouplesMeditationInvite = async (userRole: UserRoleType): Promise<boolean> => {
-  const { title, body } = getCouplesMeditationPushNotification(userRole);
+  const simulatedSender: UserRoleType = userRole === 'sonne' ? 'mond' : 'sonne';
+  const { title, body } = getCouplesMeditationPushNotification(simulatedSender);
   return sendAppNotification(
     title,
     {
@@ -506,9 +503,10 @@ export const sendTestCouplesMeditationInvite = async (userRole: UserRoleType): P
   );
 };
 
-// Test 6: Traumreise Test
+// Test 8: Traumreise Test
 export const sendTestDreamJourneyInvite = async (userRole: UserRoleType): Promise<boolean> => {
-  const { title, body } = getDreamJourneyPushNotification(userRole);
+  const simulatedSender: UserRoleType = userRole === 'sonne' ? 'mond' : 'sonne';
+  const { title, body } = getDreamJourneyPushNotification(simulatedSender);
   return sendAppNotification(
     title,
     {
@@ -716,166 +714,93 @@ export const scheduleDailyMorningAffirmation = (
   }
 };
 
-// Real-Time Partner Listener for Shooting Stars & Shared Thoughts
+// Helper to track which partner notification IDs have been processed locally
+const getSeenPartnerNotificationIds = (): string[] => {
+  if (typeof window === 'undefined') return [];
+  try {
+    const raw = localStorage.getItem(SEEN_NOTIFS_KEY);
+    return raw ? JSON.parse(raw) : [];
+  } catch {
+    return [];
+  }
+};
+
+const markPartnerNotificationAsSeen = (id: string) => {
+  if (typeof window === 'undefined') return;
+  try {
+    const seen = getSeenPartnerNotificationIds();
+    if (!seen.includes(id)) {
+      const updated = [id, ...seen].slice(0, 300);
+      localStorage.setItem(SEEN_NOTIFS_KEY, JSON.stringify(updated));
+    }
+  } catch {}
+};
+
+// Real-Time Partner Listener for all cross-device activities
 export const listenForPartnerActivities = (
   userRole: UserRoleType,
-  currentUserId: string | null
+  _currentUserId: string | null
 ): (() => void) => {
   if (typeof window === 'undefined') return () => {};
 
-  let isInitialStarsSnapshot = true;
-  const knownStarIds = new Set<string>();
-
-  let isInitialThoughtsSnapshot = true;
-  const knownThoughtIds = new Set<string>();
-
-  // 1. Listen for new shooting stars
-  let unsubStars = () => {};
-  try {
-    unsubStars = onSnapshot(collection(db, 'shooting_stars'), (snapshot) => {
-      if (isInitialStarsSnapshot) {
-        snapshot.docs.forEach((d) => knownStarIds.add(d.id));
-        isInitialStarsSnapshot = false;
-        return;
-      }
-
-      snapshot.docChanges().forEach((change) => {
-        if (change.type === 'added' && !knownStarIds.has(change.doc.id)) {
-          knownStarIds.add(change.doc.id);
-          const data = change.doc.data();
-
-          // Check if this star is from the partner
-          const isFromPartner = data.authorRole ? data.authorRole !== userRole : (currentUserId ? data.authorUid !== currentUserId : true);
-          if (isFromPartner) {
-            const { title, body } = getShootingStarPushNotification(userRole);
-            sendAppNotification(
-              title,
-              {
-                body,
-                tag: `star-${change.doc.id}`,
-                data: { tab: 'stars', url: '/?tab=stars' },
-              },
-              false,
-              'sternschnuppe',
-              userRole
-            );
-          }
-        }
-      });
-    }, (err) => console.warn('Stars listener notice:', err));
-  } catch (err) {
-    console.warn('Could not attach stars notification listener:', err);
-  }
-
-  // 2. Listen for new shared thoughts
-  let unsubThoughts = () => {};
-  try {
-    unsubThoughts = onSnapshot(collection(db, 'shared_thoughts'), (snapshot) => {
-      if (isInitialThoughtsSnapshot) {
-        snapshot.docs.forEach((d) => knownThoughtIds.add(d.id));
-        isInitialThoughtsSnapshot = false;
-        return;
-      }
-
-      snapshot.docChanges().forEach((change) => {
-        if (change.type === 'added' && !knownThoughtIds.has(change.doc.id)) {
-          knownThoughtIds.add(change.doc.id);
-          const data = change.doc.data();
-
-          // Check if this thought is from the partner
-          const isFromPartner = data.authorRole ? data.authorRole !== userRole : (currentUserId ? data.authorUid !== currentUserId : true);
-          if (isFromPartner) {
-            const { title, body } = getSharedThoughtPushNotification(userRole);
-            sendAppNotification(
-              title,
-              {
-                body,
-                tag: `thought-${change.doc.id}`,
-                data: { tab: 'journal', url: '/?tab=journal' },
-              },
-              false,
-              'gedanken',
-              userRole
-            );
-          }
-        }
-      });
-    }, (err) => console.warn('Thoughts listener notice:', err));
-  } catch (err) {
-    console.warn('Could not attach thoughts notification listener:', err);
-  }
-
-  // 3. Listen for interactive celestial touch encounters (Himmelsbegegnung)
-  let unsubEncounters = () => {};
-  let isInitialEncountersSnapshot = true;
-  const knownEncounterIds = new Set<string>();
-
-  try {
-    unsubEncounters = onSnapshot(collection(db, 'celestial_touches'), (snapshot) => {
-      if (isInitialEncountersSnapshot) {
-        snapshot.docs.forEach((d) => knownEncounterIds.add(d.id));
-        isInitialEncountersSnapshot = false;
-        return;
-      }
-
-      snapshot.docChanges().forEach((change) => {
-        if (change.type === 'added' && !knownEncounterIds.has(change.doc.id)) {
-          knownEncounterIds.add(change.doc.id);
-          const data = change.doc.data();
-
-          const isFromPartner = data.authorRole ? data.authorRole !== userRole : (currentUserId ? data.authorUid !== currentUserId : true);
-          if (isFromPartner) {
-            const senderRole = data.authorRole || (userRole === 'sonne' ? 'mond' : 'sonne');
-            const { title, body } = getHimmelsbegegnungPushNotification(senderRole);
-            sendAppNotification(
-              title,
-              {
-                body,
-                tag: `encounter-${change.doc.id}`,
-              },
-              false,
-              'himmelsbegegnung',
-              userRole
-            );
-          }
-        }
-      });
-    }, (err) => console.warn('Encounters listener notice:', err));
-  } catch (err) {
-    console.warn('Could not attach encounters notification listener:', err);
-  }
-
-  // 4. Listen for direct Partner Notifications (Sommernacht am See, Traumreise, Geführte & Paar Meditationen)
+  // Listen directly to partner_notifications for all cross-device events
   let unsubPartnerNotifs = () => {};
-  let isInitialPartnerNotifsSnapshot = true;
-  const knownPartnerNotifIds = new Set<string>();
-
   try {
     unsubPartnerNotifs = onSnapshot(collection(db, 'partner_notifications'), (snapshot) => {
-      if (isInitialPartnerNotifsSnapshot) {
-        snapshot.docs.forEach((d) => knownPartnerNotifIds.add(d.id));
-        isInitialPartnerNotifsSnapshot = false;
-        return;
-      }
-
       snapshot.docChanges().forEach((change) => {
-        if (change.type === 'added' && !knownPartnerNotifIds.has(change.doc.id)) {
-          knownPartnerNotifIds.add(change.doc.id);
+        if (change.type === 'added') {
           const data = change.doc.data();
+          const notifId = change.doc.id;
 
-          // Only trigger if this notification was specifically sent for this device's userRole
+          // Only process notifications targeted specifically for THIS device role
           if (data.targetRole === userRole) {
-            sendAppNotification(
-              data.title,
-              {
-                body: data.body,
-                tag: data.tag || `partner-${change.doc.id}`,
-                data: data.navTab ? { tab: data.navTab, url: `/?tab=${data.navTab}` } : undefined,
-              },
-              false,
-              data.type || 'system',
-              userRole
-            );
+            const seenIds = getSeenPartnerNotificationIds();
+            const alreadySeen = seenIds.includes(notifId);
+
+            if (!alreadySeen) {
+              markPartnerNotificationAsSeen(notifId);
+
+              // Always add to local log so Messages inbox and Mitteilungs-Log have it immediately
+              addNotificationLog(
+                data.title,
+                data.body,
+                false,
+                data.type || 'system',
+                userRole,
+                notifId,
+                data.timestamp
+              );
+
+              // Trigger OS/Browser push notification banner if created recently (within last 30 minutes)
+              const createdAtMs = data.createdAt ? new Date(data.createdAt).getTime() : Date.now();
+              const isRecent = (Date.now() - createdAtMs) < 30 * 60 * 1000;
+
+              if (isRecent) {
+                // Display native system push notification
+                if (isNotificationSupported() && Notification.permission === 'granted') {
+                  const notificationOptions: any = {
+                    body: data.body,
+                    icon: APP_NOTIFICATION_ICON,
+                    badge: APP_NOTIFICATION_BADGE,
+                    tag: data.tag || `partner-${notifId}`,
+                    data: data.navTab ? { tab: data.navTab, url: `/?tab=${data.navTab}` } : undefined,
+                    vibrate: [200, 100, 200],
+                  };
+
+                  if ('serviceWorker' in navigator) {
+                    navigator.serviceWorker.ready.then((reg) => {
+                      if (reg && 'showNotification' in reg) {
+                        reg.showNotification(data.title, notificationOptions).catch(() => {});
+                      }
+                    }).catch(() => {});
+                  } else {
+                    try {
+                      new Notification(data.title, notificationOptions);
+                    } catch (_) {}
+                  }
+                }
+              }
+            }
           }
         }
       });
@@ -885,9 +810,6 @@ export const listenForPartnerActivities = (
   }
 
   return () => {
-    unsubStars();
-    unsubThoughts();
-    unsubEncounters();
     unsubPartnerNotifs();
   };
 };

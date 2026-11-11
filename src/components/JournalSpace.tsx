@@ -5,7 +5,7 @@ import { soundSynth } from '../services/soundSynth';
 import { useUserRole } from '../context/UserRoleContext';
 import { db, ensureAuthenticated } from '../services/firebase';
 import { collection, onSnapshot, doc, setDoc, deleteDoc, updateDoc } from 'firebase/firestore';
-import { sendAppNotification } from '../services/notificationService';
+import { sendAppNotification, getSharedThoughtPushNotification } from '../services/notificationService';
 
 const DAILY_AFFIRMATIONS: string[] = [
   "Du musst heute niemandem etwas beweisen. Dein Dasein allein ist wertvoll und vollkommen genug.",
@@ -161,10 +161,22 @@ export const JournalSpace: React.FC = () => {
       setEntries([newEntry, ...entries]);
     }
 
-    sendAppNotification('💌 Gedanke geteilt!', {
-      body: `"${title.trim() || 'Gedanke'}" wurde für euch beide geteilt.`,
-      tag: `my-thought-${thoughtId}`,
+    const recipientRole = role === 'sonne' ? 'mond' : 'sonne';
+    const notif = getSharedThoughtPushNotification(recipientRole, {
+      title: title.trim(),
+      content: content.trim(),
     });
+
+    sendAppNotification(
+      notif.title,
+      {
+        body: notif.body,
+        tag: `thought-${thoughtId}`,
+        data: { tab: 'journal', url: '/?tab=journal' },
+      },
+      false,
+      'gedanken'
+    );
 
     setIsSubmitting(false);
     setTitle('');
@@ -206,7 +218,7 @@ export const JournalSpace: React.FC = () => {
     Sonnig: <Sun className="w-4 h-4 text-[#e6d3a3]" />,
     Ruhig: <Moon className="w-4 h-4 text-[#f5d77f]" />,
     Sternenklar: <Sparkles className="w-4 h-4 text-[#dfba61]" />,
-    Gedankenvoll: <Cloud className="w-4 h-4 text-teal-300" />,
+    Gedankenvoll: <Cloud className="w-4 h-4 text-[#c79b78]" />,
   };
 
   return (
@@ -325,7 +337,7 @@ export const JournalSpace: React.FC = () => {
               className="flex items-center gap-1.5 px-6 py-2 rounded-xl gold-gradient-btn text-[#0a232c] font-bold text-xs shadow transition active:scale-95 disabled:opacity-50"
             >
               <Send className="w-3.5 h-3.5 text-[#0a232c]" />
-              <span>Mit dem Partner teilen</span>
+              <span>Gedanken teilen...</span>
             </button>
           </div>
         </form>

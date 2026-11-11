@@ -6,9 +6,10 @@ import firebaseConfig from '../../firebase-applet-config.json';
 // Initialize Firebase App
 const app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApp();
 
-// Initialize Firestore with long-polling to prevent WebChannel streaming AbortErrors in proxied/Cloud Run environments
+// Initialize Firestore with force long-polling to prevent WebChannel streaming 10s timeouts in cloud/iframe environments
 const firestoreSettings = {
   experimentalAutoDetectLongPolling: true,
+  experimentalForceLongPolling: true,
 };
 
 export const db = (() => {

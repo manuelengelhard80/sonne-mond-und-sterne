@@ -122,15 +122,21 @@ self.addEventListener('fetch', (event) => {
 
 self.addEventListener('notificationclick', (event) => {
   event.notification.close();
+  const targetTab = (event.notification.data && event.notification.data.tab) ? event.notification.data.tab : 'stars';
+  const targetUrl = `/?tab=${targetTab}`;
+
   event.waitUntil(
     clients.matchAll({ type: 'window', includeUncontrolled: true }).then((clientList) => {
       for (const client of clientList) {
         if (client.url && 'focus' in client) {
+          if ('postMessage' in client) {
+            client.postMessage({ type: 'NAVIGATE_TAB', tab: targetTab });
+          }
           return client.focus();
         }
       }
       if (clients.openWindow) {
-        return clients.openWindow('/');
+        return clients.openWindow(targetUrl);
       }
     })
   );

@@ -69,8 +69,39 @@ function MainApp() {
     initServiceWorker();
     scheduleDailyMorningAffirmation(role);
     const unsub = listenForPartnerActivities(role, currentUserId);
+
+    const handleNavigateTab = (e: any) => {
+      if (e.detail && e.detail.tab) {
+        setActiveTab(e.detail.tab as ActiveTab);
+      }
+    };
+
+    const handleSwMessage = (event: MessageEvent) => {
+      if (event.data && event.data.type === 'NAVIGATE_TAB' && event.data.tab) {
+        setActiveTab(event.data.tab as ActiveTab);
+      }
+    };
+
+    // Check URL query parameter on load (e.g. /?tab=stars)
+    if (typeof window !== 'undefined') {
+      const params = new URLSearchParams(window.location.search);
+      const tabParam = params.get('tab');
+      if (tabParam) {
+        setActiveTab(tabParam as ActiveTab);
+      }
+    }
+
+    window.addEventListener('navigate-tab', handleNavigateTab);
+    if (typeof navigator !== 'undefined' && 'serviceWorker' in navigator) {
+      navigator.serviceWorker.addEventListener('message', handleSwMessage);
+    }
+
     return () => {
       unsub();
+      window.removeEventListener('navigate-tab', handleNavigateTab);
+      if (typeof navigator !== 'undefined' && 'serviceWorker' in navigator) {
+        navigator.serviceWorker.removeEventListener('message', handleSwMessage);
+      }
     };
   }, [role, currentUserId]);
 

@@ -232,11 +232,11 @@ export const getShootingStarPushNotification = (
   const title = '🌠 Neue Sternschnuppe am Himmel!';
   const defaultBody =
     userRole === 'sonne'
-      ? 'Ein Wunsch vom Mond 🌕 an dich, meine liebe Sonne. ☀️\nSchau ihn dir an!'
-      : 'Ein Wunsch von der Sonne ☀️ an dich, meine lieber Mond 🌕\nSchau ihn dir an!';
+      ? 'Ein Wunsch vom Mond 🌕 an dich, meine liebe Sonne. ☀️\n\n➡️ Schau ihn dir an!'
+      : 'Ein Wunsch von der Sonne ☀️ an dich, meine lieber Mond 🌕\n\n➡️ Schau ihn dir an!';
 
   const body = starTitle && starTitle.trim().length > 0
-    ? `${starTitle.trim()}\n${defaultBody}`
+    ? `${starTitle.trim()}\n\n${defaultBody}`
     : defaultBody;
 
   return { title, body };

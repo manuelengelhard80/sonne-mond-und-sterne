@@ -14,17 +14,13 @@ export const Messages: React.FC = () => {
     // 1. Real-time Firestore sync with partner_notifications
     const path = 'partner_notifications';
     let firestoreEntries: NotificationLogEntry[] = [];
-    const q = query(
-      collection(db, path),
-      orderBy('createdAt', 'desc'),
-      limit(100)
-    );
-
-    const unsub = onSnapshot(q, (snapshot) => {
+    
+    // Use simplest possible listener to avoid any index or query failures
+    const unsub = onSnapshot(collection(db, path), (snapshot) => {
       const cloudList: NotificationLogEntry[] = [];
       snapshot.docs.forEach((docSnap) => {
         const data = docSnap.data();
-        // Client-side filter to avoid composite index requirements in AI Studio
+        // Client-side filter
         if (data.targetRole === role) {
           cloudList.push({
             id: docSnap.id,

@@ -275,7 +275,11 @@ export const sendTestMorningAffirmation = async (userRole: UserRoleType): Promis
   const randomIndex = Math.floor(Math.random() * MORNING_AFFIRMATIONS.length);
   const message = MORNING_AFFIRMATIONS[randomIndex];
   const title = getMorningAffirmationTitle(userRole);
+  // Trigger local log immediately so it works even if permission/FCM is pending
   addNotificationLog(title, `Dein positiver Gedanke für heute: "${message}"`, true, 'morgen_affirmation', userRole);
+  
+  // Background FCM setup if needed
+  requestNotificationPermission().catch(() => {});
   return true;
 };
 
@@ -295,7 +299,11 @@ export const getShootingStarPushNotification = (
 // Test 2: Sternschnuppen Test
 export const sendTestShootingStar = async (userRole: UserRoleType): Promise<boolean> => {
   const { title, body } = getShootingStarPushNotification(userRole);
+  // Trigger local log immediately
   addNotificationLog(title, body, true, 'sternschnuppe', userRole);
+  
+  // Background FCM setup
+  requestNotificationPermission().catch(() => {});
   return true;
 };
 
@@ -316,7 +324,11 @@ export const getSharedThoughtPushNotification = (
 // Test 3: Gedanken Teilen Test
 export const sendTestSharedThought = async (userRole: UserRoleType): Promise<boolean> => {
   const { title, body } = getSharedThoughtPushNotification(userRole);
+  // Trigger local log immediately
   addNotificationLog(title, body, true, 'gedanken', userRole);
+  
+  // Background FCM setup
+  requestNotificationPermission().catch(() => {});
   return true;
 };
 
@@ -497,21 +509,15 @@ export const listenForPartnerActivities = (
   let unsubPartnerNotifs = () => {};
   try {
     console.log(`Attaching partner listener for role: ${userRole}`);
-    // Use simple query to avoid composite index requirements in AI Studio
-    const q = query(
-      collection(db, path),
-      orderBy('createdAt', 'desc'),
-      limit(100)
-    );
-
-    unsubPartnerNotifs = onSnapshot(q, (snapshot) => {
-      console.log(`Listener sync: ${snapshot.docChanges().length} changes detected.`);
+    
+    // Simplest possible listener to avoid any index or query failures
+    unsubPartnerNotifs = onSnapshot(collection(db, path), (snapshot) => {
       snapshot.docChanges().forEach((change) => {
         if (change.type === 'added') {
           const data = change.doc.data();
           const notifId = change.doc.id;
 
-          // Filter by targetRole client-side to avoid index requirement
+          // Filter by targetRole client-side
           if (data.targetRole === userRole) {
             const seenIds = getSeenPartnerNotificationIds();
             const alreadySeen = seenIds.includes(notifId);

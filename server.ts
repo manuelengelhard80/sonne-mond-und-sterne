@@ -33,91 +33,82 @@ const messagingAdmin = getMessaging();
 function setupPushService() {
   console.log('Starting Background Push Authority Service...');
   
-  // Listen for the most recent notifications to avoid reprocessing old data
-  dbAdmin.collection('partner_notifications')
-    .orderBy('createdAt', 'desc')
-    .limit(10)
-    .onSnapshot((snapshot: any) => {
-      snapshot.docChanges().forEach(async (change: any) => {
-        // Only trigger for newly created documents
-        if (change.type === 'added') {
-          const data = change.doc.data();
-          const { targetRole, title, body, type, navTab, tag } = data;
+  // Use a simple listener to avoid any sync issues
+  dbAdmin.collection('partner_notifications').onSnapshot((snapshot: any) => {
+    snapshot.docChanges().forEach(async (change: any) => {
+      // Only trigger for newly created documents
+      if (change.type === 'added') {
+        const data = change.doc.data();
+        const { targetRole, title, body, type, navTab, tag } = data;
 
-          if (!targetRole) return;
-          
-          // Basic threshold check: ignore docs older than 10 minutes to prevent blast-processing on server restart
-          const createdAt = new Date(data.createdAt || Date.now()).getTime();
-          if (Date.now() - createdAt > 10 * 60 * 1000) {
+        if (!targetRole) return;
+
+        try {
+          console.log(`Processing push trigger for ${targetRole}: ${title}`);
+          // 1. Fetch tokens for the target role
+          const userRolesSnap = await dbAdmin.collection('user_roles')
+            .where('role', '==', targetRole)
+            .get();
+
+          const allTokens: string[] = [];
+          userRolesSnap.forEach((doc: any) => {
+            const roleData = doc.data();
+            if (roleData.pushTokens && Array.isArray(roleData.pushTokens)) {
+              allTokens.push(...roleData.pushTokens);
+            }
+          });
+
+          const uniqueTokens = Array.from(new Set(allTokens));
+          if (uniqueTokens.length === 0) {
+            console.log(`No push tokens found for role: ${targetRole}`);
             return;
           }
 
-          try {
-            console.log(`Processing push trigger for ${targetRole}: ${title}`);
-            // 1. Fetch tokens for the target role
-            const userRolesSnap = await dbAdmin.collection('user_roles')
-              .where('role', '==', targetRole)
-              .get();
-
-            const allTokens: string[] = [];
-            userRolesSnap.forEach((doc: any) => {
-              const roleData = doc.data();
-              if (roleData.pushTokens && Array.isArray(roleData.pushTokens)) {
-                allTokens.push(...roleData.pushTokens);
-              }
-            });
-
-            const uniqueTokens = Array.from(new Set(allTokens));
-            if (uniqueTokens.length === 0) {
-              console.log(`No push tokens found for role: ${targetRole}`);
-              return;
-            }
-
-            // 2. Prepare FCM message
-            const message: any = {
-              tokens: uniqueTokens,
+          // 2. Prepare FCM message
+          const message: any = {
+            tokens: uniqueTokens,
+            notification: {
+              title: title,
+              body: body,
+            },
+            data: {
+              type: type || 'system',
+              tab: navTab || '',
+              tag: tag || change.doc.id,
+              click_action: navTab ? `/?tab=${navTab}` : '/',
+            },
+            webpush: {
+              headers: {
+                Urgency: 'high'
+              },
               notification: {
                 title: title,
                 body: body,
-              },
-              data: {
-                type: type || 'system',
-                tab: navTab || '',
+                icon: '/app-icon-full.png?v=12',
+                badge: '/badge-icon.png?v=12',
                 tag: tag || change.doc.id,
-                click_action: navTab ? `/?tab=${navTab}` : '/',
+                renotify: true,
+                requireInteraction: true,
               },
-              webpush: {
-                headers: {
-                  Urgency: 'high'
-                },
-                notification: {
-                  title: title,
-                  body: body,
-                  icon: '/app-icon-full.png?v=12',
-                  badge: '/badge-icon.png?v=12',
-                  tag: tag || change.doc.id,
-                  renotify: true,
-                  requireInteraction: true,
-                },
-                fcmOptions: {
-                  link: navTab ? `/?tab=${navTab}` : '/',
-                }
+              fcmOptions: {
+                link: navTab ? `/?tab=${navTab}` : '/',
               }
-            };
-
-            // 3. Send via FCM
-            const response = await messagingAdmin.sendEachForMulticast(message);
-            console.log(`Successfully sent ${response.successCount} push messages for ${targetRole}`);
-            
-            if (response.failureCount > 0) {
-              console.warn(`${response.failureCount} push messages failed.`);
             }
-          } catch (error) {
-            console.error('Error sending background push:', error);
+          };
+
+          // 3. Send via FCM
+          const response = await messagingAdmin.sendEachForMulticast(message);
+          console.log(`Successfully sent ${response.successCount} push messages for ${targetRole}`);
+          
+          if (response.failureCount > 0) {
+            console.warn(`${response.failureCount} push messages failed.`);
           }
+        } catch (error) {
+          console.error('Error sending background push:', error);
         }
-      });
-    }, (err: any) => console.error('Push Service Listener Error:', err));
+      }
+    });
+  }, (err: any) => console.error('Push Service Listener Error:', err));
 }
 
 async function startServer() {

@@ -40,8 +40,15 @@ export const ensureAuthenticated = (): Promise<User | null> => {
   }
   if (!authInitPromise) {
     authInitPromise = new Promise<User | null>((resolve) => {
+      // Safety timeout: resolve to null after 5 seconds if auth hangs
+      const timeout = setTimeout(() => {
+        console.warn('Auth initialization timed out.');
+        resolve(null);
+      }, 5000);
+
       try {
         const unsubscribe = onAuthStateChanged(auth, (user) => {
+          clearTimeout(timeout);
           if (user) {
             unsubscribe();
             resolve(user);
@@ -58,6 +65,7 @@ export const ensureAuthenticated = (): Promise<User | null> => {
           }
         });
       } catch (err) {
+        clearTimeout(timeout);
         console.warn('Auth initialization skipped:', err);
         resolve(null);
       }

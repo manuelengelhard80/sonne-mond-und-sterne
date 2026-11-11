@@ -88,15 +88,6 @@ export const SettingsSpace: React.FC = () => {
     }
     setLogs(getNotificationLogs());
 
-    // Listen for log updates
-    const handleLogsUpdate = (e: any) => {
-      if (e.detail) {
-        setLogs(e.detail);
-      } else {
-        setLogs(getNotificationLogs());
-      }
-    };
-
     // Check standalone mode
     const isStandalone =
       window.matchMedia('(display-mode: standalone)').matches ||
@@ -123,15 +114,29 @@ export const SettingsSpace: React.FC = () => {
       setDeferredPrompt(null);
     };
 
-    window.addEventListener('notification-log-updated', handleLogsUpdate);
     window.addEventListener('beforeinstallprompt', handleBeforePrompt);
     window.addEventListener('appinstalled', handleAppInstalled);
 
     return () => {
-      window.removeEventListener('notification-log-updated', handleLogsUpdate);
       window.removeEventListener('beforeinstallprompt', handleBeforePrompt);
       window.removeEventListener('appinstalled', handleAppInstalled);
     };
+  }, []);
+
+  // Listen for log updates separately
+  useEffect(() => {
+    const handleLogsUpdate = (e: any) => {
+      if (e.detail) {
+        setLogs(e.detail);
+      } else {
+        setLogs(getNotificationLogs());
+      }
+      // Auto-open log when a new entry arrives if it was closed
+      setIsLogOpen(true);
+    };
+
+    window.addEventListener('notification-log-updated', handleLogsUpdate);
+    return () => window.removeEventListener('notification-log-updated', handleLogsUpdate);
   }, []);
 
   // Handle persona change
@@ -141,6 +146,8 @@ export const SettingsSpace: React.FC = () => {
     await setRole(r, defaultName);
     setRoleFeedback(`Rolle gewechselt zu ${r === 'sonne' ? 'Die Sonne' : 'Der Mond'}`);
     setTimeout(() => setRoleFeedback(null), 3000);
+    // Reload page to ensure all listeners restart with the new role
+    setTimeout(() => window.location.reload(), 1000);
   };
 
   // Handle push notification permission
@@ -269,8 +276,20 @@ export const SettingsSpace: React.FC = () => {
         <h2 className="text-2xl sm:text-3xl font-serif-serif font-bold gold-gradient-text tracking-wide pt-1">
           Einstellungen
         </h2>
-        <p className="text-xs sm:text-sm text-white/70 max-w-md mx-auto">
-          Passe deine Rolle an, verwalte Mitteilungen, lege das App-Icon auf dein Handy oder teste versendete Benachrichtigungen.
+        
+        {/* System Status Indicator */}
+        <div className="flex flex-wrap items-center justify-center gap-2 pt-2">
+          <div className={`px-2 py-1 rounded-full border text-[10px] font-bold uppercase flex items-center gap-1.5 ${currentUserId ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-400' : 'bg-rose-500/10 border-rose-500/30 text-rose-400'}`}>
+            <div className={`w-1.5 h-1.5 rounded-full ${currentUserId ? 'bg-emerald-400 animate-pulse' : 'bg-rose-400'}`} />
+            Auth: {currentUserId ? 'Verbunden' : 'Getrennt'}
+          </div>
+          <div className="px-2 py-1 rounded-full border border-[#c79b78]/30 bg-[#c79b78]/10 text-[#ebd8c8] text-[10px] font-bold uppercase flex items-center gap-1.5">
+             Rolle: {role === 'sonne' ? '☀️ Sonne' : '🌙 Mond'}
+          </div>
+        </div>
+        
+        <p className="text-xs text-white/50 max-w-md mx-auto pt-3">
+          Passe deine Rolle an oder teste Benachrichtigungen. Der Status zeigt an, ob du mit dem Server verbunden bist.
         </p>
       </div>
 

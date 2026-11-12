@@ -229,12 +229,18 @@ export const displayLocalNotification = async (
   body: string,
   tag?: string,
   navTab?: string
-): Promise<void> => {
+): Promise<boolean> => {
   try {
-    if (typeof window === 'undefined' || !('Notification' in window)) return;
-    if (Notification.permission !== 'granted') return;
+    if (typeof window === 'undefined' || !('Notification' in window)) {
+      console.warn('DIAGNOSTIC: Notifications not supported in this browser environment.');
+      return false;
+    }
+    if (Notification.permission !== 'granted') {
+      console.warn('DIAGNOSTIC: Notification permission not granted (current state: ' + Notification.permission + ')');
+      return false;
+    }
 
-    const notifOptions: NotificationOptions & { vibrate?: number[]; renotify?: boolean } = {
+    const notifOptions: any = {
       body,
       icon: APP_NOTIFICATION_ICON,
       badge: APP_NOTIFICATION_BADGE,
@@ -245,23 +251,39 @@ export const displayLocalNotification = async (
         url: navTab ? `/?tab=${navTab}` : '/',
       },
       renotify: true,
+      requireInteraction: false,
     };
 
     if ('serviceWorker' in navigator) {
       try {
-        const reg = await navigator.serviceWorker.ready;
+        let reg = await navigator.serviceWorker.getRegistration();
+        if (!reg) {
+          reg = await Promise.race([
+            navigator.serviceWorker.ready,
+            new Promise<null>((r) => setTimeout(() => r(null), 1500))
+          ]) as any;
+        }
         if (reg && typeof reg.showNotification === 'function') {
           await reg.showNotification(title, notifOptions);
-          return;
+          console.log('DIAGNOSTIC: System notification successfully displayed via Service Worker:', title);
+          return true;
         }
       } catch (swErr) {
-        console.warn('SW showNotification notice:', swErr);
+        console.warn('DIAGNOSTIC: SW showNotification notice:', swErr);
       }
     }
 
-    new Notification(title, notifOptions);
+    try {
+      new Notification(title, notifOptions);
+      console.log('DIAGNOSTIC: System notification successfully displayed via Notification API:', title);
+      return true;
+    } catch (notifErr) {
+      console.warn('DIAGNOSTIC: Notification constructor notice (expected on Android Chrome):', notifErr);
+    }
+    return false;
   } catch (err) {
-    console.warn('Could not display local notification:', err);
+    console.warn('DIAGNOSTIC: Could not display local notification:', err);
+    return false;
   }
 };
 
@@ -581,7 +603,7 @@ export const listenForPartnerActivities = (
               console.log('DIAGNOSTIC: Notification already seen, skipping:', notifId);
             }
           } else {
-            console.log('DIAGNOSTIC: Notification target role mismatch (Expected', userRole, ', Got', data.targetRole, ')');
+            console.log(`DIAGNOSTIC: Mitteilung richtet sich an Partnerrolle "${data.targetRole}". Da dieses Gerät auf "${userRole}" eingestellt ist, wird die Benachrichtigung auf dem Partner-Gerät (${data.targetRole === 'sonne' ? 'Sonne' : 'Mond'}) empfangen.`);
           }
         }
       });

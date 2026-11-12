@@ -33,6 +33,8 @@ import {
   isNotificationSupported,
   getNotificationLogs,
   clearNotificationLogs,
+  displayLocalNotification,
+  addNotificationLog,
 } from '../services/notificationService';
 import { UserRoleType, NotificationLogEntry } from '../types';
 
@@ -225,6 +227,19 @@ export const SettingsSpace: React.FC = () => {
     await ensurePermissionAndSend(() => sendTestDreamJourneyInvite(selectedRole));
     setTestFeedback('Test: Traumreise Einladung gesendet & im Log vermerkt!');
     setTimeout(() => setTestFeedback(null), 4000);
+  };
+
+  const handleTestIncomingPartnerMessage = async () => {
+    await ensurePermissionAndSend(async () => {
+      const partnerRole: UserRoleType = selectedRole === 'sonne' ? 'mond' : 'sonne';
+      const partnerName = partnerRole === 'sonne' ? 'Die Sonne ☀️' : 'Der Mond 🌕';
+      const title = `✨ Neue Mitteilung von ${partnerName}`;
+      const body = `${partnerName} hat gerade an dich gedacht und schickt dir ein warmes Leuchten! ✨`;
+      addNotificationLog(title, body, true, 'system', selectedRole);
+      await displayLocalNotification(title, body, `sim-partner-${Date.now()}`);
+    });
+    setTestFeedback(`Test-Mitteilung von ${selectedRole === 'sonne' ? 'Der Mond' : 'Die Sonne'} direkt auf diesem Bildschirm angezeigt!`);
+    setTimeout(() => setTestFeedback(null), 4500);
   };
 
   // 1-Click Install handler
@@ -486,17 +501,48 @@ export const SettingsSpace: React.FC = () => {
       {/* ========================================================================= */}
       
       <section className="bg-[#0a232c]/90 border-2 border-[#c79b78]/60 rounded-3xl p-4 sm:p-5 shadow-2xl backdrop-blur-md space-y-4">
-        <div className="border-b border-white/10 pb-2.5">
-          <h3 className="font-serif-serif font-bold text-lg text-[#ebd8c8] flex items-center gap-2">
-            <Sparkles className="w-5 h-5 text-[#c79b78]" />
-            <span>Mitteilungen & Nachrichten testen</span>
-          </h3>
-          <p className="text-xs text-white/70 mt-0.5">
-            Klicke auf die Test-Buttons, um Benachrichtigungen auszulösen und im untenstehenden Log-Fenster zu überprüfen:
-          </p>
+        <div className="border-b border-white/10 pb-3 space-y-2">
+          <div className="flex items-center justify-between flex-wrap gap-2">
+            <h3 className="font-serif-serif font-bold text-lg text-[#ebd8c8] flex items-center gap-2">
+              <Sparkles className="w-5 h-5 text-[#c79b78]" />
+              <span>Mitteilungen & Nachrichten testen</span>
+            </h3>
+            <span className="text-[11px] px-2.5 py-0.5 rounded-full bg-[#c79b78]/20 border border-[#c79b78]/40 text-[#ebd8c8] font-bold">
+              Dieses Gerät: {selectedRole === 'sonne' ? '☀️ Die Sonne' : '🌙 Der Mond'}
+            </span>
+          </div>
+
+          <div className="p-3 rounded-2xl bg-white/5 border border-[#c79b78]/30 text-xs text-[#ebd8c8] space-y-1">
+            <p className="text-[11px] text-white/90 leading-relaxed">
+              💡 <strong>So funktioniert die Zustellung:</strong> Sendest du als <strong className="text-[#ffe89c]">{selectedRole === 'sonne' ? 'Die Sonne' : 'Der Mond'}</strong> eine Sternschnuppe oder Einladung, wird sie an das Partner-Gerät (<strong className="text-[#38bdf8]">{selectedRole === 'sonne' ? 'Der Mond' : 'Die Sonne'}</strong>) übermittelt.
+            </p>
+            <p className="text-[11px] text-[#ebd8c8]/85 leading-relaxed">
+              Mit den Test-Buttons unten kannst du System-Banner <strong>direkt auf deinem aktuellen Bildschirm</strong> überprüfen.
+            </p>
+          </div>
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2.5">
+          
+          {/* Test 0: Partner-Nachricht an dieses Gerät simulieren */}
+          <button
+            type="button"
+            onClick={handleTestIncomingPartnerMessage}
+            className="p-3.5 rounded-2xl bg-gradient-to-r from-[#c79b78]/25 to-[#c79b78]/10 border-2 border-[#c79b78] hover:border-[#ffe89c] text-left transition space-y-1.5 group cursor-pointer shadow-xl sm:col-span-2 lg:col-span-3"
+          >
+            <div className="flex items-center justify-between">
+              <span className="text-base">{selectedRole === 'sonne' ? '🌙 ➔ ☀️' : '☀️ ➔ 🌙'}</span>
+              <span className="px-2 py-0.5 rounded-full bg-[#c79b78] text-[#071920] text-[9px] font-bold uppercase tracking-wider">
+                Partner-Empfang testen
+              </span>
+            </div>
+            <div className="font-bold text-xs text-[#ffe89c] group-hover:underline">
+              Eingehende Partner-Nachricht auf DIESEM Bildschirm testen
+            </div>
+            <p className="text-[11px] text-white/85 leading-tight">
+              Simuliert den Empfang einer Mitteilung von {selectedRole === 'sonne' ? 'dem Mond 🌕' : 'der Sonne ☀️'} direkt als Banner auf deinem aktuellen Gerät.
+            </p>
+          </button>
           
           {/* Test 1: Morgen Affirmation */}
           <button

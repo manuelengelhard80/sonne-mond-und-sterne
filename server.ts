@@ -2,129 +2,151 @@ import express from 'express';
 import { createServer as createViteServer } from 'vite';
 import fs from 'fs';
 import path from 'path';
-import { initializeApp, getApps } from 'firebase-admin/app';
-import { getFirestore } from 'firebase-admin/firestore';
-import { getMessaging } from 'firebase-admin/messaging';
+import * as webpush from 'web-push';
+import { initializeApp, getApps } from 'firebase/app';
+import { getFirestore, collection, getDocs, onSnapshot } from 'firebase/firestore';
+import { getAuth, signInAnonymously } from 'firebase/auth';
 
-// Initialize Firebase Admin for background push triggers
 const firebaseConfig = JSON.parse(fs.readFileSync(path.join(process.cwd(), 'firebase-applet-config.json'), 'utf-8'));
 
-let adminApp: any = null;
-let dbAdmin: any = null;
-let messagingAdmin: any = null;
+// VAPID Key Pair for Web Push
+export const VAPID_PUBLIC_KEY = 'BKDGl7c3RPjL_Te5Ysx--vJgqravzRooqxnjFGj9d8Ftf9aRFmLCkm_yzB1j920womuLxlXQ0nXfavVFq_8VNYU';
+export const VAPID_PRIVATE_KEY = 'ZiV0jyTk3h_1M41iCDohRTthwSUwiipNfl9XC4nUmhk';
+
+try {
+  webpush.setVapidDetails(
+    'mailto:sonne-mond-sterne@applet.internal',
+    VAPID_PUBLIC_KEY,
+    VAPID_PRIVATE_KEY
+  );
+  console.log('[Web Push] VAPID details initialized successfully.');
+} catch (err) {
+  console.warn('[Web Push] Could not initialize VAPID details:', err);
+}
+
+// Client SDK for server-side push query (handles Firestore permissions gracefully)
+let appClient: any = null;
+let dbClient: any = null;
+let authClient: any = null;
 
 try {
   const apps = getApps();
   if (apps.length > 0) {
-    adminApp = apps[0];
+    appClient = apps[0];
   } else {
-    adminApp = initializeApp({
-      projectId: firebaseConfig.projectId,
-    });
+    appClient = initializeApp(firebaseConfig, 'server-push-app');
   }
-  // Initialize with named databaseId specified in firebase-applet-config.json
-  dbAdmin = getFirestore(adminApp, firebaseConfig.firestoreDatabaseId);
-  messagingAdmin = getMessaging(adminApp);
-  console.log('Firebase Admin initialized with databaseId:', firebaseConfig.firestoreDatabaseId);
+  authClient = getAuth(appClient);
+  dbClient = getFirestore(appClient, firebaseConfig.firestoreDatabaseId);
 } catch (err: any) {
-  console.warn('Firebase Admin initialization notice (dev environment):', err?.message || err);
+  console.warn('[Server SDK] Initialization notice:', err?.message || err);
 }
 
-/**
- * Authority Background Listener:
- * Watches partner_notifications collection and sends FCM push to target role tokens.
- */
-function setupPushService() {
-  if (!dbAdmin || !messagingAdmin) {
-    console.log('Background Push Authority Service inactive: dbAdmin or messagingAdmin not initialized.');
-    return;
+async function ensureServerAuth() {
+  if (!authClient) return;
+  if (!authClient.currentUser) {
+    try {
+      await signInAnonymously(authClient);
+    } catch (err: any) {
+      console.warn('[Server Auth] Anonymous auth notice:', err?.message || err);
+    }
   }
-  console.log('Starting Background Push Authority Service...');
-  
+}
+
+async function sendWebPushToRole(
+  targetRole: string,
+  title: string,
+  body: string,
+  type?: string,
+  tag?: string,
+  navTab?: string
+) {
   try {
-    dbAdmin.collection('partner_notifications').onSnapshot((snapshot: any) => {
-      snapshot.docChanges().forEach(async (change: any) => {
-        // Only trigger for newly created documents
-        if (change.type === 'added') {
-          const data = change.doc.data();
-          const { targetRole, title, body, type, navTab, tag } = data;
+    await ensureServerAuth();
+    if (!dbClient) {
+      console.warn('[Web Push] Cannot send push: dbClient not ready.');
+      return { successCount: 0, failCount: 0, error: 'dbClient not ready' };
+    }
 
-          if (!targetRole) return;
+    const snap = await getDocs(collection(dbClient, 'user_roles'));
+    const targetSubscriptions: any[] = [];
 
-          try {
-            console.log(`Processing push trigger for ${targetRole}: ${title}`);
-            // 1. Fetch tokens for the target role
-            const userRolesSnap = await dbAdmin.collection('user_roles')
-              .where('role', '==', targetRole)
-              .get();
-
-            const allTokens: string[] = [];
-            userRolesSnap.forEach((doc: any) => {
-              const roleData = doc.data();
-              if (roleData.pushTokens && Array.isArray(roleData.pushTokens)) {
-                allTokens.push(...roleData.pushTokens);
+    snap.forEach((docSnap) => {
+      const data = docSnap.data();
+      if (data.role === targetRole) {
+        if (data.pushSubscriptions && Array.isArray(data.pushSubscriptions)) {
+          for (const rawSub of data.pushSubscriptions) {
+            try {
+              const parsed = typeof rawSub === 'string' ? JSON.parse(rawSub) : rawSub;
+              if (parsed && parsed.endpoint) {
+                targetSubscriptions.push(parsed);
               }
-            });
-
-            const uniqueTokens = Array.from(new Set(allTokens));
-            console.log(`FCM tokens retrieved for ${targetRole}:`, uniqueTokens);
-            if (uniqueTokens.length === 0) {
-              console.log(`No push tokens found for role: ${targetRole}`);
-              return;
-            }
-
-            // 2. Prepare FCM message
-            const message: any = {
-              tokens: uniqueTokens,
-              notification: {
-                title: title,
-                body: body,
-              },
-              data: {
-                type: type || 'system',
-                tab: navTab || '',
-                tag: tag || change.doc.id,
-                click_action: navTab ? `/?tab=${navTab}` : '/',
-              },
-              webpush: {
-                headers: {
-                  Urgency: 'high'
-                },
-                notification: {
-                  title: title,
-                  body: body,
-                  icon: '/app-icon-full.png?v=12',
-                  badge: '/badge-icon.png?v=12',
-                  tag: tag || change.doc.id,
-                  renotify: true,
-                  requireInteraction: true,
-                },
-                fcmOptions: {
-                  link: navTab ? `/?tab=${navTab}` : '/',
-                }
-              }
-            };
-
-            // 3. Send via FCM
-            console.log(`Sending FCM to ${uniqueTokens.length} tokens...`);
-            const response = await messagingAdmin.sendEachForMulticast(message);
-            console.log(`FCM Response: Success=${response.successCount}, Fail=${response.failureCount}`);
-            
-            if (response.failureCount > 0) {
-              response.responses.forEach((resp: any, idx: number) => {
-                if (!resp.success) {
-                  console.warn(`FCM Send Failure for token ${uniqueTokens[idx]}:`, resp.error);
-                }
-              });
-            }
-          } catch (error) {
-            console.error('Error sending background push:', error);
+            } catch (_) {}
           }
         }
+      }
+    });
+
+    console.log(`[Web Push] Found ${targetSubscriptions.length} subscriptions for role "${targetRole}": ${title}`);
+
+    if (targetSubscriptions.length === 0) {
+      console.log(`[Web Push] No push subscriptions registered for role: ${targetRole}`);
+      return { successCount: 0, failCount: 0, notice: 'No push subscriptions found for role' };
+    }
+
+    const pushPayload = JSON.stringify({
+      title,
+      body,
+      type: type || 'system',
+      tag: tag || `push-${Date.now()}`,
+      navTab: navTab || '',
+    });
+
+    let successCount = 0;
+    let failCount = 0;
+
+    for (const sub of targetSubscriptions) {
+      try {
+        await webpush.sendNotification(sub, pushPayload);
+        successCount++;
+      } catch (err: any) {
+        failCount++;
+        console.warn(`[Web Push] Delivery notice (status ${err?.statusCode || 'err'}):`, err?.message || err);
+      }
+    }
+
+    console.log(`[Web Push] Summary for ${targetRole}: ${successCount} sent, ${failCount} failed.`);
+    return { successCount, failCount };
+  } catch (err) {
+    console.error('[Web Push] Error in sendWebPushToRole:', err);
+    return { successCount: 0, failCount: 0, error: String(err) };
+  }
+}
+
+function setupPushService() {
+  console.log('[Push Service] Starting Firestore background listener for partner_notifications...');
+  try {
+    ensureServerAuth().then(() => {
+      if (!dbClient) return;
+      onSnapshot(collection(dbClient, 'partner_notifications'), (snapshot) => {
+        snapshot.docChanges().forEach((change) => {
+          if (change.type === 'added') {
+            const data = change.doc.data();
+            const { targetRole, title, body, type, navTab, tag } = data;
+            if (targetRole && title) {
+              console.log(`[Push Service] Firestore trigger received for ${targetRole}: ${title}`);
+              sendWebPushToRole(targetRole, title, body, type, tag, navTab).catch((err) => {
+                console.warn('[Push Service] Listener dispatch notice:', err);
+              });
+            }
+          }
+        });
+      }, (err) => {
+        console.warn('[Push Service] Listener stream notice:', err?.message || err);
       });
-    }, (err: any) => console.warn('Push Service Firestore stream notice:', err?.message || err));
+    }).catch(() => {});
   } catch (err: any) {
-    console.warn('Could not attach background push listener:', err?.message || err);
+    console.warn('[Push Service] Could not attach listener:', err?.message || err);
   }
 }
 
@@ -133,6 +155,23 @@ async function startServer() {
 
   const app = express();
   const PORT = 3000;
+
+  app.use(express.json());
+
+  // Direct Push Dispatch Route
+  app.post('/api/send-push', async (req, res) => {
+    try {
+      const { targetRole, title, body, type, tag, navTab } = req.body || {};
+      if (!targetRole || !title) {
+        return res.status(400).json({ error: 'Missing targetRole or title' });
+      }
+      const result = await sendWebPushToRole(targetRole, title, body, type, tag, navTab);
+      return res.json(result);
+    } catch (err: any) {
+      console.error('/api/send-push error:', err);
+      return res.status(500).json({ error: err?.message || String(err) });
+    }
+  });
 
   // Create Vite server in middleware mode
   const vite = await createViteServer({

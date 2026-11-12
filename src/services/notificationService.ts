@@ -3,11 +3,21 @@ import { db, ensureAuthenticated, messaging, auth } from './firebase';
 import { getToken, onMessage } from 'firebase/messaging';
 import { NotificationLogEntry, UserRoleType } from '../types';
 
-// VAPID Public Key for Web Push (Required for FCM on Safari and Chrome)
-// Replace with your real VAPID key from Firebase Console -> Project Settings -> Cloud Messaging
-export const VAPID_PUBLIC_KEY = 'BON2h1JLQaSMQJrAgeWz6niyAqBQAXzlLeda8rolYgI03yUj95H6qhTfaz7-pZXKbSob7lWSNYvgGZ5qfducaNM';
+// VAPID Public Key for Web Push (Required for Chrome, Safari, Firefox OS background notifications)
+export const VAPID_PUBLIC_KEY = 'BKDGl7c3RPjL_Te5Ysx--vJgqravzRooqxnjFGj9d8Ftf9aRFmLCkm_yzB1j920womuLxlXQ0nXfavVFq_8VNYU';
 
-// Request Notification Permission and setup FCM
+function urlBase64ToUint8Array(base64String: string): Uint8Array {
+  const padding = '='.repeat((4 - (base64String.length % 4)) % 4);
+  const base64 = (base64String + padding).replace(/-/g, '+').replace(/_/g, '/');
+  const rawData = window.atob(base64);
+  const outputArray = new Uint8Array(rawData.length);
+  for (let i = 0; i < rawData.length; ++i) {
+    outputArray[i] = rawData.charCodeAt(i);
+  }
+  return outputArray;
+}
+
+// Request Notification Permission and setup FCM / Web Push
 export const requestNotificationPermission = async (): Promise<boolean> => {
   if (!isNotificationSupported()) return false;
   try {
@@ -80,34 +90,58 @@ function handleFirestoreError(error: unknown, operationType: OperationType, path
   }
 }
 
-// Initialize FCM and obtain a token
+// Initialize Web Push & FCM for closed app background notifications
 export const setupFCM = async (registration: ServiceWorkerRegistration) => {
-  if (!messaging) return;
   try {
     const user = await ensureAuthenticated();
     if (!user) {
-      console.warn('FCM setup skipped: No authenticated user.');
+      console.warn('Push setup skipped: No authenticated user.');
       return;
     }
 
-    const token = await getToken(messaging, {
-      vapidKey: VAPID_PUBLIC_KEY,
-      serviceWorkerRegistration: registration,
-    });
-
-    if (token) {
-      console.log('FCM Token generated.');
-      await registerPushToken(token, user.uid);
-    } else {
-      console.warn('No FCM registration token received.');
+    // 1. Register W3C PushSubscription for background Web Push (works when app is closed)
+    try {
+      let sub = await registration.pushManager.getSubscription();
+      if (!sub) {
+        sub = await registration.pushManager.subscribe({
+          userVisibleOnly: true,
+          applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY) as any
+        });
+      }
+      if (sub) {
+        const subJson = sub.toJSON();
+        const userRoleDoc = doc(db, 'user_roles', user.uid);
+        await setDoc(userRoleDoc, {
+          pushSubscriptions: arrayUnion(JSON.stringify(subJson)),
+          updatedAt: new Date().toISOString()
+        }, { merge: true });
+        console.log('Web Push Subscription registered successfully for background OS push.');
+      }
+    } catch (subErr) {
+      console.warn('W3C PushSubscription notice:', subErr);
     }
 
-    // Handle foreground messages (optional, since we have onSnapshot for UI)
-    onMessage(messaging, (payload) => {
-      console.log('Foreground message received:', payload);
-    });
+    // 2. Also register FCM token if messaging is active
+    if (messaging) {
+      try {
+        const token = await getToken(messaging, {
+          vapidKey: VAPID_PUBLIC_KEY,
+          serviceWorkerRegistration: registration,
+        });
+        if (token) {
+          console.log('FCM Token generated.');
+          await registerPushToken(token, user.uid);
+        }
+      } catch (fcmErr) {
+        console.warn('FCM getToken notice:', fcmErr);
+      }
+
+      onMessage(messaging, (payload) => {
+        console.log('Foreground message received:', payload);
+      });
+    }
   } catch (err) {
-    console.warn('FCM setup error:', err);
+    console.warn('Push setup error:', err);
   }
 };
 
@@ -320,6 +354,24 @@ export const publishPartnerNotification = async (
     };
     await setDoc(docRef, payload);
     console.log('DIAGNOSTIC: Notification successfully written to Firestore:', notifId);
+
+    // Call server Web Push route to deliver OS push notification even if partner app/browser is completely closed
+    fetch('/api/send-push', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        senderRole,
+        targetRole,
+        title,
+        body,
+        type,
+        tag: payload.tag,
+        navTab,
+      }),
+    }).catch((pushErr) => {
+      console.warn('Push dispatch notice:', pushErr);
+    });
+
     return notifId;
   } catch (err) {
     console.error('DIAGNOSTIC: Firestore write error:', err);

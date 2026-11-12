@@ -1,5 +1,5 @@
 // Service Worker for Sonne, Mond und Sterne notifications & PWA
-const CACHE_NAME = 'sonne-mond-v26';
+const CACHE_NAME = 'sonne-mond-v27';
 const PRECACHE_ASSETS = [
   '/',
   '/index.html',
@@ -32,7 +32,7 @@ function triggerScheduledNotificationIfDue() {
       tag: tag || 'daily-morning-affirmation',
       icon: icon || '/app-icon-full.png?v=12',
       badge: badge || '/badge-icon.png?v=12',
-      vibrate: [200, 100, 200],
+      vibrate: [300, 100, 300, 100, 300],
     });
   }
 }
@@ -153,33 +153,41 @@ self.addEventListener('notificationclick', (event) => {
   );
 });
 
-// Background Push Notification Listener
+// Background Push Notification Listener (Delivered even when app is closed)
 self.addEventListener('push', (event) => {
-  if (!event.data) return;
+  let title = 'Sonne, Mond & Sterne';
+  let body = 'Eine neue Mitteilung ist angekommen.';
+  let tag = 'partner-push';
+  let navTab = '';
 
-  try {
-    const payload = event.data.json();
-    console.log('Push received:', payload);
-    
-    // FCM payloads can be nested under .notification or at top level
-    const title = (payload.notification ? payload.notification.title : payload.title) || 'Sonne, Mond und Sterne';
-    const body = (payload.notification ? payload.notification.body : payload.body) || '';
-    
-    const options = {
-      body: body,
-      icon: (payload.notification ? payload.notification.icon : payload.icon) || '/app-icon-full.png?v=12',
-      badge: (payload.notification ? payload.notification.badge : payload.badge) || '/badge-icon.png?v=12',
-      tag: payload.data?.tag || payload.tag || 'partner-notification',
-      data: payload.data || payload,
-      vibrate: [200, 100, 200],
-      renotify: true,
-      actions: payload.actions || [],
-    };
-
-    event.waitUntil(
-      self.registration.showNotification(title, options)
-    );
-  } catch (err) {
-    console.error('Push event error:', err);
+  if (event.data) {
+    try {
+      const payload = event.data.json();
+      console.log('SW Push payload received:', payload);
+      title = payload.title || payload.notification?.title || title;
+      body = payload.body || payload.notification?.body || body;
+      tag = payload.tag || payload.data?.tag || tag;
+      navTab = payload.navTab || payload.data?.tab || '';
+    } catch (err) {
+      body = event.data.text() || body;
+    }
   }
+
+  const options = {
+    body: body,
+    icon: '/app-icon-full.png?v=12',
+    badge: '/badge-icon.png?v=12',
+    tag: tag,
+    data: {
+      tab: navTab,
+      url: navTab ? `/?tab=${navTab}` : '/',
+    },
+    vibrate: [300, 100, 300, 100, 300],
+    renotify: true,
+    requireInteraction: true,
+  };
+
+  event.waitUntil(
+    self.registration.showNotification(title, options)
+  );
 });

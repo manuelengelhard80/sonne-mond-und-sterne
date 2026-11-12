@@ -162,14 +162,16 @@ export const SettingsSpace: React.FC = () => {
 
   const ensurePermissionAndSend = async (sendFn: () => Promise<any>) => {
     if (!isNotificationSupported()) {
-      alert('Dein Browser unterstützt keine Benachrichtigungen.');
+      setTestFeedback('Dein Browser unterstützt keine System-Benachrichtigungen.');
+      setTimeout(() => setTestFeedback(null), 4000);
       return;
     }
     if (Notification.permission !== 'granted') {
       const granted = await requestNotificationPermission();
       setPermission(granted ? 'granted' : getNotificationPermission());
       if (!granted) {
-        alert('Bitte erlaube Push-Benachrichtigungen in deinem Browser, um Mitteilungen zu erhalten.');
+        setTestFeedback('Bitte Push-Benachrichtigungen in Schritt 2 erlauben, um Banner zu sehen.');
+        setTimeout(() => setTestFeedback(null), 4000);
         return;
       }
     }

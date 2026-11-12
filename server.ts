@@ -2,119 +2,130 @@ import express from 'express';
 import { createServer as createViteServer } from 'vite';
 import fs from 'fs';
 import path from 'path';
-import admin from 'firebase-admin';
+import { initializeApp, getApps } from 'firebase-admin/app';
 import { getFirestore } from 'firebase-admin/firestore';
 import { getMessaging } from 'firebase-admin/messaging';
 
 // Initialize Firebase Admin for background push triggers
 const firebaseConfig = JSON.parse(fs.readFileSync(path.join(process.cwd(), 'firebase-applet-config.json'), 'utf-8'));
 
-try {
-  (admin as any).initializeApp({
-    credential: (admin as any).credential.applicationDefault(),
-    projectId: firebaseConfig.projectId,
-  });
-  console.log('Firebase Admin initialized with applicationDefault');
-} catch (err) {
-  console.warn('Firebase Admin applicationDefault failed, trying manual init:', err);
-  // Fallback if running in environment without default credentials
-  (admin as any).initializeApp({
-    projectId: firebaseConfig.projectId,
-  });
-}
+let adminApp: any = null;
+let dbAdmin: any = null;
+let messagingAdmin: any = null;
 
-const dbAdmin = getFirestore();
-const messagingAdmin = getMessaging();
+try {
+  const apps = getApps();
+  if (apps.length > 0) {
+    adminApp = apps[0];
+  } else {
+    adminApp = initializeApp({
+      projectId: firebaseConfig.projectId,
+    });
+  }
+  // Initialize with named databaseId specified in firebase-applet-config.json
+  dbAdmin = getFirestore(adminApp, firebaseConfig.firestoreDatabaseId);
+  messagingAdmin = getMessaging(adminApp);
+  console.log('Firebase Admin initialized with databaseId:', firebaseConfig.firestoreDatabaseId);
+} catch (err: any) {
+  console.warn('Firebase Admin initialization notice (dev environment):', err?.message || err);
+}
 
 /**
  * Authority Background Listener:
  * Watches partner_notifications collection and sends FCM push to target role tokens.
  */
 function setupPushService() {
+  if (!dbAdmin || !messagingAdmin) {
+    console.log('Background Push Authority Service inactive: dbAdmin or messagingAdmin not initialized.');
+    return;
+  }
   console.log('Starting Background Push Authority Service...');
   
-  // Use a simple listener to avoid any sync issues
-  dbAdmin.collection('partner_notifications').onSnapshot((snapshot: any) => {
-    snapshot.docChanges().forEach(async (change: any) => {
-      // Only trigger for newly created documents
-      if (change.type === 'added') {
-        const data = change.doc.data();
-        const { targetRole, title, body, type, navTab, tag } = data;
+  try {
+    dbAdmin.collection('partner_notifications').onSnapshot((snapshot: any) => {
+      snapshot.docChanges().forEach(async (change: any) => {
+        // Only trigger for newly created documents
+        if (change.type === 'added') {
+          const data = change.doc.data();
+          const { targetRole, title, body, type, navTab, tag } = data;
 
-        if (!targetRole) return;
+          if (!targetRole) return;
 
-        try {
-          console.log(`Processing push trigger for ${targetRole}: ${title}`);
-          // 1. Fetch tokens for the target role
-          const userRolesSnap = await dbAdmin.collection('user_roles')
-            .where('role', '==', targetRole)
-            .get();
+          try {
+            console.log(`Processing push trigger for ${targetRole}: ${title}`);
+            // 1. Fetch tokens for the target role
+            const userRolesSnap = await dbAdmin.collection('user_roles')
+              .where('role', '==', targetRole)
+              .get();
 
-          const allTokens: string[] = [];
-          userRolesSnap.forEach((doc: any) => {
-            const roleData = doc.data();
-            if (roleData.pushTokens && Array.isArray(roleData.pushTokens)) {
-              allTokens.push(...roleData.pushTokens);
+            const allTokens: string[] = [];
+            userRolesSnap.forEach((doc: any) => {
+              const roleData = doc.data();
+              if (roleData.pushTokens && Array.isArray(roleData.pushTokens)) {
+                allTokens.push(...roleData.pushTokens);
+              }
+            });
+
+            const uniqueTokens = Array.from(new Set(allTokens));
+            console.log(`FCM tokens retrieved for ${targetRole}:`, uniqueTokens);
+            if (uniqueTokens.length === 0) {
+              console.log(`No push tokens found for role: ${targetRole}`);
+              return;
             }
-          });
 
-          const uniqueTokens = Array.from(new Set(allTokens));
-          console.log(`FCM tokens retrieved for ${targetRole}:`, uniqueTokens);
-          if (uniqueTokens.length === 0) {
-            console.log(`No push tokens found for role: ${targetRole}`);
-            return;
-          }
-
-          // 2. Prepare FCM message
-          const message: any = {
-            tokens: uniqueTokens,
-            notification: {
-              title: title,
-              body: body,
-            },
-            data: {
-              type: type || 'system',
-              tab: navTab || '',
-              tag: tag || change.doc.id,
-              click_action: navTab ? `/?tab=${navTab}` : '/',
-            },
-            webpush: {
-              headers: {
-                Urgency: 'high'
-              },
+            // 2. Prepare FCM message
+            const message: any = {
+              tokens: uniqueTokens,
               notification: {
                 title: title,
                 body: body,
-                icon: '/app-icon-full.png?v=12',
-                badge: '/badge-icon.png?v=12',
-                tag: tag || change.doc.id,
-                renotify: true,
-                requireInteraction: true,
               },
-              fcmOptions: {
-                link: navTab ? `/?tab=${navTab}` : '/',
+              data: {
+                type: type || 'system',
+                tab: navTab || '',
+                tag: tag || change.doc.id,
+                click_action: navTab ? `/?tab=${navTab}` : '/',
+              },
+              webpush: {
+                headers: {
+                  Urgency: 'high'
+                },
+                notification: {
+                  title: title,
+                  body: body,
+                  icon: '/app-icon-full.png?v=12',
+                  badge: '/badge-icon.png?v=12',
+                  tag: tag || change.doc.id,
+                  renotify: true,
+                  requireInteraction: true,
+                },
+                fcmOptions: {
+                  link: navTab ? `/?tab=${navTab}` : '/',
+                }
               }
-            }
-          };
+            };
 
-          // 3. Send via FCM
-          console.log(`Sending FCM to ${uniqueTokens.length} tokens...`);
-          const response = await messagingAdmin.sendEachForMulticast(message);
-          console.log(`FCM Response: Success=${response.successCount}, Fail=${response.failureCount}`);
-          
-          if (response.failureCount > 0) {
-            response.responses.forEach((resp, idx) => {
-              if (!resp.success) {
-                console.warn(`FCM Send Failure for token ${uniqueTokens[idx]}:`, resp.error);
-              }
-            });
+            // 3. Send via FCM
+            console.log(`Sending FCM to ${uniqueTokens.length} tokens...`);
+            const response = await messagingAdmin.sendEachForMulticast(message);
+            console.log(`FCM Response: Success=${response.successCount}, Fail=${response.failureCount}`);
+            
+            if (response.failureCount > 0) {
+              response.responses.forEach((resp: any, idx: number) => {
+                if (!resp.success) {
+                  console.warn(`FCM Send Failure for token ${uniqueTokens[idx]}:`, resp.error);
+                }
+              });
+            }
+          } catch (error) {
+            console.error('Error sending background push:', error);
           }
-        } catch (error) {
-          console.error('Error sending background push:', error);
         }
-      }
-    });
-  }, (err: any) => console.error('Push Service Listener Error:', err));
+      });
+    }, (err: any) => console.warn('Push Service Firestore stream notice:', err?.message || err));
+  } catch (err: any) {
+    console.warn('Could not attach background push listener:', err?.message || err);
+  }
 }
 
 async function startServer() {

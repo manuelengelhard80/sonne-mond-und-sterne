@@ -1,5 +1,5 @@
 // Service Worker for Sonne, Mond und Sterne notifications & PWA
-const CACHE_NAME = 'sonne-mond-v23';
+const CACHE_NAME = 'sonne-mond-v25';
 const PRECACHE_ASSETS = [
   '/',
   '/index.html',
@@ -62,6 +62,10 @@ self.addEventListener('activate', (event) => {
 });
 
 self.addEventListener('message', (event) => {
+  if (event.data && event.data.type === 'SKIP_WAITING') {
+    self.skipWaiting();
+    return;
+  }
   if (event.data && event.data.type === 'SCHEDULE_MORNING_NOTIFICATION') {
     scheduledMorningNotification = {
       targetTimestamp: event.data.targetTimestamp,
@@ -103,6 +107,16 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
+  // Network-first for navigation to guarantee fresh bundles
+  if (event.request.mode === 'navigate') {
+    event.respondWith(
+      fetch(event.request)
+        .catch(() => caches.match(event.request))
+        .then((response) => response || caches.match('/'))
+    );
+    return;
+  }
+
   event.respondWith(
     fetch(event.request)
       .then((response) => {
@@ -111,9 +125,6 @@ self.addEventListener('fetch', (event) => {
       .catch(() => {
         return caches.match(event.request).then((cached) => {
           if (cached) return cached;
-          if (event.request.mode === 'navigate') {
-            return caches.match('/');
-          }
           return new Response('Offline', { status: 503, statusText: 'Offline' });
         });
       })

@@ -223,6 +223,48 @@ export const getNotificationPermission = (): NotificationPermission => {
   return Notification.permission;
 };
 
+// Display local system notification (OS banner) via Service Worker or Notification API
+export const displayLocalNotification = async (
+  title: string,
+  body: string,
+  tag?: string,
+  navTab?: string
+): Promise<void> => {
+  try {
+    if (typeof window === 'undefined' || !('Notification' in window)) return;
+    if (Notification.permission !== 'granted') return;
+
+    const notifOptions: NotificationOptions & { vibrate?: number[]; renotify?: boolean } = {
+      body,
+      icon: APP_NOTIFICATION_ICON,
+      badge: APP_NOTIFICATION_BADGE,
+      tag: tag || `notif-${Date.now()}`,
+      vibrate: [200, 100, 200],
+      data: {
+        tab: navTab || '',
+        url: navTab ? `/?tab=${navTab}` : '/',
+      },
+      renotify: true,
+    };
+
+    if ('serviceWorker' in navigator) {
+      try {
+        const reg = await navigator.serviceWorker.ready;
+        if (reg && typeof reg.showNotification === 'function') {
+          await reg.showNotification(title, notifOptions);
+          return;
+        }
+      } catch (swErr) {
+        console.warn('SW showNotification notice:', swErr);
+      }
+    }
+
+    new Notification(title, notifOptions);
+  } catch (err) {
+    console.warn('Could not display local notification:', err);
+  }
+};
+
 // Publish a partner notification to Firestore
 export const publishPartnerNotification = async (
   senderRole: UserRoleType,
@@ -276,10 +318,9 @@ export const sendTestMorningAffirmation = async (userRole: UserRoleType): Promis
   const randomIndex = Math.floor(Math.random() * MORNING_AFFIRMATIONS.length);
   const message = MORNING_AFFIRMATIONS[randomIndex];
   const title = getMorningAffirmationTitle(userRole);
-  // Trigger local log immediately so it works even if permission/FCM is pending
-  addNotificationLog(title, `Dein positiver Gedanke für heute: "${message}"`, true, 'morgen_affirmation', userRole);
-  
-  // Background FCM setup if needed
+  const body = `Dein positiver Gedanke für heute: "${message}"`;
+  addNotificationLog(title, body, true, 'morgen_affirmation', userRole);
+  displayLocalNotification(title, body, 'morgen-affirmation-test', 'meditation').catch(() => {});
   requestNotificationPermission().catch(() => {});
   return true;
 };
@@ -300,10 +341,8 @@ export const getShootingStarPushNotification = (
 // Test 2: Sternschnuppen Test
 export const sendTestShootingStar = async (userRole: UserRoleType): Promise<boolean> => {
   const { title, body } = getShootingStarPushNotification(userRole);
-  // Trigger local log immediately
   addNotificationLog(title, body, true, 'sternschnuppe', userRole);
-  
-  // Background FCM setup
+  displayLocalNotification(title, body, 'sternschnuppe-test', 'stars').catch(() => {});
   requestNotificationPermission().catch(() => {});
   return true;
 };
@@ -325,10 +364,8 @@ export const getSharedThoughtPushNotification = (
 // Test 3: Gedanken Teilen Test
 export const sendTestSharedThought = async (userRole: UserRoleType): Promise<boolean> => {
   const { title, body } = getSharedThoughtPushNotification(userRole);
-  // Trigger local log immediately
   addNotificationLog(title, body, true, 'gedanken', userRole);
-  
-  // Background FCM setup
+  displayLocalNotification(title, body, 'gedanken-test', 'journal').catch(() => {});
   requestNotificationPermission().catch(() => {});
   return true;
 };
@@ -350,7 +387,7 @@ export const getGuidedMeditationPushNotification = (
 export const sendGuidedMeditationInvite = async (userRole: UserRoleType): Promise<boolean> => {
   const targetRole: UserRoleType = userRole === 'sonne' ? 'mond' : 'sonne';
   const { title, body } = getGuidedMeditationPushNotification(userRole);
-  await publishPartnerNotification(userRole, targetRole, title, body, 'system', `guided-meditation-${Date.now()}`);
+  await publishPartnerNotification(userRole, targetRole, title, body, 'system', `guided-meditation-${Date.now()}`, 'meditation');
   return true;
 };
 
@@ -359,6 +396,7 @@ export const sendTestGuidedMeditationInvite = async (userRole: UserRoleType): Pr
   const simulatedSender: UserRoleType = userRole === 'sonne' ? 'mond' : 'sonne';
   const { title, body } = getGuidedMeditationPushNotification(simulatedSender);
   addNotificationLog(title, body, true, 'test', userRole);
+  displayLocalNotification(title, body, 'guided-meditation-test', 'meditation').catch(() => {});
   return true;
 };
 
@@ -379,7 +417,7 @@ export const getCouplesMeditationPushNotification = (
 export const sendCouplesMeditationInvite = async (userRole: UserRoleType): Promise<boolean> => {
   const targetRole: UserRoleType = userRole === 'sonne' ? 'mond' : 'sonne';
   const { title, body } = getCouplesMeditationPushNotification(userRole);
-  await publishPartnerNotification(userRole, targetRole, title, body, 'system', `couples-meditation-${Date.now()}`);
+  await publishPartnerNotification(userRole, targetRole, title, body, 'system', `couples-meditation-${Date.now()}`, 'meditation');
   return true;
 };
 
@@ -388,6 +426,7 @@ export const sendTestCouplesMeditationInvite = async (userRole: UserRoleType): P
   const simulatedSender: UserRoleType = userRole === 'sonne' ? 'mond' : 'sonne';
   const { title, body } = getCouplesMeditationPushNotification(simulatedSender);
   addNotificationLog(title, body, true, 'test', userRole);
+  displayLocalNotification(title, body, 'couples-meditation-test', 'meditation').catch(() => {});
   return true;
 };
 
@@ -408,7 +447,7 @@ export const getDreamJourneyPushNotification = (
 export const sendDreamJourneyInvite = async (userRole: UserRoleType): Promise<boolean> => {
   const targetRole: UserRoleType = userRole === 'sonne' ? 'mond' : 'sonne';
   const { title, body } = getDreamJourneyPushNotification(userRole);
-  await publishPartnerNotification(userRole, targetRole, title, body, 'system', `dream-journey-${Date.now()}`);
+  await publishPartnerNotification(userRole, targetRole, title, body, 'system', `dream-journey-${Date.now()}`, 'traumreisen');
   return true;
 };
 
@@ -417,6 +456,7 @@ export const sendTestDreamJourneyInvite = async (userRole: UserRoleType): Promis
   const simulatedSender: UserRoleType = userRole === 'sonne' ? 'mond' : 'sonne';
   const { title, body } = getDreamJourneyPushNotification(simulatedSender);
   addNotificationLog(title, body, true, 'test', userRole);
+  displayLocalNotification(title, body, 'dream-journey-test', 'traumreisen').catch(() => {});
   return true;
 };
 
@@ -438,6 +478,7 @@ export const sendTestHimmelsbegegnung = async (userRole: UserRoleType): Promise<
   const simulatedSender: UserRoleType = userRole === 'sonne' ? 'mond' : 'sonne';
   const { title, body } = getHimmelsbegegnungPushNotification(simulatedSender);
   addNotificationLog(title, body, true, 'himmelsbegegnung', userRole);
+  displayLocalNotification(title, body, 'himmelsbegegnung-test', 'himmel').catch(() => {});
   return true;
 };
 
@@ -459,6 +500,7 @@ export const sendTestSommernachtAmSeeInvite = async (userRole: UserRoleType): Pr
   const simulatedSender: UserRoleType = userRole === 'sonne' ? 'mond' : 'sonne';
   const { title, body } = getSommernachtAmSeePushNotification(simulatedSender);
   addNotificationLog(title, body, true, 'lake', userRole);
+  displayLocalNotification(title, body, 'sommernacht-test', 'see').catch(() => {});
   return true;
 };
 
@@ -466,14 +508,17 @@ export const sendTestSommernachtAmSeeInvite = async (userRole: UserRoleType): Pr
 export const sendSommernachtAmSeeInvite = async (userRole: UserRoleType): Promise<boolean> => {
   const targetRole: UserRoleType = userRole === 'sonne' ? 'mond' : 'sonne';
   const { title, body } = getSommernachtAmSeePushNotification(userRole);
-  await publishPartnerNotification(userRole, targetRole, title, body, 'lake', `sommernacht-am-see-${Date.now()}`);
+  await publishPartnerNotification(userRole, targetRole, title, body, 'lake', `sommernacht-am-see-${Date.now()}`, 'see');
   return true;
 };
 
 // Test Notification general
 export const sendTestNotification = async (userRole: UserRoleType): Promise<boolean> => {
   const partnerName = userRole === 'sonne' ? 'Der Mond' : 'Die Sonne';
-  addNotificationLog('✨ Benachrichtigungstest aktiv', `Mitteilungen sind erfolgreich auf deinem Gerät aktiviert! Du wirst informiert, wenn ${partnerName} eine Sternschnuppe oder einen Gedanken teilt.`, true, 'test', userRole);
+  const title = '✨ Benachrichtigungstest aktiv';
+  const body = `Mitteilungen sind erfolgreich auf deinem Gerät aktiviert! Du wirst informiert, wenn ${partnerName} eine Sternschnuppe oder einen Gedanken teilt.`;
+  addNotificationLog(title, body, true, 'test', userRole);
+  displayLocalNotification(title, body, 'test-general').catch(() => {});
   return true;
 };
 
@@ -531,6 +576,7 @@ export const listenForPartnerActivities = (
               // CRITICAL: Ensure the message is added to the log so the Messages component can see it.
               // We pass 'false' for isTest to make it a 'real' system message.
               addNotificationLog(data.title, data.body, false, data.type || 'system', userRole, notifId, data.timestamp);
+              displayLocalNotification(data.title, data.body, data.tag || notifId, data.navTab).catch(() => {});
             } else {
               console.log('DIAGNOSTIC: Notification already seen, skipping:', notifId);
             }

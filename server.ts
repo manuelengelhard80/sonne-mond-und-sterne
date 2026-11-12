@@ -68,30 +68,49 @@ async function sendWebPushToRole(
       return { successCount: 0, failCount: 0, error: 'dbClient not ready' };
     }
 
-    const snap = await getDocs(collection(dbClient, 'user_roles'));
     const targetSubscriptions: any[] = [];
 
-    snap.forEach((docSnap) => {
-      const data = docSnap.data();
-      if (data.role === targetRole) {
-        if (data.pushSubscriptions && Array.isArray(data.pushSubscriptions)) {
-          for (const rawSub of data.pushSubscriptions) {
-            try {
-              const parsed = typeof rawSub === 'string' ? JSON.parse(rawSub) : rawSub;
-              if (parsed && parsed.endpoint) {
-                targetSubscriptions.push(parsed);
-              }
-            } catch (_) {}
+    // 1. Primary lookup: Dedicated push_subscriptions collection (tagged directly by device role)
+    try {
+      const pushSubSnap = await getDocs(collection(dbClient, 'push_subscriptions'));
+      pushSubSnap.forEach((docSnap) => {
+        const data = docSnap.data();
+        if (data.role === targetRole && data.subscription) {
+          const parsed = typeof data.subscription === 'string' ? JSON.parse(data.subscription) : data.subscription;
+          if (parsed && parsed.endpoint) {
+            targetSubscriptions.push(parsed);
           }
         }
-      }
-    });
+      });
+    } catch (err) {
+      console.warn('[Web Push] Error reading push_subscriptions collection:', err);
+    }
 
-    console.log(`[Web Push] Found ${targetSubscriptions.length} subscriptions for role "${targetRole}": ${title}`);
+    // 2. Secondary fallback lookup: user_roles collection
+    if (targetSubscriptions.length === 0) {
+      try {
+        const snap = await getDocs(collection(dbClient, 'user_roles'));
+        snap.forEach((docSnap) => {
+          const data = docSnap.data();
+          if (data.role === targetRole && data.pushSubscriptions && Array.isArray(data.pushSubscriptions)) {
+            for (const rawSub of data.pushSubscriptions) {
+              try {
+                const parsed = typeof rawSub === 'string' ? JSON.parse(rawSub) : rawSub;
+                if (parsed && parsed.endpoint) {
+                  targetSubscriptions.push(parsed);
+                }
+              } catch (_) {}
+            }
+          }
+        });
+      } catch (_) {}
+    }
+
+    console.log(`[Web Push] Found ${targetSubscriptions.length} subscriptions targeting role "${targetRole}": "${title}"`);
 
     if (targetSubscriptions.length === 0) {
       console.log(`[Web Push] No push subscriptions registered for role: ${targetRole}`);
-      return { successCount: 0, failCount: 0, notice: 'No push subscriptions found for role' };
+      return { successCount: 0, failCount: 0, notice: 'No push subscriptions found for target role' };
     }
 
     const pushPayload = JSON.stringify({

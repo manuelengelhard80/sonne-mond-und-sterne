@@ -48,12 +48,13 @@ export const UserRoleProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       if (!user) return;
       setCurrentUserId(user.uid);
 
-      // Check if role is stored in cloud
+      // Check if role is stored in cloud (only override if local device has no saved role)
       const roleDocRef = doc(db, 'user_roles', user.uid);
       getDoc(roleDocRef).then((snap) => {
         if (snap.exists()) {
           const data = snap.data();
-          if (data.role === 'sonne' || data.role === 'mond') {
+          const localSavedRole = localStorage.getItem(STORAGE_ROLE_KEY);
+          if (!localSavedRole && (data.role === 'sonne' || data.role === 'mond')) {
             setRoleState(data.role);
             const rawName = data.displayName || '';
             const sanitized = rawName.replace(/\s*\((Stefanie|Manuel)\)/gi, '').trim() || (data.role === 'mond' ? 'Der Mond' : 'Die Sonne');

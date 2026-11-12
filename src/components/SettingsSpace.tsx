@@ -35,6 +35,7 @@ import {
   clearNotificationLogs,
   displayLocalNotification,
   addNotificationLog,
+  registerDevicePushSubscription,
 } from '../services/notificationService';
 import { UserRoleType, NotificationLogEntry } from '../types';
 
@@ -146,10 +147,18 @@ export const SettingsSpace: React.FC = () => {
     setSelectedRole(r);
     const defaultName = r === 'sonne' ? 'Die Sonne' : 'Der Mond';
     await setRole(r, defaultName);
+    if ('serviceWorker' in navigator) {
+      try {
+        const reg = await navigator.serviceWorker.ready;
+        if (reg) {
+          await registerDevicePushSubscription(reg, r);
+        }
+      } catch (_) {}
+    }
     setRoleFeedback(`Rolle gewechselt zu ${r === 'sonne' ? 'Die Sonne' : 'Der Mond'}`);
     setTimeout(() => setRoleFeedback(null), 3000);
     // Reload page to ensure all listeners restart with the new role
-    setTimeout(() => window.location.reload(), 1000);
+    setTimeout(() => window.location.reload(), 800);
   };
 
   // Handle push notification permission

@@ -90,6 +90,47 @@ function handleFirestoreError(error: unknown, operationType: OperationType, path
   }
 }
 
+function getSubscriptionDocId(endpoint: string): string {
+  const parts = endpoint.split('/');
+  const lastSegment = parts[parts.length - 1] || 'sub';
+  return 'sub-' + lastSegment.replace(/[^a-zA-Z0-9_\-]/g, '_').substring(0, 100);
+}
+
+export const registerDevicePushSubscription = async (
+  registration: ServiceWorkerRegistration,
+  userRole?: UserRoleType
+): Promise<boolean> => {
+  try {
+    const currentRole = userRole || (typeof window !== 'undefined' ? (localStorage.getItem('sonne_mond_user_role') as UserRoleType || 'sonne') : 'sonne');
+    let sub = await registration.pushManager.getSubscription();
+    if (!sub) {
+      sub = await registration.pushManager.subscribe({
+        userVisibleOnly: true,
+        applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY) as any
+      });
+    }
+    if (sub) {
+      const subJson = sub.toJSON();
+      if (subJson.endpoint) {
+        const docId = getSubscriptionDocId(subJson.endpoint);
+        const subDocRef = doc(db, 'push_subscriptions', docId);
+        await setDoc(subDocRef, {
+          id: docId,
+          role: currentRole,
+          subscription: subJson,
+          endpoint: subJson.endpoint,
+          updatedAt: new Date().toISOString()
+        }, { merge: true });
+        console.log(`[Push Reg] Device push subscription registered for role "${currentRole}" in push_subscriptions/${docId}.`);
+        return true;
+      }
+    }
+  } catch (err) {
+    console.warn('[Push Reg] Could not register device push subscription:', err);
+  }
+  return false;
+};
+
 // Initialize Web Push & FCM for closed app background notifications
 export const setupFCM = async (registration: ServiceWorkerRegistration) => {
   try {
@@ -99,27 +140,24 @@ export const setupFCM = async (registration: ServiceWorkerRegistration) => {
       return;
     }
 
-    // 1. Register W3C PushSubscription for background Web Push (works when app is closed)
+    const currentRole = typeof window !== 'undefined' ? (localStorage.getItem('sonne_mond_user_role') as UserRoleType || 'sonne') : 'sonne';
+
+    // 1. Register W3C PushSubscription in dedicated push_subscriptions collection
+    await registerDevicePushSubscription(registration, currentRole);
+
+    // Also backup in user_roles doc
     try {
-      let sub = await registration.pushManager.getSubscription();
-      if (!sub) {
-        sub = await registration.pushManager.subscribe({
-          userVisibleOnly: true,
-          applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY) as any
-        });
-      }
+      const sub = await registration.pushManager.getSubscription();
       if (sub) {
         const subJson = sub.toJSON();
         const userRoleDoc = doc(db, 'user_roles', user.uid);
         await setDoc(userRoleDoc, {
+          role: currentRole,
           pushSubscriptions: arrayUnion(JSON.stringify(subJson)),
           updatedAt: new Date().toISOString()
         }, { merge: true });
-        console.log('Web Push Subscription registered successfully for background OS push.');
       }
-    } catch (subErr) {
-      console.warn('W3C PushSubscription notice:', subErr);
-    }
+    } catch (_) {}
 
     // 2. Also register FCM token if messaging is active
     if (messaging) {
